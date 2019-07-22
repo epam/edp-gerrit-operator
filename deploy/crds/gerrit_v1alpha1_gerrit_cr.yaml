@@ -1,0 +1,5 @@
+apiVersion: gerrit.edp.epam.com/v1alpha1
+kind: Gerrit
+metadata:
+  name: example-gerrit
+spec:
