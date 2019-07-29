@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -18,8 +19,9 @@ type GerritSpec struct {
 // GerritStatus defines the observed state of Gerrit
 // +k8s:openapi-gen=true
 type GerritStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	Available       bool      `json:"available, omitempty"`
+	LastTimeUpdated time.Time `json:"lastTimeUpdated, omitempty"`
+	Status          string    `json:"status, omitempty"`
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
