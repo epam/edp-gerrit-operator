@@ -2,11 +2,11 @@ package client
 
 import (
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var SchemeGroupVersion = schema.GroupVersion{Group: "edp.epam.com", Version: "v1alpha1"}
@@ -14,8 +14,6 @@ var SchemeGroupVersion = schema.GroupVersion{Group: "edp.epam.com", Version: "v1
 type EdpV1Client struct {
 	crClient *rest.RESTClient
 }
-
-
 
 func NewForConfig(config *rest.Config) (*EdpV1Client, error) {
 	if err := createCrdClient(config); err != nil {
