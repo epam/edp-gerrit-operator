@@ -10,19 +10,32 @@ import (
 
 // GerritSpec defines the desired state of Gerrit
 // +k8s:openapi-gen=true
+
+type GerritVolumes struct {
+	Name         string `json:"name"`
+	StorageClass string `json:"storage_class"`
+	Capacity     string `json:"capacity"`
+}
+
 type GerritSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	Type    string          `json:"type"`
+	Version string          `json:"version"`
+	Volumes []GerritVolumes `json:"volumes,omitempty"`
 }
 
 // GerritStatus defines the observed state of Gerrit
 // +k8s:openapi-gen=true
 type GerritStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Available       bool      `json:"available, omitempty"`
 	LastTimeUpdated time.Time `json:"lastTimeUpdated, omitempty"`
 	Status          string    `json:"status, omitempty"`
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	ExternalUrl     string    `json:"externalUrl"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

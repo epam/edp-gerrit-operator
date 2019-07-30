@@ -14,7 +14,6 @@ import (
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
 		"gerrit-operator/pkg/apis/edp/v1alpha1.Gerrit":       schema_pkg_apis_edp_v1alpha1_Gerrit(ref),
-		"gerrit-operator/pkg/apis/edp/v1alpha1.GerritSpec":   schema_pkg_apis_edp_v1alpha1_GerritSpec(ref),
 		"gerrit-operator/pkg/apis/edp/v1alpha1.GerritStatus": schema_pkg_apis_edp_v1alpha1_GerritStatus(ref),
 	}
 }
@@ -62,24 +61,39 @@ func schema_pkg_apis_edp_v1alpha1_Gerrit(ref common.ReferenceCallback) common.Op
 	}
 }
 
-func schema_pkg_apis_edp_v1alpha1_GerritSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "GerritSpec defines the desired state of Gerrit",
-				Properties:  map[string]spec.Schema{},
-			},
-		},
-		Dependencies: []string{},
-	}
-}
-
 func schema_pkg_apis_edp_v1alpha1_GerritStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "GerritStatus defines the observed state of Gerrit",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"available": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"lastTimeUpdated": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "date-time",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"externalUrl": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"externalUrl"},
 			},
 		},
 		Dependencies: []string{},

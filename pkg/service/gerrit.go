@@ -3,10 +3,22 @@ package service
 import (
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gopkg.in/resty.v1"
+	logPrint "log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
+	Image                 = "openfrontier/gerrit:2.14.8"
+	DbImage               = "postgres:9.6"
+	Port                  = 8080
+	SSHPort               = 30001
+	DBPort                = 5432
+	LivenessProbeDelay    = 180
+	ReadinessProbeDelay   = 60
+	DbLivenessProbeDelay  = 60
+	DbReadinessProbeDelay = 60
+	MemoryRequest         = "500Mi"
+
 	StatusInstall     = "installing"
 	StatusFailed      = "failed"
 	StatusCreated     = "created"
@@ -32,12 +44,13 @@ func NewGerritService(platformService PlatformService, k8sClient client.Client) 
 }
 
 type GerritServiceImpl struct {
-	// Providing sonar service implementation through the interface (platform abstract)
+	// Providing gerrit service implementation through the interface (platform abstract)
 	platformService PlatformService
 	k8sClient       client.Client
 }
 
 func (service GerritServiceImpl) Install(instance v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	logPrint.Printf("[INFO] Gerrit Installation started")
 	return &instance, nil
 }
 

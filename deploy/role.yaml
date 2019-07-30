@@ -50,5 +50,6 @@ rules:
   - edp.epam.com
   resources:
   - '*'
+  - gerrits
   verbs:
   - '*'

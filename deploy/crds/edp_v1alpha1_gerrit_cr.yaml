@@ -1,0 +1,11 @@
+apiVersion: edp.epam.com/v1alpha1
+kind: Gerrit
+metadata:
+  name: example-gerrit
+spec:
+  type: "Gerrit"
+  version: '2.16.10'
+  volumes:
+    - name: "data"
+      storage_class: "efs"
+      capacity: "1Gi"
