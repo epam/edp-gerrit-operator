@@ -1,0 +1,357 @@
+package openshift
+
+import (
+	"fmt"
+	"gerrit-operator/pkg/service/gerrit/spec"
+	"log"
+	"reflect"
+
+	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/service/helpers"
+	"gerrit-operator/pkg/service/platform/k8s"
+
+	appsV1Api "github.com/openshift/api/apps/v1"
+	routeV1Api "github.com/openshift/api/route/v1"
+	securityV1Api "github.com/openshift/api/security/v1"
+	appsV1client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	authV1Client "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
+	projectV1Client "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
+	routeV1Client "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityV1Client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	templateV1Client "github.com/openshift/client-go/template/clientset/versioned/typed/template/v1"
+	"github.com/pkg/errors"
+	coreV1Api "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+// OpenshiftService implements platform.Service interface (OpenShift platform integration)
+type OpenshiftService struct {
+	k8s.K8SService
+
+	authClient     *authV1Client.AuthorizationV1Client
+	templateClient *templateV1Client.TemplateV1Client
+	projectClient  *projectV1Client.ProjectV1Client
+	securityClient *securityV1Client.SecurityV1Client
+	appClient      *appsV1client.AppsV1Client
+	routeClient    *routeV1Client.RouteV1Client
+}
+
+// Init process with OpenshiftService instance initialization actions
+func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) error {
+	if err := s.K8SService.Init(config, scheme); err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	templateClient, err := templateV1Client.NewForConfig(config)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+	s.templateClient = templateClient
+
+	projectClient, err := projectV1Client.NewForConfig(config)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+	s.projectClient = projectClient
+
+	securityClient, err := securityV1Client.NewForConfig(config)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	s.securityClient = securityClient
+	appClient, err := appsV1client.NewForConfig(config)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	s.appClient = appClient
+	routeClient, err := routeV1Client.NewForConfig(config)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+	s.routeClient = routeClient
+
+	authClient, err := authV1Client.NewForConfig(config)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+	s.authClient = authClient
+
+	return nil
+}
+
+// CreateExternalEndpoint creates a new Endpoint resource for a Gerrit EDP Component
+func (s *OpenshiftService) CreateExternalEndpoint(gerrit *v1alpha1.Gerrit) error {
+	gerritRouteObject := newGerritRoute(gerrit.Name, gerrit.Namespace)
+
+	if err := controllerutil.SetControllerReference(gerrit, gerritRouteObject, s.Scheme); err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	if _, err := s.routeClient.Routes(gerritRouteObject.Namespace).Get(gerritRouteObject.Name, metav1.GetOptions{}); err != nil {
+		if k8serrors.IsNotFound(err) {
+			log.Printf("Creating a new Route %s/%s for Gerrit %s", gerritRouteObject.Namespace, gerritRouteObject.Name, gerrit.Name)
+			if _, err = s.routeClient.Routes(gerritRouteObject.Namespace).Create(gerritRouteObject); err != nil {
+				return helpers.LogErrorAndReturn(err)
+			}
+			log.Printf("Route %s/%s has been created", gerritRouteObject.Namespace, gerritRouteObject.Name)
+		} else {
+			return helpers.LogErrorAndReturn(err)
+		}
+	}
+	return nil
+}
+
+// CreateSecurityContext creates a new SecurityContextConstraints resource for a Gerrit EDP Component
+func (s *OpenshiftService) CreateSecurityContext(gerrit *v1alpha1.Gerrit, sa *coreV1Api.ServiceAccount) error {
+	project, err := s.projectClient.Projects().Get(gerrit.Namespace, metav1.GetOptions{})
+	if err != nil {
+		return helpers.LogErrorAndReturn(errors.Wrapf(err, "Unable to retrieve project %s", gerrit.Namespace))
+	}
+
+	displayName := project.GetObjectMeta().GetAnnotations()["openshift.io/display-name"]
+	if len(displayName) == 0 {
+		return helpers.LogErrorAndReturn(errors.New("Project display name does not set"))
+	}
+
+	gerritSccObject, err := s.newGerritSecurityContextConstraints(gerrit, displayName)
+	if err != nil {
+		return err
+	}
+
+	currentSCC, err := s.securityClient.SecurityContextConstraints().Get(gerritSccObject.Name, metav1.GetOptions{})
+	if err == nil {
+		// Object successfuly retrived
+
+		if !reflect.DeepEqual(currentSCC.Users, gerritSccObject.Users) {
+			// .Users slices are not equal
+
+			if _, err := s.securityClient.SecurityContextConstraints().Update(gerritSccObject); err != nil {
+				return helpers.LogErrorAndReturn(err)
+			}
+			log.Printf("Security Context Constraint %s has been updated", gerritSccObject.Name)
+		}
+	} else if k8serrors.IsNotFound(err) {
+		// Object hasn't been found
+
+		log.Printf("Creating a new Security Context Constraint %s for Gerrit %s", gerritSccObject.Name, gerrit.Name)
+		if _, err = s.securityClient.SecurityContextConstraints().Create(gerritSccObject); err != nil {
+			return helpers.LogErrorAndReturn(err)
+		}
+		log.Printf("Security Context Constraint %s has been created", gerritSccObject.Name)
+	} else {
+		// Some other issue has occured during object retrival
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	// Success: SecurityContextConstraints resource already exists or the new one has been successfuly created
+	return nil
+}
+
+// CreateDeployConf creates a new DeploymentConfig resource for a Gerrit EDP Component
+func (s *OpenshiftService) CreateDeployConf(gerrit *v1alpha1.Gerrit) error {
+	gerritDCObject := newGerritDeploymentConfig(gerrit)
+
+	if err := controllerutil.SetControllerReference(gerrit, gerritDCObject, s.Scheme); err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	if _, err := s.appClient.DeploymentConfigs(gerritDCObject.Namespace).Get(gerritDCObject.Name, metav1.GetOptions{}); err != nil {
+		if k8serrors.IsNotFound(err) {
+			log.Printf("Creating a new DeploymentConfig %s/%s for Gerrit %s", gerritDCObject.Namespace, gerritDCObject.Name, gerrit.Name)
+			_, err = s.appClient.DeploymentConfigs(gerritDCObject.Namespace).Create(gerritDCObject)
+			if err != nil {
+				return helpers.LogErrorAndReturn(err)
+			}
+			log.Printf("DeploymentConfig %s/%s has been created", gerritDCObject.Namespace, gerritDCObject.Name)
+		} else {
+			return helpers.LogErrorAndReturn(err)
+		}
+	}
+	return nil
+}
+
+// GetDeploymentConfig returns DeploymentConfig object from Openshift
+func (service OpenshiftService) GetDeploymentConfig(instance v1alpha1.Gerrit) (*appsV1Api.DeploymentConfig, error) {
+	deploymentConfig, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, helpers.LogErrorAndReturn(err)
+	}
+
+	return deploymentConfig, nil
+}
+
+// newGerritSCC returns a new instance of securityV1Api.SecurityContextConstraints type
+func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.Gerrit, displayName string) (*securityV1Api.SecurityContextConstraints, error) {
+	priority := int32(1)
+	gerritSccObject := &securityV1Api.SecurityContextConstraints{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", gerrit.Name, displayName),
+			Namespace: gerrit.Namespace,
+			Labels:    helpers.GenerateLabels(gerrit.Name),
+		},
+		Volumes: []securityV1Api.FSType{
+			securityV1Api.FSTypeSecret,
+			securityV1Api.FSTypeDownwardAPI,
+			securityV1Api.FSTypeEmptyDir,
+			securityV1Api.FSTypePersistentVolumeClaim,
+			securityV1Api.FSProjected,
+			securityV1Api.FSTypeConfigMap,
+		},
+		AllowHostDirVolumePlugin: false,
+		AllowHostIPC:             true,
+		AllowHostNetwork:         false,
+		AllowHostPID:             false,
+		AllowHostPorts:           false,
+		AllowPrivilegedContainer: false,
+		AllowedCapabilities:      []coreV1Api.Capability{},
+		AllowedFlexVolumes:       []securityV1Api.AllowedFlexVolume{},
+		DefaultAddCapabilities:   []coreV1Api.Capability{},
+		FSGroup: securityV1Api.FSGroupStrategyOptions{
+			Type:   securityV1Api.FSGroupStrategyRunAsAny,
+			Ranges: []securityV1Api.IDRange{},
+		},
+		Groups:                 []string{},
+		Priority:               &priority,
+		ReadOnlyRootFilesystem: false,
+		RunAsUser: securityV1Api.RunAsUserStrategyOptions{
+			Type:        securityV1Api.RunAsUserStrategyRunAsAny,
+			UID:         nil,
+			UIDRangeMin: nil,
+			UIDRangeMax: nil,
+		},
+		SELinuxContext: securityV1Api.SELinuxContextStrategyOptions{
+			Type:           securityV1Api.SELinuxStrategyMustRunAs,
+			SELinuxOptions: nil,
+		},
+		SupplementalGroups: securityV1Api.SupplementalGroupsStrategyOptions{
+			Type:   securityV1Api.SupplementalGroupsStrategyRunAsAny,
+			Ranges: nil,
+		},
+		Users: []string{
+			"system:serviceaccount:" + gerrit.Namespace + ":" + gerrit.Name,
+		},
+	}
+
+	if err := controllerutil.SetControllerReference(gerrit, gerritSccObject, s.Scheme); err != nil {
+		return nil, helpers.LogErrorAndReturn(err)
+	}
+
+	return gerritSccObject, nil
+}
+
+func newGerritRoute(name, namespace string) *routeV1Api.Route {
+	return &routeV1Api.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    helpers.GenerateLabels(name),
+		},
+		Spec: routeV1Api.RouteSpec{
+			TLS: &routeV1Api.TLSConfig{
+				Termination:                   routeV1Api.TLSTerminationEdge,
+				InsecureEdgeTerminationPolicy: routeV1Api.InsecureEdgeTerminationPolicyRedirect,
+			},
+			To: routeV1Api.RouteTargetReference{
+				Name: name,
+				Kind: "Service",
+			},
+			Port: &routeV1Api.RoutePort{
+				TargetPort: intstr.IntOrString{IntVal: 8080, StrVal: "ui"},
+			},
+		},
+	}
+}
+
+func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit) *appsV1Api.DeploymentConfig {
+	labels := helpers.GenerateLabels(gerrit.Name)
+	return &appsV1Api.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      gerrit.Name,
+			Namespace: gerrit.Namespace,
+			Labels:    labels,
+		},
+		Spec: appsV1Api.DeploymentConfigSpec{
+			Replicas: 1,
+			Triggers: []appsV1Api.DeploymentTriggerPolicy{
+				{
+					Type: appsV1Api.DeploymentTriggerOnConfigChange,
+				},
+			},
+			Strategy: appsV1Api.DeploymentStrategy{
+				Type: appsV1Api.DeploymentStrategyTypeRolling,
+			},
+			Selector: labels,
+			Template: &coreV1Api.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: coreV1Api.PodSpec{
+					Containers: []coreV1Api.Container{
+						{
+							Name:            gerrit.Name,
+							Image:           spec.Image + ":" + gerrit.Spec.Version,
+							ImagePullPolicy: coreV1Api.PullIfNotPresent,
+							Ports: []coreV1Api.ContainerPort{
+								{
+									Name:          gerrit.Name,
+									ContainerPort: spec.Port,
+								},
+							},
+							LivenessProbe:          generateProbe(spec.LivenessProbeDelay),
+							ReadinessProbe:         generateProbe(spec.ReadinessProbeDelay),
+							TerminationMessagePath: "/dev/termination-log",
+							Resources: coreV1Api.ResourceRequirements{
+								Requests: map[coreV1Api.ResourceName]resource.Quantity{
+									coreV1Api.ResourceMemory: resource.MustParse(spec.MemoryRequest),
+								},
+							},
+							VolumeMounts: []coreV1Api.VolumeMount{
+								{
+									MountPath: "/var/gerrit/review_site",
+									Name:      "gerrit-data",
+								},
+							},
+						},
+					},
+					ServiceAccountName: gerrit.Name,
+					Volumes: []coreV1Api.Volume{
+						{
+							Name: "gerrit-data",
+							VolumeSource: coreV1Api.VolumeSource{
+								PersistentVolumeClaim: &coreV1Api.PersistentVolumeClaimVolumeSource{
+									ClaimName: gerrit.Name + "-data",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generateProbe(delay int32) *coreV1Api.Probe {
+	return &coreV1Api.Probe{
+		FailureThreshold:    5,
+		InitialDelaySeconds: delay,
+		PeriodSeconds:       20,
+		SuccessThreshold:    1,
+		Handler: coreV1Api.Handler{
+			HTTPGet: &coreV1Api.HTTPGetAction{
+				Port: intstr.IntOrString{
+					IntVal: spec.Port,
+				},
+				Path: "/",
+			},
+		},
+		TimeoutSeconds: 5,
+	}
+}

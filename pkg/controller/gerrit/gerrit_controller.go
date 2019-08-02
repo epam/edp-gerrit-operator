@@ -2,11 +2,15 @@ package gerrit
 
 import (
 	"context"
+	logPrint "log"
+	"time"
+
 	edpv1alpha1 "gerrit-operator/pkg/apis/edp/v1alpha1"
-	"gerrit-operator/pkg/service"
+	"gerrit-operator/pkg/service/gerrit"
+	"gerrit-operator/pkg/service/platform"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	logPrint "log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -14,19 +18,35 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"time"
 )
 
 const (
-	StatusInstall          = "installing"
-	StatusFailed           = "failed"
-	StatusCreated          = "created"
-	StatusConfiguring      = "configuring"
-	StatusConfigured       = "configured"
-	StatusExposeStart      = "exposing config"
-	StatusExposeFinish     = "config exposed"
+	// StatusInstall = installing
+	StatusInstall = "installing"
+
+	// StatusFailed = failed
+	StatusFailed = "failed"
+
+	// StatusCreated = created
+	StatusCreated = "created"
+
+	// StatusConfiguring = configuring
+	StatusConfiguring = "configuring"
+
+	// StatusConfigured = configured
+	StatusConfigured = "configured"
+
+	// StatusExposeStart = exposing config
+	StatusExposeStart = "exposing config"
+
+	// StatusExposeFinish = config exposed
+	StatusExposeFinish = "config exposed"
+
+	// StatusIntegrationStart = integration started
 	StatusIntegrationStart = "integration started"
-	StatusReady            = "ready"
+
+	// StatusReady = ready
+	StatusReady = "ready"
 )
 
 var log = logf.Log.WithName("controller_gerrit")
@@ -46,12 +66,10 @@ func Add(mgr manager.Manager) error {
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	scheme := mgr.GetScheme()
 	client := mgr.GetClient()
-	platformService, _ := service.NewPlatformService(scheme)
-	gerritService := service.NewGerritService(platformService, client)
 	return &ReconcileGerrit{
-		client:  mgr.GetClient(),
-		scheme:  mgr.GetScheme(),
-		service: gerritService,
+		client:  client,
+		scheme:  scheme,
+		service: gerrit.NewComponentService(platform.NewService(scheme), client),
 	}
 }
 
@@ -80,7 +98,7 @@ type ReconcileGerrit struct {
 	// that reads objects from the cache and writes to the apiserver
 	client  client.Client
 	scheme  *runtime.Scheme
-	service service.GerritService
+	service gerrit.Interface
 }
 
 // Reconcile reads that state of the cluster for a Gerrit object and makes changes based on the state read
@@ -109,14 +127,14 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	if instance.Status.Status == "" || instance.Status.Status == StatusFailed {
+		logPrint.Printf("[INFO] Installation of %v/%v object with name has been started", instance.Namespace, instance.Name)
 		err = r.updateStatus(instance, StatusInstall)
 		if err != nil {
-			r.resourceActionFailed(instance, err)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
-	instance, err = r.service.Install(*instance)
+	instance, err = r.service.Install(instance)
 	if err != nil {
 		logPrint.Printf("[ERROR] Cannot install Gerrit %s. The reason: %s", instance.Name, err)
 		r.resourceActionFailed(instance, err)
@@ -124,17 +142,25 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	if instance.Status.Status == StatusInstall {
-		logPrint.Printf("Installing Gerrit component has been finished")
-		err = r.updateStatus(instance, StatusReady)
-		if err != nil {
-			r.resourceActionFailed(instance, err)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
-		}
+		logPrint.Printf("[INFO] Installation of %v/%v object with name has been finished", instance.Namespace, instance.Name)
+		r.updateStatus(instance, StatusCreated)
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	err = r.updateAvailableStatus(instance, true)
-	if err != nil {
-		r.resourceActionFailed(instance, err)
+	if dcIsReady, err := r.service.IsDeploymentConfigReady(*instance); err != nil {
+		logPrint.Printf("[ERROR] Checking if Deployment config for %v/%v object is ready has been failed", instance.Namespace, instance.Name)
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	} else if !dcIsReady {
+		logPrint.Printf("[WARNING] Deployment config for %v/%v object is not ready for configuration yet", instance.Namespace, instance.Name)
+		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	if instance.Status.Status == StatusCreated || instance.Status.Status == "" {
+		logPrint.Printf("[INFO] Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name)
+		err := r.updateStatus(instance, StatusConfiguring)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
 	}
 
 	return reconcile.Result{}, nil
