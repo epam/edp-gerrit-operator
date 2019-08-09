@@ -163,6 +163,12 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
+	err = r.updateAvailableStatus(instance, true)
+	if err != nil {
+		logPrint.Printf("[WARNING] Failed update avalability status for Nexus object with name %s", instance.Name)
+		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
 	return reconcile.Result{}, nil
 }
 
