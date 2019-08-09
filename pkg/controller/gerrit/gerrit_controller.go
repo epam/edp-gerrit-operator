@@ -2,6 +2,7 @@ package gerrit
 
 import (
 	"context"
+	"fmt"
 	logPrint "log"
 	"time"
 
@@ -163,12 +164,27 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
+	instance, err = r.service.Configure(instance)
+	if err != nil {
+		logPrint.Printf("[ERROR] Configuration of %v/%v object has been failed", instance.Namespace, instance.Name)
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	if instance.Status.Status == StatusConfiguring {
+		logPrint.Printf("[INFO] Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
+		err = r.updateStatus(instance, StatusReady)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+	}
+
 	err = r.updateAvailableStatus(instance, true)
 	if err != nil {
-		logPrint.Printf("[WARNING] Failed update avalability status for Nexus object with name %s", instance.Name)
+		logPrint.Printf("[WARNING] Failed update avalability status for Gerrit object with name %s", instance.Name)
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
+	reqLogger.Info(fmt.Sprintf("Reconciling Gerrit component %v/%v has been finished", request.Namespace, request.Name))
 	return reconcile.Result{}, nil
 }
 

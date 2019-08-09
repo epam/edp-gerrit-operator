@@ -116,12 +116,7 @@ func (s *OpenshiftService) CreateSecurityContext(gerrit *v1alpha1.Gerrit, sa *co
 		return helpers.LogErrorAndReturn(errors.Wrapf(err, "Unable to retrieve project %s", gerrit.Namespace))
 	}
 
-	displayName := project.GetObjectMeta().GetAnnotations()["openshift.io/display-name"]
-	if len(displayName) == 0 {
-		return helpers.LogErrorAndReturn(errors.New("Project display name does not set"))
-	}
-
-	gerritSccObject, err := s.newGerritSecurityContextConstraints(gerrit, displayName)
+	gerritSccObject, err := s.newGerritSecurityContextConstraints(gerrit, project.Name)
 	if err != nil {
 		return err
 	}
@@ -189,11 +184,11 @@ func (service OpenshiftService) GetDeploymentConfig(instance v1alpha1.Gerrit) (*
 }
 
 // newGerritSCC returns a new instance of securityV1Api.SecurityContextConstraints type
-func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.Gerrit, displayName string) (*securityV1Api.SecurityContextConstraints, error) {
+func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.Gerrit, projectName string) (*securityV1Api.SecurityContextConstraints, error) {
 	priority := int32(1)
 	gerritSccObject := &securityV1Api.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", gerrit.Name, displayName),
+			Name:      fmt.Sprintf("%s-%s", gerrit.Name, projectName),
 			Namespace: gerrit.Namespace,
 			Labels:    helpers.GenerateLabels(gerrit.Name),
 		},

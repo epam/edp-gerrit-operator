@@ -9,6 +9,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	adminUsername = "admin"
+)
+
 // Interface expresses behaviour of the Gerrit EDP Component
 type Interface interface {
 	IsDeploymentConfigReady(instance v1alpha1.Gerrit) (bool, error)
@@ -45,16 +49,6 @@ func (s ComponentService) IsDeploymentConfigReady(instance v1alpha1.Gerrit) (boo
 
 // Install has a minimal set of logic, required to install "vanilla" Gerrit EDP Component
 func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
-	username := []byte("admin")
-
-	adminSecret := map[string][]byte{
-		"user":     username,
-		"password": []byte(uniuri.New()),
-	}
-	if err := s.platformService.CreateSecret(instance, instance.Name+"-admin-password", adminSecret); err != nil {
-		return nil, err
-	}
-
 	sa, err := s.platformService.CreateServiceAccount(instance)
 	if err != nil {
 		return nil, err
@@ -85,6 +79,14 @@ func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, 
 
 // Configure contains logic related to self configuration of the Gerrit EDP Component
 func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	adminSecret := map[string][]byte{
+		"user":     []byte(adminUsername),
+		"password": []byte(uniuri.New()),
+	}
+	if err := s.platformService.CreateSecret(instance, instance.Name+"-admin-password", adminSecret); err != nil {
+		return nil, err
+	}
+
 	return instance, nil
 }
 
