@@ -41,13 +41,13 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - gerrit.edp.epam.com
+  - gerrit.v2.edp.epam.com
   resources:
   - '*'
   verbs:
   - '*'
 - apiGroups:
-  - edp.epam.com
+  - v2.edp.epam.com
   resources:
   - '*'
   - gerrits
