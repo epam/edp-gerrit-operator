@@ -4,13 +4,16 @@ import (
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform"
+	"os"
 
 	"github.com/dchest/uniuri"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	adminUsername = "admin"
+	adminUsername                   = "admin"
+	gerritAdminPrivateKeyFileName   = "gerrit_admin_rsa"
+	gerritProjectCreatorKeyFileName = "gerrit_project-creator_rsa"
 )
 
 // Interface expresses behaviour of the Gerrit EDP Component
@@ -84,6 +87,62 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		"password": []byte(uniuri.New()),
 	}
 	if err := s.platformService.CreateSecret(instance, instance.Name+"-admin-password", adminSecret); err != nil {
+		return nil, err
+	}
+
+	gerritAdminPrivateKey, err := helpers.GeneratePrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	gerritAdminPublicKey, err := helpers.GeneratePublicKey(gerritAdminPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := helpers.SaveKeyToFile(helpers.EncodePrivateKey(gerritAdminPrivateKey),
+		gerritAdminPrivateKeyFileName, os.Getenv("HOME")+"/"); err != nil {
+		return nil, err
+	}
+
+	if err := helpers.SaveKeyToFile(gerritAdminPublicKey, gerritAdminPrivateKeyFileName+".pub", os.Getenv("HOME")+"/"); err != nil {
+		return nil, err
+	}
+
+	gerritAdminSshKeys := map[string][]byte{
+		"id_rsa":     helpers.EncodePrivateKey(gerritAdminPrivateKey),
+		"id_rsa.pub": gerritAdminPublicKey,
+	}
+
+	if err := s.platformService.CreateSecret(instance, instance.Name+"-admin", gerritAdminSshKeys); err != nil {
+		return nil, err
+	}
+
+	gerritProjectCreatorPrivateKey, err := helpers.GeneratePrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	gerritProjectCreatorPublicKey, err := helpers.GeneratePublicKey(gerritProjectCreatorPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := helpers.SaveKeyToFile(helpers.EncodePrivateKey(gerritProjectCreatorPrivateKey),
+		gerritProjectCreatorKeyFileName, os.Getenv("HOME")+"/"); err != nil {
+		return nil, err
+	}
+
+	if err := helpers.SaveKeyToFile(gerritProjectCreatorPublicKey, gerritProjectCreatorKeyFileName+".pub", os.Getenv("HOME")+"/"); err != nil {
+		return nil, err
+	}
+
+	gerritProjectCreatorSshKeys := map[string][]byte{
+		"id_rsa":     helpers.EncodePrivateKey(gerritAdminPrivateKey),
+		"id_rsa.pub": gerritAdminPublicKey,
+	}
+
+	if err := s.platformService.CreateSecret(instance, instance.Name+"-project-creator", gerritProjectCreatorSshKeys); err != nil {
 		return nil, err
 	}
 
