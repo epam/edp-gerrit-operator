@@ -5,9 +5,10 @@ ENV OPERATOR=/usr/local/bin/gerrit-operator \
     USER_NAME=gerrit-operator \
     HOME=/home/gerrit-operator
 
+RUN apk add --no-cache ca-certificates openssh-client
+
 # install operator binary
 COPY gerrit-operator ${OPERATOR}
-
 COPY bin /usr/local/bin
 
 RUN chmod u+x /usr/local/bin/user_setup && \

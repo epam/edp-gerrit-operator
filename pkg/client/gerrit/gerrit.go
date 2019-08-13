@@ -3,16 +3,20 @@ package gerrit
 import (
 	"fmt"
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/client/ssh"
 	"gerrit-operator/pkg/service/platform"
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
 	"path/filepath"
+	"log"
+	"os"
 )
 
 type Client struct {
-	instance *v1alpha1.Gerrit
-	resty    resty.Client
+	instance  *v1alpha1.Gerrit
+	resty     resty.Client
+	sshClient ssh.SSHClient
 }
 
 // InitNewRestClient performs initialization of Gerrit connection
@@ -59,4 +63,25 @@ func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.Platf
 	}
 
 	return instance, nil
+}
+
+func (gc *Client) CreateGroup(groupName string, groupDescription string) error {
+	cmd := &ssh.SSHCommand{
+		Path:   fmt.Sprintf("create-group --description '%v' --visible-to-all '%v'", groupDescription, groupName),
+		Env:    []string{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	_, err := gc.sshClient.RunCommand(cmd)
+	if err != nil {
+		log.Printf("[ERROR] Create %v group failed: %v", groupName, err)
+	}
+	return err
+}
+
+func (gc *Client) InitNewSshClient(userName string, privateKey []byte, host string, port int32) error {
+	var err error
+	gc.sshClient, err = ssh.SshInit(userName, privateKey, host, port)
+	return err
 }

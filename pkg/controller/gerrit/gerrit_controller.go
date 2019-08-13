@@ -166,7 +166,7 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 
 	instance, err = r.service.Configure(instance)
 	if err != nil {
-		logPrint.Printf("[ERROR] Configuration of %v/%v object has been failed", instance.Namespace, instance.Name)
+		logPrint.Printf("[ERROR] Configuration of %v/%v object has been failed\n%v", instance.Namespace, instance.Name, err)
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 

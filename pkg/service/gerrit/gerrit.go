@@ -127,8 +127,9 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	if err != nil {
 		return instance, err
 	}
+
 	if dcUpdated {
-		return instance, nil
+		return instance, errors.Wrapf(errors.New("[INFO] Restarting Gerrit after SSH port change"), "[INFO] Restarting Gerrit after SSH port change")
 	}
 
 	gerritApiUrl, err := s.getGerritRestApiUrl(instance)
@@ -162,13 +163,14 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	status, err := s.gerritClient.CheckCredentials()
+
 	if status == 401 {
 		err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, spec.GerritDefaultAdminPassword)
 		if err != nil {
 			return instance, errors.Wrapf(err, "[ERROR] Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 		}
-
 		status, err = s.gerritClient.CheckCredentials()
+
 		if status == 401 {
 			instance, err := s.gerritClient.InitAdminUser(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
 				string(gerritAdminPublicKey))
@@ -181,7 +183,27 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	_, _, err = s.PlatformService.ExecInPod(instance.Namespace, podList.Items[0].Name,
 		[]string{"/bin/sh", "-c", "chown -R gerrit2:gerrit2 /var/gerrit/review_site"})
 	if err != nil {
-		return instance, errors.Wrapf(err, "[ERROR] Failed to chown /var/gerrit/review_site folder")
+		return instance, err
+	}
+
+	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
+	if err != nil {
+		return instance, err
+	}
+
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], "gerrit", sshPortService)
+	if err != nil {
+		return instance, err
+	}
+
+	err = s.gerritClient.CreateGroup("Continuous Integration Tools", "Contains Jenkins and any other CI tools that get +2/-2 access on reviews")
+	if err != nil {
+		return instance, err
+	}
+
+	err = s.gerritClient.CreateGroup("Project Bootstrappers", "Grants all the permissions needed to set up a new project")
+	if err != nil {
+		return instance, err
 	}
 
 	return instance, nil
@@ -259,7 +281,11 @@ func (s ComponentService) getDcSshPortNumber(instance *v1alpha1.Gerrit) (int32, 
 		if env.Name == spec.SSHListnerEnvName {
 			re := regexp.MustCompile(`[0-9]+`)
 			if re.MatchString(env.Value) {
-				portNumber, err := strconv.ParseInt(re.FindStringSubmatch(env.Value)[1], 10, 32)
+				ports := re.FindStringSubmatch(env.Value)
+				if len(ports) != 1 {
+					return 0, nil
+				}
+				portNumber, err := strconv.ParseInt(ports[0], 10, 32)
 				if err != nil {
 					return 0, err
 				}
