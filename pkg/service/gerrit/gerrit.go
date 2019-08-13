@@ -153,7 +153,10 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	_, _, err = s.platformService.ExecInPod(instance.Namespace, podList.Items[0].Name,
-		[]string{"/bin/sh", "-c", "mkdir -p /tmp/test"})
+		[]string{"/bin/sh", "-c", "chown -R gerrit2:gerrit2 /var/gerrit/review_site"})
+	if err != nil {
+		return nil, err
+	}
 
 	return instance, nil
 }
