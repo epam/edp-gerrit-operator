@@ -4,9 +4,10 @@ import (
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform"
-	"os"
-
 	"github.com/dchest/uniuri"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -145,6 +146,14 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	if err := s.platformService.CreateSecret(instance, instance.Name+"-project-creator", gerritProjectCreatorSshKeys); err != nil {
 		return nil, err
 	}
+
+	podList, err := s.platformService.GetPods(instance.Namespace, metav1.ListOptions{LabelSelector: "deploymentconfig=" + instance.Name})
+	if err != nil || len(podList.Items) != 1 {
+		return nil, errors.Wrapf(err, "[ERROR] Unable to determine Gerrit pod name: %v/%v", err, len(podList.Items))
+	}
+
+	_, _, err = s.platformService.ExecInPod(instance.Namespace, podList.Items[0].Name,
+		[]string{"/bin/sh", "-c", "mkdir -p /tmp/test"})
 
 	return instance, nil
 }

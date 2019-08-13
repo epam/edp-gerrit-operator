@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"bytes"
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/client"
 	"gerrit-operator/pkg/service/gerrit/spec"
@@ -12,8 +13,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/remotecommand"
 	"log"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -42,6 +46,59 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	s.EdpClient = edpClient
 
 	return nil
+}
+
+// GetPods returns Pod list according to the filter
+func (s *K8SService) GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error) {
+	PodList, err := s.CoreClient.Pods(namespace).List(filter)
+	if err != nil {
+		return &coreV1Api.PodList{}, err
+	}
+
+	return PodList, nil
+}
+
+// ExecInPod executes command in pod
+func (s *K8SService) ExecInPod(namespace string, podName string, command []string) (string, string, error) {
+	pod, err := s.CoreClient.Pods(namespace).Get(podName, metav1.GetOptions{})
+	if err != nil {
+		return "", "", err
+	}
+
+	req := s.CoreClient.RESTClient().
+		Post().
+		Namespace(pod.Namespace).
+		Resource("pods").
+		Name(pod.Name).
+		SubResource("exec").
+		VersionedParams(&coreV1Api.PodExecOptions{
+			Container: pod.Spec.Containers[0].Name,
+			Command:   command,
+			Stdin:     false,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       false,
+		}, scheme.ParameterCodec)
+
+	restConfig := newRestConfig()
+
+	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
+	if err != nil {
+		return "", "", err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	return stdout.String(), stderr.String(), nil
 }
 
 // CreateService creates a new Service Resource for a Gerrit EDP Component
@@ -237,4 +294,18 @@ func newGerritSecret(name, gerritName, namespace string, data map[string][]byte)
 		Data: data,
 		Type: "Opaque",
 	}
+}
+
+func newRestConfig() *rest.Config {
+	config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{},
+	)
+	restConfig, err := config.ClientConfig()
+	if err != nil {
+		helpers.LogErrorAndReturn(err)
+		return nil
+	}
+
+	return restConfig
 }

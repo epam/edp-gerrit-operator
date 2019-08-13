@@ -6,12 +6,15 @@ import (
 	"gerrit-operator/pkg/service/platform/openshift"
 	appsV1Api "github.com/openshift/api/apps/v1"
 	coreV1Api "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 // PlatformService defines common behaviour of the services for the supported platforms
 type PlatformService interface {
+	GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error)
+	ExecInPod(namespace string, podName string, command []string) (string, string, error)
 	CreateExternalEndpoint(gerrit *v1alpha1.Gerrit) error
 	CreateSecurityContext(gerrit *v1alpha1.Gerrit, sa *coreV1Api.ServiceAccount) error
 	CreateService(gerrit *v1alpha1.Gerrit) error
