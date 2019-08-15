@@ -6,9 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"log"
-	"os"
 )
 
 const (
@@ -28,24 +26,8 @@ func GenerateLabels(name string) map[string]string {
 	}
 }
 
-// SaveKeyToFile saves key to file
-func SaveKeyToFile(keyBytes []byte, filename string, savePath string) error {
-	f, err := os.Create(savePath+filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	err = ioutil.WriteFile(savePath+filename, keyBytes, 0600)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // GeneratePrivateKey generates private key
-func GeneratePrivateKey() (*rsa.PrivateKey, error) {
+func generatePrivateKey() (*rsa.PrivateKey, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, keyBitSize)
 	if err != nil {
 		return nil, err
@@ -60,7 +42,7 @@ func GeneratePrivateKey() (*rsa.PrivateKey, error) {
 }
 
 // GeneratePublicKey convert *rsa.PublicKey to ssh.PublicKey
-func GeneratePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
+func generatePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
 	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
 	if err != nil {
 		return nil, err
@@ -72,7 +54,7 @@ func GeneratePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
 }
 
 // EncodePrivateKey encodes private key to PEM format
-func EncodePrivateKey(privateKey *rsa.PrivateKey) []byte {
+func encodePrivateKey(privateKey *rsa.PrivateKey) []byte {
 	asnDEREncoding := x509.MarshalPKCS1PrivateKey(privateKey)
 
 	block := pem.Block{
@@ -82,4 +64,18 @@ func EncodePrivateKey(privateKey *rsa.PrivateKey) []byte {
 	}
 
 	return pem.EncodeToMemory(&block)
+}
+
+func GenerateKeyPairs() ([]byte, []byte, error) {
+	privateKey, err := generatePrivateKey()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	publicKey, err := generatePublicKey(privateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return encodePrivateKey(privateKey), publicKey, nil
 }

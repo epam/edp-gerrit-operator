@@ -39,4 +39,21 @@ const (
 
 	// StatuseExposeConf = "exposing config"
 	StatuseExposeConf = "exposing config"
+
+	//GerritDefaultAdminUser - default admin username in Gerrit
+	GerritDefaultAdminUser = "admin"
+
+	//GerritDefaultAdminPassword - default admin password in Gerrit
+	GerritDefaultAdminPassword = "secret"
+
+	//GerritRestApiUrlPath - Gerrit relative REST API path
+	GerritRestApiUrlPath = "a/"
+
+	//Gerrit port
+	GerritPort = "8080"
+
+	//GerritDefaultScriptsPath - default scripts for uploading to Gerrit
+	GerritDefaultScriptsPath = "/usr/local/configs/scripts"
+
+	LocalConfigsRelativePath = "configs"
 )

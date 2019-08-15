@@ -48,6 +48,18 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	return nil
 }
 
+// GetSecret return data field of Secret
+func (service K8SService) GetSecretData(namespace string, name string) (map[string][]byte, error) {
+	secret, err := service.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil && k8serr.IsNotFound(err) {
+		log.Printf("Secret %v in namespace %v not found", name, namespace)
+		return nil, nil
+	} else if err != nil {
+		return nil, errors.Wrap(err, "Unable to get secret data")
+	}
+	return secret.Data, nil
+}
+
 // GetPods returns Pod list according to the filter
 func (s *K8SService) GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error) {
 	PodList, err := s.CoreClient.Pods(namespace).List(filter)

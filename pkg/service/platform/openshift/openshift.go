@@ -87,6 +87,23 @@ func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) err
 	return nil
 }
 
+// GetRoute returns Route object from Openshift
+func (service OpenshiftService) GetRoute(namespace string, name string) (*routeV1Api.Route, string, error) {
+	route, err := service.routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
+	if err != nil && k8serrors.IsNotFound(err) {
+		log.Printf("Route %v in namespace %v not found", name, namespace)
+		return nil, "", nil
+	} else if err != nil {
+		return nil, "", err
+	}
+
+	var routeScheme = "http"
+	if route.Spec.TLS.Termination != "" {
+		routeScheme = "https"
+	}
+	return route, routeScheme, nil
+}
+
 // CreateExternalEndpoint creates a new Endpoint resource for a Gerrit EDP Component
 func (s *OpenshiftService) CreateExternalEndpoint(gerrit *v1alpha1.Gerrit) error {
 	gerritRouteObject := newGerritRoute(gerrit.Name, gerrit.Namespace)
