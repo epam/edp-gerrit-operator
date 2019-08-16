@@ -11,9 +11,13 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
+	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"strconv"
+	"time"
 )
 
 var log = logf.Log.WithName("service_gerrit")
@@ -105,7 +109,25 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	GerritScriptsPath := spec.GerritDefaultScriptsPath
 	if _, err = k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		GerritScriptsPath = fmt.Sprintf("%v/../%v/scripts", executableFilePath, spec.LocalConfigsRelativePath)
+		GerritScriptsPath = fmt.Sprintf("%v/%v/scripts", executableFilePath, spec.LocalConfigsRelativePath)
+	}
+
+	sshPortService, err := s.getServicePort(instance)
+	if err != nil {
+		return instance, err
+	}
+
+	sshPortDC, err := s.getDcSshPortNumber(instance)
+	if err != nil {
+		return instance, err
+	}
+
+	dcUpdated, err := s.updateDeploymentConfigPort(sshPortDC, sshPortService, instance)
+	if err != nil {
+		return instance, err
+	}
+	if dcUpdated {
+		return instance, nil
 	}
 
 	gerritApiUrl, err := s.getGerritRestApiUrl(instance)
@@ -209,4 +231,62 @@ func (s ComponentService) createSSHKeyPairs(instance *v1alpha1.Gerrit, secretNam
 	}
 
 	return privateKey, publicKey, nil
+}
+
+func (s ComponentService) getServicePort(instance *v1alpha1.Gerrit) (int32, error) {
+	service, err := s.PlatformService.GetService(instance.Namespace, instance.Name)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, port := range service.Spec.Ports {
+		if port.Name == spec.SSHPortName {
+			return port.NodePort, nil
+		}
+	}
+
+	return 0, errors.Wrapf(err, "[ERROR] Unable to determine Gerrit ssh port")
+}
+
+func (s ComponentService) getDcSshPortNumber(instance *v1alpha1.Gerrit) (int32, error) {
+	dc, err := s.PlatformService.GetDeploymentConfig(*instance)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, env := range dc.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == spec.SSHListnerEnvName {
+			re := regexp.MustCompile(`[0-9]+`)
+			if re.MatchString(env.Value) {
+				portNumber, err := strconv.ParseInt(re.FindStringSubmatch(env.Value)[1], 10, 32)
+				if err != nil {
+					return 0, err
+				}
+				return int32(portNumber), nil
+			}
+		}
+	}
+
+	return 0, nil
+}
+
+func (s ComponentService) updateDeploymentConfigPort(sshPortDC, sshPortService int32, instance *v1alpha1.Gerrit) (bool, error) {
+	if sshPortDC != sshPortService || sshPortDC == 0 {
+		newEnv := []coreV1Api.EnvVar{
+			{
+				Name:  spec.SSHListnerEnvName,
+				Value: fmt.Sprintf("*:%d", sshPortService),
+			},
+		}
+		deployConf, err := s.PlatformService.GetDeploymentConfig(*instance)
+		if err != nil {
+			return false, err
+		}
+		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, newEnv); err != nil {
+			return false, err
+		}
+		time.Sleep(5 * time.Second)
+		return true, nil
+	}
+	return false, nil
 }

@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"encoding/json"
 	"fmt"
 	"gerrit-operator/pkg/service/gerrit/spec"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform/k8s"
+	"k8s.io/apimachinery/pkg/types"
 
 	appsV1Api "github.com/openshift/api/apps/v1"
 	routeV1Api "github.com/openshift/api/route/v1"
@@ -259,6 +261,34 @@ func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.
 	return gerritSccObject, nil
 }
 
+func (s *OpenshiftService) PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error {
+
+	if len(env) == 0 {
+		return nil
+	}
+
+	container, err := selectContainer(dc.Spec.Template.Spec.Containers, gerrit.Name)
+	if err != nil {
+		return err
+	}
+
+	container.Env = updateEnv(container.Env, env)
+
+	dc.Spec.Template.Spec.Containers = append(dc.Spec.Template.Spec.Containers, container)
+
+	jsonDc, err := json.Marshal(dc)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(dc.Name, types.StrategicMergePatchType, jsonDc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func newGerritRoute(name, namespace string) *routeV1Api.Route {
 	return &routeV1Api.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -298,7 +328,7 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit) *appsV1Api.DeploymentCon
 				},
 			},
 			Strategy: appsV1Api.DeploymentStrategy{
-				Type: appsV1Api.DeploymentStrategyTypeRolling,
+				Type: appsV1Api.DeploymentStrategyTypeRecreate,
 			},
 			Selector: labels,
 			Template: &coreV1Api.PodTemplateSpec{
@@ -311,6 +341,19 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit) *appsV1Api.DeploymentCon
 							Name:            gerrit.Name,
 							Image:           spec.Image + ":" + gerrit.Spec.Version,
 							ImagePullPolicy: coreV1Api.PullIfNotPresent,
+							Env: []coreV1Api.EnvVar{
+								{
+									Name:  "HTTPD_LISTENURL",
+									Value: "proxy-https://*:8080",
+								},
+								{
+									Name: "GERRIT_INIT_ARGS",
+									Value: "--install-plugin=commit-message-length-validator " +
+										"--install-plugin=download-commands --install-plugin=hooks " +
+										"--install-plugin=reviewnotes --install-plugin=singleusergroup " +
+										"--install-plugin=replication",
+								},
+							},
 							Ports: []coreV1Api.ContainerPort{
 								{
 									Name:          gerrit.Name,
@@ -366,4 +409,46 @@ func generateProbe(delay int32) *coreV1Api.Probe {
 		},
 		TimeoutSeconds: 5,
 	}
+}
+
+func selectContainer(containers []coreV1Api.Container, name string) (coreV1Api.Container, error) {
+	for _, c := range containers {
+		if c.Name == name {
+			return c, nil
+		}
+	}
+
+	return coreV1Api.Container{}, errors.New("No matching container in spec found!")
+}
+
+func updateEnv(existing []coreV1Api.EnvVar, env []coreV1Api.EnvVar) []coreV1Api.EnvVar {
+	var out []coreV1Api.EnvVar
+	var covered []string
+
+	for _, e := range existing {
+		newer, ok := findEnv(env, e.Name)
+		if ok {
+			covered = append(covered, e.Name)
+			out = append(out, newer)
+			continue
+		}
+		out = append(out, e)
+	}
+	for _, e := range env {
+		if helpers.IsStringInSlice(e.Name, covered) {
+			continue
+		}
+		covered = append(covered, e.Name)
+		out = append(out, e)
+	}
+	return out
+}
+
+func findEnv(env []coreV1Api.EnvVar, name string) (coreV1Api.EnvVar, bool) {
+	for _, e := range env {
+		if e.Name == name {
+			return e, true
+		}
+	}
+	return coreV1Api.EnvVar{}, false
 }

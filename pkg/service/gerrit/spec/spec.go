@@ -7,8 +7,14 @@ const (
 	// Port = 8080
 	Port = 8080
 
-	// SSHPort = 30001
-	SSHPort = 30001
+	// SSHPort = 29418
+	SSHPort = 29418
+
+	// SSHPortName = "ssh"
+	SSHPortName = "ssh"
+
+	// SSHListnerEnvName
+	SSHListnerEnvName = "LISTEN_ADDR"
 
 	// LivenessProbeDelay = 180
 	LivenessProbeDelay = 180

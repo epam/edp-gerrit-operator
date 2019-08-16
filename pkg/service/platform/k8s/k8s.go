@@ -133,7 +133,7 @@ func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, da
 
 	if _, err := s.CoreClient.Secrets(gerritSecretObject.Namespace).Get(gerritSecretObject.Name, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Printf("Creating a new Secret %s/%s for Admin Console", gerritSecretObject.Namespace, gerritSecretObject.Name)
+			log.Printf("Creating a new Secret %s/%s for Gerrit", gerritSecretObject.Namespace, gerritSecretObject.Name)
 			if _, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(gerritSecretObject); err != nil {
 				return helpers.LogErrorAndReturn(err)
 			}
@@ -179,7 +179,7 @@ func (s *K8SService) CreateServiceAccount(gerrit *v1alpha1.Gerrit) (account *cor
 
 // GetSecret returns data section of an existing Secret resource of a Gerrit EDP Component
 func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte, error) {
-	sonarSecret, err := s.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := s.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			log.Printf("Secret %v in namespace %v not found", name, namespace)
@@ -187,7 +187,20 @@ func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte
 		}
 		return nil, helpers.LogErrorAndReturn(err)
 	}
-	return sonarSecret.Data, nil
+	return secret.Data, nil
+}
+
+// GetService returns existing Service resource of a Gerrit EDP Component
+func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Service, error) {
+	service, err := s.CoreClient.Services(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			log.Printf("Service %v in namespace %v not found", name, namespace)
+			return nil, nil
+		}
+		return nil, helpers.LogErrorAndReturn(err)
+	}
+	return service, nil
 }
 
 func (s *K8SService) createGerritPersistentVolume(gerrit *v1alpha1.Gerrit, gerritVolume v1alpha1.GerritVolumes) error {
@@ -273,9 +286,9 @@ func newGerritPortMap(gerritName string) map[string][]coreV1Api.ServicePort {
 				Name:       "ui",
 			},
 			{
-				TargetPort: intstr.IntOrString{StrVal: "ssh"},
+				TargetPort: intstr.IntOrString{StrVal: spec.SSHPortName},
 				Port:       spec.SSHPort,
-				Name:       "ssh",
+				Name:       spec.SSHPortName,
 			},
 		},
 	}
@@ -292,6 +305,7 @@ func newGerritInternalBalancingService(serviceName, namespace string, ports []co
 		Spec: coreV1Api.ServiceSpec{
 			Selector: labels,
 			Ports:    ports,
+			Type:     "NodePort",
 		},
 	}
 }
