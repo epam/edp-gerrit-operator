@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"path/filepath"
 	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -109,7 +110,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	GerritScriptsPath := spec.GerritDefaultScriptsPath
 	if _, err = k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		GerritScriptsPath = fmt.Sprintf("%v/%v/scripts", executableFilePath, spec.LocalConfigsRelativePath)
+		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/scripts", executableFilePath, spec.LocalConfigsRelativePath))
 	}
 
 	sshPortService, err := s.getServicePort(instance)

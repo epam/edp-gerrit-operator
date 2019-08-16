@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
+	"path/filepath"
 )
 
 type Client struct {
@@ -34,7 +35,7 @@ func (gc Client) CheckCredentials() (int, error) {
 }
 
 func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (v1alpha1.Gerrit, error) {
-	addInitialAdminUserScript, err := ioutil.ReadFile(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath))
+	addInitialAdminUserScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
 	if err != nil {
 		return instance, errors.Wrapf(err, "[ERROR] Failed to read add-initial-admin-user.sh script")
 	}
