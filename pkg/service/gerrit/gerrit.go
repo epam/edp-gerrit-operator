@@ -123,6 +123,16 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, err
 	}
 
+	service, err := s.PlatformService.GetService(instance.Namespace, instance.Name)
+	if err != nil {
+		return instance, errors.Wrapf(err, "Unable to get Gerrit service")
+	}
+
+	err = s.PlatformService.UpdateService(*service, sshPortService)
+	if err != nil {
+		return instance, errors.Wrapf(err, "Unable to update Gerrit service")
+	}
+
 	dcUpdated, err := s.updateDeploymentConfigPort(sshPortDC, sshPortService, instance)
 	if err != nil {
 		return instance, err

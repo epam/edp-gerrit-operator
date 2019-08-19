@@ -203,6 +203,20 @@ func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Servi
 	return service, nil
 }
 
+// UpdateService updates target port of a Gerrit EDP Component
+func (s *K8SService) UpdateService(svc coreV1Api.Service, nodePort int32) error {
+	ports := svc.Spec.Ports
+	updatedPorts, err := updatePort(ports, "ssh", nodePort)
+	svc.Spec.Ports = updatedPorts
+
+	_, err = s.CoreClient.Services(svc.Namespace).Update(&svc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *K8SService) createGerritPersistentVolume(gerrit *v1alpha1.Gerrit, gerritVolume v1alpha1.GerritVolumes) error {
 	gerritVolumeObject := newGerritPersistentVolumeClaim(gerritVolume, gerrit.Name, gerrit.Namespace)
 
@@ -334,4 +348,16 @@ func newRestConfig() *rest.Config {
 	}
 
 	return restConfig
+}
+
+func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]coreV1Api.ServicePort, error) {
+	for i, p := range ports {
+		if p.Name == name {
+			p.Port = nodePort
+			p.TargetPort.IntVal = nodePort
+		}
+		ports[i] = p
+	}
+
+	return ports, nil
 }

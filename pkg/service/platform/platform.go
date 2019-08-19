@@ -29,6 +29,7 @@ type PlatformService interface {
 	GetDeploymentConfig(instance v1alpha1.Gerrit) (*appsV1Api.DeploymentConfig, error)
 	GetService(namespace string, name string) (*coreV1Api.Service, error)
 	PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error
+	UpdateService(svc coreV1Api.Service, port int32) error
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided

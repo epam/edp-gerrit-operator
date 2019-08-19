@@ -67,7 +67,7 @@ func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.Platf
 
 func (gc *Client) CreateGroup(groupName string, groupDescription string) error {
 	cmd := &ssh.SSHCommand{
-		Path:   fmt.Sprintf("create-group --description '%v' --visible-to-all '%v'", groupDescription, groupName),
+		Path:   fmt.Sprintf("gerrit create-group --description '%v' --visible-to-all '%v'", groupDescription, groupName),
 		Env:    []string{},
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
