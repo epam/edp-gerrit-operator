@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/client/ssh"
-	"gerrit-operator/pkg/helper"
 	"gerrit-operator/pkg/service/platform"
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
@@ -67,19 +66,32 @@ func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.Platf
 
 func (gc *Client) CreateGroup(groupName string, groupDescription string) error {
 	cmd := &ssh.SSHCommand{
-		Path:   fmt.Sprintf("gerrit create-group --description '%v' --visible-to-all '%v'", groupDescription, groupName),
+		Path:   fmt.Sprintf("gerrit create-group --description \"%v\" --visible-to-all \"%v\"", groupDescription, groupName),
 		Env:    []string{},
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
-	outputCmd, err := gc.sshClient.RunCommand(cmd)
+
+	_, err := gc.sshClient.RunCommand(cmd)
 	if err != nil {
-		out, err := helper.ParseStdout(outputCmd)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to parse command %v stdout", cmd)
-		}
-		return errors.Wrapf(err, "Create %v group failed: %v %v", groupName, out)
+		return errors.Wrapf(err, "Group %v creation failed: %v", groupName)
+	}
+	return nil
+}
+
+func (gc *Client) ChangePassword(username string, password string) error {
+	cmd := &ssh.SSHCommand{
+		Path:   fmt.Sprintf("gerrit set-account --http-password \"%v\" \"%v\"", password, username),
+		Env:    []string{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	_, err := gc.sshClient.RunCommand(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "Changing %v password failed: %v ", username)
 	}
 	return nil
 }

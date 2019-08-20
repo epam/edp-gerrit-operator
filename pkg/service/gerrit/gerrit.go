@@ -216,6 +216,11 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, err
 	}
 
+	err = s.gerritClient.ChangePassword("admin", gerritAdminPassword)
+	if err != nil {
+		return instance, err
+	}
+
 	return instance, nil
 }
 
