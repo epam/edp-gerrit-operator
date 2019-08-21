@@ -61,5 +61,18 @@ const (
 	//GerritDefaultScriptsPath - default scripts for uploading to Gerrit
 	GerritDefaultScriptsPath = "/usr/local/configs/scripts"
 
+	//LocalConfigsRelativePath - default directory for configs
 	LocalConfigsRelativePath = "configs"
+
+	//GerritCIToolsGroupName - default group name for Continuous Integration users
+	GerritCIToolsGroupName = "Continuous Integration Tools"
+
+	//GerritCIToolsGroupDescription - default group description for Continuous Integration Tools group
+	GerritCIToolsGroupDescription = "Contains Jenkins and any other CI tools that get +2/-2 access on reviews"
+
+	//GerritProjectBootstrappersGroupName - default group name for Project Bootstrappers users
+	GerritProjectBootstrappersGroupName = "Project Bootstrappers"
+
+	//GerritProjectBootstrappersGroupDescription - default group description for Project Bootstrappers group
+	GerritProjectBootstrappersGroupDescription = "Grants all the permissions needed to set up a new project"
 )

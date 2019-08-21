@@ -1,15 +1,19 @@
 package gerrit
 
 import (
+	"bytes"
 	"fmt"
 	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/client/ssh"
+	"gerrit-operator/pkg/service/gerrit/spec"
 	"gerrit-operator/pkg/service/platform"
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 type Client struct {
@@ -93,6 +97,72 @@ func (gc *Client) ChangePassword(username string, password string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Changing %v password failed: %v ", username)
 	}
+	return nil
+}
+
+func (gc *Client) getGroupUuid(groupName string) (string, error) {
+	var re = regexp.MustCompile(fmt.Sprintf(`%v\t[A-Za-z0-9_]{40}`, groupName))
+	cmd := &ssh.SSHCommand{
+		Path:   fmt.Sprint("gerrit ls-groups -v"),
+		Env:    []string{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	out, err := gc.sshClient.RunCommand(cmd)
+	if err != nil {
+		return "", errors.Wrap(err, "Receiving Gerrit groups password failed")
+	}
+
+	groups := bytes.NewBuffer(out).String()
+	group := re.FindStringSubmatch(groups)
+	uuid := strings.Split(group[0], "\t")[1]
+
+	return uuid, nil
+}
+
+func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
+	podName string, gerritAdminPublicKey string) error {
+	initAllProjectsScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
+	if err != nil {
+		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
+	}
+
+	gerritConfig, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", GerritScriptsPath)))
+	if err != nil {
+		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
+	}
+
+	ciToolsGroupUuid, err := gc.getGroupUuid(spec.GerritCIToolsGroupName)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get %v group ID", spec.GerritCIToolsGroupName)
+	}
+
+	projectBootstrappersGroupUuid, err := gc.getGroupUuid(spec.GerritProjectBootstrappersGroupName)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get %v group ID", spec.GerritCIToolsGroupName)
+	}
+
+	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+		[]string{"/bin/sh", "-c", "mkdir -p /tmp/scripts && touch /tmp/scripts/init-all-projects.sh && chmod +x /tmp/scripts/init-all-projects.sh"})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create init-all-projects.sh script inside gerrit pod")
+	}
+
+	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+		[]string{"/bin/sh", "-c", fmt.Sprintf("echo \"%v\" > /tmp/scripts/init-all-projects.sh", string(initAllProjectsScript))})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create init-all-projects.sh script inside gerrit pod")
+	}
+
+	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\"",
+			gerritConfig, ciToolsGroupUuid, projectBootstrappersGroupUuid)})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
+	}
+
 	return nil
 }
 

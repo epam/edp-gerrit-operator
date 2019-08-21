@@ -110,7 +110,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	GerritScriptsPath := spec.GerritDefaultScriptsPath
 	if _, err = k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/scripts", executableFilePath, spec.LocalConfigsRelativePath))
+		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/%v/scripts", executableFilePath, spec.LocalConfigsRelativePath))
 	}
 
 	sshPortService, err := s.getServicePort(instance)
@@ -201,17 +201,17 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, err
 	}
 
-	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], instance.Name, sshPortService)
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], "example-gerrit-operator-sdk-sk.delivery.aws.main.edp.projects.epam.com", sshPortService)
 	if err != nil {
 		return instance, err
 	}
 
-	err = s.gerritClient.CreateGroup("Continuous Integration Tools", "Contains Jenkins and any other CI tools that get +2/-2 access on reviews")
+	err = s.gerritClient.CreateGroup(spec.GerritCIToolsGroupName, spec.GerritCIToolsGroupDescription)
 	if err != nil {
 		return instance, err
 	}
 
-	err = s.gerritClient.CreateGroup("Project Bootstrappers", "Grants all the permissions needed to set up a new project")
+	err = s.gerritClient.CreateGroup(spec.GerritProjectBootstrappersGroupName, spec.GerritProjectBootstrappersGroupDescription)
 	if err != nil {
 		return instance, err
 	}
@@ -219,6 +219,12 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	err = s.gerritClient.ChangePassword("admin", gerritAdminPassword)
 	if err != nil {
 		return instance, err
+	}
+
+	err = s.gerritClient.InitAllProjects(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
+		string(gerritAdminPublicKey))
+	if err != nil {
+		return instance, errors.Wrapf(err, "Failed to initialize Gerrit All-Users project")
 	}
 
 	return instance, nil
