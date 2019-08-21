@@ -201,7 +201,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, err
 	}
 
-	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], "example-gerrit-operator-sdk-sk.delivery.aws.main.edp.projects.epam.com", sshPortService)
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], instance.Name, sshPortService)
 	if err != nil {
 		return instance, err
 	}
