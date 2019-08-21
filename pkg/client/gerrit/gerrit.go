@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -39,6 +40,29 @@ func (gc Client) CheckCredentials() (int, error) {
 	}
 
 	return resp.StatusCode(), nil
+}
+
+// CheckCredentials checks gerrit group
+func (gc Client) CheckGroup(groupName string) (*int, error) {
+	statusNotFound := http.StatusNotFound
+	uuid, err := gc.getGroupUuid(groupName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to get Gerrit group uuid")
+	}
+	if uuid == "" {
+		return &statusNotFound, nil
+	}
+
+	resp, err := gc.resty.R().
+		SetHeader("accept", "application/json").
+		Get(fmt.Sprintf("groups/%v", uuid))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to get Gerrit groups")
+	}
+
+	status := resp.StatusCode()
+
+	return &status, nil
 }
 
 func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (v1alpha1.Gerrit, error) {
@@ -117,6 +141,9 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 
 	groups := bytes.NewBuffer(out).String()
 	group := re.FindStringSubmatch(groups)
+	if group == nil {
+		return "", err
+	}
 	uuid := strings.Split(group[0], "\t")[1]
 
 	return uuid, nil
