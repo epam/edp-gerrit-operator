@@ -103,6 +103,7 @@ func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, 
 
 // Configure contains logic related to self configuration of the Gerrit EDP Component
 func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, bool, error) {
+	gerritUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
 	executableFilePath, err := helper.GetExecutableFilePath()
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "[ERROR] Unable to get executable file path")
@@ -193,7 +194,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 				return &instance, false, err
 			}
 
-			err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], instance.Name, sshPortService)
+			err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
 			if err != nil {
 				return &instance, false, err
 			}
@@ -221,7 +222,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, err
 	}
 
-	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], instance.Name, sshPortService)
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
 	if err != nil {
 		return instance, false, err
 	}
@@ -237,7 +238,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	if *ciToolsStatus == 404 || *projectBootstrappersStatus == 404 {
 
-		err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], instance.Name, sshPortService)
+		err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
 		if err != nil {
 			return instance, false, err
 		}
