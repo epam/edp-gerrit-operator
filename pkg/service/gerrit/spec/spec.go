@@ -75,4 +75,10 @@ const (
 
 	//GerritProjectBootstrappersGroupDescription - default group description for Project Bootstrappers group
 	GerritProjectBootstrappersGroupDescription = "Grants all the permissions needed to set up a new project"
+
+	//GerritDefaultCiUserUser - default jenkins username in Gerrit
+	GerritDefaultCiUserUser = "jenkins"
+
+	//GerritDefaultCiUserSecretPostfix - default CI user secret postfix for Gerrit
+	GerritDefaultCiUserSecretPostfix = "ciuser-password"
 )

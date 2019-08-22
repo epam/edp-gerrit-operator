@@ -65,6 +65,20 @@ func (gc Client) CheckGroup(groupName string) (*int, error) {
 	return &status, nil
 }
 
+//GetUser checks gerrit user
+func (gc Client) GetUser(username string) (*int, error) {
+	resp, err := gc.resty.R().
+		SetHeader("accept", "application/json").
+		Get(fmt.Sprintf("accounts/%v", username))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to get Gerrit user")
+	}
+
+	status := resp.StatusCode()
+
+	return &status, nil
+}
+
 func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (v1alpha1.Gerrit, error) {
 	addInitialAdminUserScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
 	if err != nil {
@@ -119,7 +133,32 @@ func (gc *Client) ChangePassword(username string, password string) error {
 
 	_, err := gc.sshClient.RunCommand(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "Changing %v password failed: %v ", username)
+		return errors.Wrapf(err, "Changing %v password failed", username)
+	}
+	return nil
+}
+
+func (gc *Client) CreateUser(username string, password string, fullname string, publicKey string) error {
+	ciUserStatus, err := gc.GetUser(spec.GerritDefaultCiUserUser)
+	if err != nil {
+		return errors.Wrapf(err, "Getting %v user failed", username)
+	}
+
+	if *ciUserStatus == 404 {
+		cmd := &ssh.SSHCommand{
+			Path: fmt.Sprintf("gerrit create-account --full-name \"%v\" --http-password \"%v\" --ssh-key \"%v\" \"%v\"",
+				fullname, password, publicKey, username),
+			Env:    []string{},
+			Stdin:  os.Stdin,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+
+		_, err = gc.sshClient.RunCommand(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "Creating %v user failed", username)
+		}
+		return nil
 	}
 	return nil
 }

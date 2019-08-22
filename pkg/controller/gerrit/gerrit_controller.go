@@ -174,6 +174,35 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 
 	if instance.Status.Status == StatusConfiguring {
 		logPrint.Printf("[INFO] Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
+		err = r.updateStatus(instance, StatusConfigured)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+	}
+
+	if instance.Status.Status == StatusConfigured {
+		reqLogger.Info("Exposing configuration has started")
+		err = r.updateStatus(instance, StatusExposeStart)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+	}
+
+	instance, err = r.service.ExposeConfiguration(instance)
+	if err != nil {
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	if instance.Status.Status == StatusExposeStart {
+		reqLogger.Info("Exposing configuration has finished")
+		err = r.updateStatus(instance, StatusExposeFinish)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+	}
+
+	if instance.Status.Status == StatusConfiguring {
+		logPrint.Printf("[INFO] Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
 		err = r.updateStatus(instance, StatusReady)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil

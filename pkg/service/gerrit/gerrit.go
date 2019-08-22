@@ -103,7 +103,10 @@ func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, 
 
 // Configure contains logic related to self configuration of the Gerrit EDP Component
 func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, bool, error) {
-	gerritUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
+	gerritUrl, err := s.getGerritSSHUrl(instance)
+	if err != nil {
+		return instance, false, errors.Wrapf(err, "Unable to get Gerrit SSH URL")
+	}
 	executableFilePath, err := helper.GetExecutableFilePath()
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "[ERROR] Unable to get executable file path")
@@ -265,12 +268,88 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
 func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	if err := s.initRestClient(instance); err != nil {
+		return instance, errors.Wrapf(err, "Failed to init Gerrit REST client")
+	}
+
+	if err := s.initSSHClient(instance); err != nil {
+		return instance, errors.Wrapf(err, "Failed to init Gerrit SSH client")
+	}
+
+	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+
+	if err := s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
+		"user":     []byte(spec.GerritDefaultCiUserUser),
+		"password": []byte(uniuri.New()),
+	}); err != nil {
+		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
+	}
+
+	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserSecretName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "[ERROR] Failed to get Secret %v for %v/%v", ciUserSecretName,
+			instance.Namespace, instance.Name)
+	}
+
+	_, ciUserPublicKey, err := s.createSSHKeyPairs(instance, instance.Name+"-ciuser")
+	if err != nil {
+		return instance, errors.Wrapf(err, "Failed to create Gerrit CI User SSH keypair %v/%v", instance.Namespace, instance.Name)
+	}
+
+	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials["password"]),
+		"CI Jenkins", string(ciUserPublicKey)); err != nil {
+		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", ciUserSecretName)
+	}
+
 	return instance, nil
 }
 
 // Integrate applies actions required for the integration with the other EDP Components
 func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
 	return instance, nil
+}
+
+func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
+	gerritAdminPassword, err := s.getGerritAdminPassword(instance)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	gerritApiUrl, err := s.getGerritRestApiUrl(instance)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get Gerrit REST API URL %v/%v", instance.Namespace, instance.Name)
+	}
+
+	err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	return nil
+}
+
+func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
+	gerritUrl, err := s.getGerritSSHUrl(instance)
+	if err != nil {
+		return err
+	}
+
+	sshPortService, err := s.getServicePort(instance)
+	if err != nil {
+		return err
+	}
+
+	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
+	if err != nil {
+		return err
+	}
+
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to init Gerrit SSH client %v/%v", instance.Namespace, instance.Name)
+	}
+
+	return nil
 }
 
 func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string, error) {
@@ -283,6 +362,18 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 		gerritApiUrl = fmt.Sprintf("%v://%v/%v", gerritRouteScheme, gerritRoute.Spec.Host, spec.GerritRestApiUrlPath)
 	}
 	return gerritApiUrl, nil
+}
+
+func (s ComponentService) getGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
+	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
+	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+		gerritRoute, _, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
+		if err != nil {
+			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)
+		}
+		gerritSSHUrl = gerritRoute.Spec.Host
+	}
+	return gerritSSHUrl, nil
 }
 
 func (s ComponentService) getGerritAdminPassword(instance *v1alpha1.Gerrit) (string, error) {
