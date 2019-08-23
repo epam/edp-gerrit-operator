@@ -79,6 +79,12 @@ const (
 	//GerritDefaultCiUserUser - default jenkins username in Gerrit
 	GerritDefaultCiUserUser = "jenkins"
 
+	//GerritDefaultProjectCreatorUser - default project-creator username in Gerrit
+	GerritDefaultProjectCreatorUser = "project-creator"
+
 	//GerritDefaultCiUserSecretPostfix - default CI user secret postfix for Gerrit
 	GerritDefaultCiUserSecretPostfix = "ciuser-password"
+
+	//GerritDefaultCiUserSecretPostfix - default CI user secret postfix for Gerrit
+	GerritDefaultProjectCreatorSecretPostfix = "project-creator"
 )

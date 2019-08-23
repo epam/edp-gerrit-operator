@@ -139,12 +139,12 @@ func (gc *Client) ChangePassword(username string, password string) error {
 }
 
 func (gc *Client) CreateUser(username string, password string, fullname string, publicKey string) error {
-	ciUserStatus, err := gc.GetUser(spec.GerritDefaultCiUserUser)
+	userStatus, err := gc.GetUser(username)
 	if err != nil {
 		return errors.Wrapf(err, "Getting %v user failed", username)
 	}
 
-	if *ciUserStatus == 404 {
+	if *userStatus == 404 {
 		cmd := &ssh.SSHCommand{
 			Path: fmt.Sprintf("gerrit create-account --full-name \"%v\" --http-password \"%v\" --ssh-key \"%v\" \"%v\"",
 				fullname, password, publicKey, username),

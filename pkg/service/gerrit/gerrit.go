@@ -277,12 +277,21 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	}
 
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	projectCreatorSecretKeyName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
+	projectCreatorSecretPasswordName := fmt.Sprintf("%v-%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, "password")
 
 	if err := s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
 		"user":     []byte(spec.GerritDefaultCiUserUser),
 		"password": []byte(uniuri.New()),
 	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
+	}
+
+	if err := s.PlatformService.CreateSecret(instance, projectCreatorSecretPasswordName, map[string][]byte{
+		"user":     []byte(spec.GerritDefaultProjectCreatorUser),
+		"password": []byte(uniuri.New()),
+	}); err != nil {
+		return instance, errors.Wrapf(err, "Failed to create project-creator Secret %v for Gerrit", projectCreatorSecretPasswordName)
 	}
 
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserSecretName)
@@ -298,9 +307,25 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials["password"]),
 		"CI Jenkins", string(ciUserPublicKey)); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", ciUserSecretName)
+		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", spec.GerritDefaultCiUserUser)
 	}
 
+	projectCreatorCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, projectCreatorSecretPasswordName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get Secret %v for %v/%v", projectCreatorSecretPasswordName,
+			instance.Namespace, instance.Name)
+	}
+
+	projectCreatorKeys, err := s.PlatformService.GetSecretData(instance.Namespace, projectCreatorSecretKeyName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get Secret %v for %v/%v", projectCreatorSecretKeyName,
+			instance.Namespace, instance.Name)
+	}
+
+	if err := s.gerritClient.CreateUser(spec.GerritDefaultProjectCreatorUser, string(projectCreatorCredentials["password"]),
+		"Project Creator", string(projectCreatorKeys["id_rsa.pub"])); err != nil {
+		return instance, errors.Wrapf(err, "Failed to create project-creator user %v in Gerrit", spec.GerritDefaultProjectCreatorUser)
+	}
 	return instance, nil
 }
 
