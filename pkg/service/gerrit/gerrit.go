@@ -287,12 +287,18 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
 	}
 
+	ciUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUserSuffix)
+	s.setAnnotation(instance, ciUserAnnotationKey, ciUserSecretName)
+
 	if err := s.PlatformService.CreateSecret(instance, projectCreatorSecretPasswordName, map[string][]byte{
 		"user":     []byte(spec.GerritDefaultProjectCreatorUser),
 		"password": []byte(uniuri.New()),
 	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create project-creator Secret %v for Gerrit", projectCreatorSecretPasswordName)
 	}
+
+	projectCreatorUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorUserSuffix)
+	s.setAnnotation(instance, projectCreatorUserAnnotationKey, projectCreatorSecretPasswordName)
 
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserSecretName)
 	if err != nil {
@@ -304,6 +310,11 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Gerrit CI User SSH keypair %v/%v", instance.Namespace, instance.Name)
 	}
+
+	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
+	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, instance.Name+"-ciuser")
+	projectCreatorUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorSshKeySuffix)
+	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 
 	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials["password"]),
 		"CI Jenkins", string(ciUserPublicKey)); err != nil {
@@ -486,4 +497,15 @@ func (s ComponentService) updateDeploymentConfigPort(sshPortDC, sshPortService i
 		return true, nil
 	}
 	return false, nil
+}
+
+//setAnnotation add key:value to current resource annotation
+func (s ComponentService) setAnnotation(instance *v1alpha1.Gerrit, key string, value string) {
+	if len(instance.Annotations) == 0 {
+		instance.ObjectMeta.Annotations = map[string]string{
+			key: value,
+		}
+	} else {
+		instance.ObjectMeta.Annotations[key] = value
+	}
 }

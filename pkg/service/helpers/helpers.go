@@ -5,6 +5,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
+	"gerrit-operator/pkg/service/gerrit/spec"
 	"golang.org/x/crypto/ssh"
 	"log"
 )
@@ -87,4 +89,9 @@ func IsStringInSlice(str string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func GenerateAnnotationKey(entitySuffix string) string {
+	key := fmt.Sprintf("%v/%v", spec.EdpAnnotationsPrefix, entitySuffix)
+	return key
 }

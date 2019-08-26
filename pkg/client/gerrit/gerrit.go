@@ -94,7 +94,7 @@ func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.Platf
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
 		[]string{"/bin/sh", "-c", fmt.Sprintf("echo \"%v\" > /tmp/scripts/add-initial-admin-user.sh", string(addInitialAdminUserScript))})
 	if err != nil {
-		return instance, errors.Wrapf(err, "[ERROR] Failed to create add-initial-admin-user.sh script inside gerrit pod")
+		return instance, errors.Wrapf(err, "[ERROR] Failed to add content to add-initial-admin-user.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,

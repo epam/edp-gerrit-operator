@@ -85,6 +85,21 @@ const (
 	//GerritDefaultCiUserSecretPostfix - default CI user secret postfix for Gerrit
 	GerritDefaultCiUserSecretPostfix = "ciuser-password"
 
+	//EdpAnnotationsPrefix general prefix for all annotation made by EDP team
+	EdpAnnotationsPrefix = "edp.epam.com"
+
+	//EdpCiUserSuffix entity prefix for integration functionality
+	EdpCiUserSuffix string = "ci-credentials"
+
+	//EdpCiUserKeySuffix entity prefix for integration functionality
+	EdpCiUSerSshKeySuffix string = "ci-sshkey"
+
 	//GerritDefaultCiUserSecretPostfix - default CI user secret postfix for Gerrit
 	GerritDefaultProjectCreatorSecretPostfix = "project-creator"
+
+	//EdpCiUserSuffix entity prefix for integration functionality
+	EdpProjectCreatorUserSuffix string = "project-creator-credentials"
+
+	//EdpCiUserKeySuffix entity prefix for integration functionality
+	EdpProjectCreatorSshKeySuffix string = "project-creator-sshkey"
 )
