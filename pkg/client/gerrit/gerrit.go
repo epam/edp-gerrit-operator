@@ -163,6 +163,22 @@ func (gc *Client) CreateUser(username string, password string, fullname string, 
 	return nil
 }
 
+func (gc *Client) AddUserToGroup(userName, groupName string) error {
+	cmd := &ssh.SSHCommand{
+		Path:   fmt.Sprintf("gerrit set-members --add \"%v\" \"%v\"", userName, groupName),
+		Env:    []string{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	_, err := gc.sshClient.RunCommand(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to add user %v to group %v", userName, groupName)
+	}
+	return nil
+}
+
 func (gc *Client) getGroupUuid(groupName string) (string, error) {
 	var re = regexp.MustCompile(fmt.Sprintf(`%v\t[A-Za-z0-9_]{40}`, groupName))
 	cmd := &ssh.SSHCommand{

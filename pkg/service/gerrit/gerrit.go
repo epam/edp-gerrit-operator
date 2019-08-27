@@ -337,6 +337,22 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		"Project Creator", string(projectCreatorKeys["id_rsa.pub"])); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create project-creator user %v in Gerrit", spec.GerritDefaultProjectCreatorUser)
 	}
+
+	userGroups := []map[string]string{
+		{spec.GerritDefaultCiUserUser: spec.GerritCIToolsGroupName},
+		{spec.GerritDefaultCiUserUser: spec.GerritNonInteractiveUsersGroup},
+		{spec.GerritDefaultProjectCreatorUser: spec.GerritProjectBootstrappersGroupName},
+		{spec.GerritDefaultProjectCreatorUser: spec.GerritAdministratorsGroup},
+	}
+
+	for _, userGroup := range userGroups {
+		for user, group := range userGroup {
+			if err := s.gerritClient.AddUserToGroup(user, group); err != nil {
+				return instance, errors.Wrapf(err, "Failed to add user %v to group %v", user, group)
+			}
+		}
+	}
+
 	return instance, nil
 }
 
