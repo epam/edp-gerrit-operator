@@ -1,7 +1,7 @@
 package client
 
 import (
-	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"

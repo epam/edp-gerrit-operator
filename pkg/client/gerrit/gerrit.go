@@ -3,7 +3,7 @@ package gerrit
 import (
 	"bytes"
 	"fmt"
-	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/client/ssh"
 	"gerrit-operator/pkg/service/gerrit/spec"
 	"gerrit-operator/pkg/service/platform"

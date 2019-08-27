@@ -3,11 +3,11 @@ package openshift
 import (
 	"encoding/json"
 	"fmt"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/service/gerrit/spec"
 	"log"
 	"reflect"
 
-	"gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform/k8s"
 	"k8s.io/apimachinery/pkg/types"

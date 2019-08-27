@@ -1,7 +1,7 @@
 package platform
 
 import (
-	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform/openshift"
 	appsV1Api "github.com/openshift/api/apps/v1"

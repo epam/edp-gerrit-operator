@@ -2,7 +2,7 @@ package gerrit
 
 import (
 	"fmt"
-	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/client/gerrit"
 	"gerrit-operator/pkg/helper"
 	"gerrit-operator/pkg/service/gerrit/spec"

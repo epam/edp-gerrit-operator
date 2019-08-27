@@ -1,0 +1,7 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: GerritReplicationConfig
+metadata:
+  name: example-gerritreplicationconfig
+spec:
+  ssh_url: ""
+

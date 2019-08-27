@@ -2,7 +2,7 @@ package k8s
 
 import (
 	"bytes"
-	"gerrit-operator/pkg/apis/edp/v1alpha1"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/client"
 	"gerrit-operator/pkg/service/gerrit/spec"
 	"gerrit-operator/pkg/service/helpers"

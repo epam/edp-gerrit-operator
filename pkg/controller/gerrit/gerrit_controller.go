@@ -3,10 +3,10 @@ package gerrit
 import (
 	"context"
 	"fmt"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	logPrint "log"
 	"time"
 
-	edpv1alpha1 "gerrit-operator/pkg/apis/edp/v1alpha1"
 	"gerrit-operator/pkg/service/gerrit"
 	"gerrit-operator/pkg/service/platform"
 
@@ -83,7 +83,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Gerrit
-	err = c.Watch(&source.Kind{Type: &edpv1alpha1.Gerrit{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &v1alpha1.Gerrit{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	reqLogger.Info("Reconciling Gerrit")
 
 	// Fetch the Gerrit instance
-	instance := &edpv1alpha1.Gerrit{}
+	instance := &v1alpha1.Gerrit{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -219,7 +219,7 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileGerrit) updateStatus(instance *edpv1alpha1.Gerrit, status string) error {
+func (r *ReconcileGerrit) updateStatus(instance *v1alpha1.Gerrit, status string) error {
 	instance.Status.Status = status
 	instance.Status.LastTimeUpdated = time.Now()
 	err := r.client.Status().Update(context.TODO(), instance)
@@ -234,14 +234,14 @@ func (r *ReconcileGerrit) updateStatus(instance *edpv1alpha1.Gerrit, status stri
 	return nil
 }
 
-func (r *ReconcileGerrit) resourceActionFailed(instance *edpv1alpha1.Gerrit, err error) error {
+func (r *ReconcileGerrit) resourceActionFailed(instance *v1alpha1.Gerrit, err error) error {
 	if r.updateStatus(instance, StatusFailed) != nil {
 		return err
 	}
 	return err
 }
 
-func (r ReconcileGerrit) updateAvailableStatus(instance *edpv1alpha1.Gerrit, value bool) error {
+func (r ReconcileGerrit) updateAvailableStatus(instance *v1alpha1.Gerrit, value bool) error {
 	if instance.Status.Available != value {
 		instance.Status.Available = value
 		instance.Status.LastTimeUpdated = time.Now()
