@@ -27,6 +27,13 @@ spec:
           type: object
         spec:
           properties:
+            keycloakSpec:
+              properties:
+                enabled:
+                  type: boolean
+              required:
+              - enabled
+              type: object
             type:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "operator-sdk generate k8s" to regenerate code after
@@ -50,6 +57,7 @@ spec:
           required:
           - type
           - version
+          - keycloakSpec
           type: object
         status:
           properties:

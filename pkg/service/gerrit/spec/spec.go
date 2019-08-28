@@ -126,4 +126,7 @@ const (
 
 	//GerritDefaultVCSKeyName - default name for VCS key
 	GerritDefaultVCSKeyName = "vcs-autouser"
+
+	//IdentityServiceCredentialsSecretPostfix
+	IdentityServiceCredentialsSecretPostfix = "is-credentials"
 )

@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"bytes"
+	"fmt"
 	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/client"
 	"gerrit-operator/pkg/service/gerrit/spec"
@@ -46,6 +47,40 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	s.EdpClient = edpClient
 
 	return nil
+}
+
+// GenerateKeycloakSettings generates a set of environment var
+func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV1Api.EnvVar {
+	identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
+	return []coreV1Api.EnvVar{
+		{
+			Name:  "AUTH_TYPE",
+			Value: "OAUTH",
+		},
+		{
+			Name:  "OAUTH_KEYCLOAK_CLIENT_ID",
+			Value: instance.Name,
+		},
+		{
+			Name:  "OAUTH_KEYCLOAK_REALM",
+			Value: instance.Spec.KeycloakSpec.Realm,
+		},
+		{
+			Name:  "OAUTH_KEYCLOAK_ROOT_URL",
+			Value: instance.Spec.KeycloakSpec.Url,
+		},
+		{
+			Name: "OAUTH_KEYCLOAK_CLIENT_SECRET",
+			ValueFrom: &coreV1Api.EnvVarSource{
+				SecretKeyRef: &coreV1Api.SecretKeySelector{
+					LocalObjectReference: coreV1Api.LocalObjectReference{
+						Name: identityServiceSecretName,
+					},
+					Key: "client_secret",
+				},
+			},
+		},
+	}
 }
 
 // GetSecret return data field of Secret

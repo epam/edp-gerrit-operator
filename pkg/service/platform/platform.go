@@ -30,6 +30,7 @@ type PlatformService interface {
 	GetService(namespace string, name string) (*coreV1Api.Service, error)
 	PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error
 	UpdateService(svc coreV1Api.Service, port int32) error
+	GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV1Api.EnvVar
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided

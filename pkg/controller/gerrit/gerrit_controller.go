@@ -10,6 +10,7 @@ import (
 	"gerrit-operator/pkg/service/gerrit"
 	"gerrit-operator/pkg/service/platform"
 
+	errorsf "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -164,11 +165,22 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
-	instance, isFinished, err := r.service.Configure(instance)
+	instance, dcPatched, err := r.service.Configure(instance)
 	if err != nil {
 		logPrint.Printf("[ERROR] Configuration of %v/%v object has been failed\n%v", instance.Namespace, instance.Name, err)
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
-	} else if !isFinished {
+	}
+
+	if dcPatched {
+		logPrint.Printf("[INFO] Restarting deployment after configuration changed")
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	if dcIsReady, err := r.service.IsDeploymentConfigReady(*instance); err != nil {
+		logPrint.Printf("[ERROR] Checking if Deployment config for %v/%v object is ready has been failed", instance.Namespace, instance.Name)
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	} else if !dcIsReady {
+		logPrint.Printf("[WARNING] Deployment config for %v/%v object is not ready for configuration yet", instance.Namespace, instance.Name)
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
@@ -201,7 +213,20 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
-	if instance.Status.Status == StatusConfiguring {
+	if instance.Status.Status == StatusExposeFinish {
+		reqLogger.Info("Integration has started")
+		err = r.updateStatus(instance, StatusIntegrationStart)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+		}
+	}
+
+	instance, err = r.service.Integrate(instance)
+	if err != nil {
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, errorsf.Wrapf(err, "Integration failed")
+	}
+
+	if instance.Status.Status == StatusIntegrationStart {
 		logPrint.Printf("[INFO] Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
 		err = r.updateStatus(instance, StatusReady)
 		if err != nil {
