@@ -2,30 +2,40 @@ package gerritreplicationconfig
 
 import (
 	"context"
-
-	v2v1alpha1 "gerrit-operator/pkg/apis/v2/v1alpha1"
-
-	corev1 "k8s.io/api/core/v1"
+	coreerrors "errors"
+	"fmt"
+	"gerrit-operator/pkg/apis/v2/v1alpha1"
+	"gerrit-operator/pkg/controller/gerrit"
+	"gerrit-operator/pkg/controller/helper"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
+	"time"
+)
+
+const (
+	// StatusReplicationConfiguration = replication configuration
+	StatusReplicationConfiguration = "configuration"
+
+	// StatusReplicationFinished = replication configuration
+	StatusReplicationFinished = "configured"
+
+	// StatusFailed = failed
+	StatusFailed = "failed"
 )
 
 var log = logf.Log.WithName("controller_gerritreplicationconfig")
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
 
 // Add creates a new GerritReplicationConfig Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -46,18 +56,19 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource GerritReplicationConfig
-	err = c.Watch(&source.Kind{Type: &v2v1alpha1.GerritReplicationConfig{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
+	p := predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldObject := e.ObjectOld.(*v1alpha1.Gerrit)
+			newObject := e.ObjectNew.(*v1alpha1.Gerrit)
+			if oldObject.Status != newObject.Status {
+				return false
+			}
+			return true
+		},
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner GerritReplicationConfig
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &v2v1alpha1.GerritReplicationConfig{},
-	})
+	// Watch for changes to primary resource GerritReplicationConfig
+	err = c.Watch(&source.Kind{Type: &v1alpha1.GerritReplicationConfig{}}, &handler.EnqueueRequestForObject{}, p)
 	if err != nil {
 		return err
 	}
@@ -78,9 +89,6 @@ type ReconcileGerritReplicationConfig struct {
 
 // Reconcile reads that state of the cluster for a GerritReplicationConfig object and makes changes based on the state read
 // and what is in the GerritReplicationConfig.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -88,67 +96,168 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) 
 	reqLogger.Info("Reconciling GerritReplicationConfig")
 
 	// Fetch the GerritReplicationConfig instance
-	instance := &v2v1alpha1.GerritReplicationConfig{}
+	instance := &v1alpha1.GerritReplicationConfig{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
-		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
+	if !r.isInstanceOwnerSet(instance) {
+		ownerReference := findCROwnerName(*instance)
 
-	// Set GerritReplicationConfig instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
+		gerritInstance, err := r.getGerritInstance(ownerReference, instance.Namespace)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
-	} else if err != nil {
+		instance := r.setOwnerReference(gerritInstance, instance)
+
+		err = r.client.Update(context.TODO(), &instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	gerritInstance, err := r.getInstanceOwner(instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
+
 		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	if gerritInstance.Status.Status == gerrit.StatusReady && (instance.Status.Status == "" || instance.Status.Status == StatusFailed) {
+		reqLogger.Info(fmt.Sprintf("Replication configuration of %v/%v object with name has been started",
+			gerritInstance.Namespace, gerritInstance.Name))
+		reqLogger.Info(fmt.Sprintf("Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name))
+		err := r.updateStatus(instance, StatusReplicationConfiguration)
+		if err != nil {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+
+		err = r.configureReplication(instance, gerritInstance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
 	return reconcile.Result{}, nil
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *v2v1alpha1.GerritReplicationConfig) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
+func (r *ReconcileGerritReplicationConfig) updateStatus(instance *v1alpha1.GerritReplicationConfig, status string) error {
+	instance.Status.Status = status
+	instance.Status.LastTimeUpdated = time.Now()
+	err := r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		err := r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return err
+		}
 	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
+
+	log.V(1).Info(fmt.Sprintf("Status for Gerrit Replication Config %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
+	return nil
+}
+
+func (r *ReconcileGerritReplicationConfig) isInstanceOwnerSet(config *v1alpha1.GerritReplicationConfig) bool {
+	log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
+	ows := config.GetOwnerReferences()
+	if len(ows) == 0 {
+		return false
 	}
+
+	return true
+}
+
+func (r *ReconcileGerritReplicationConfig) getInstanceOwner(config *v1alpha1.GerritReplicationConfig) (*v1alpha1.Gerrit, error) {
+	log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
+	ows := config.GetOwnerReferences()
+	gerritOwner := getGerritOwner(ows)
+	if gerritOwner == nil {
+		return nil, coreerrors.New("gerrit replication config cr does not have gerrit cr owner references")
+	}
+
+	nsn := types.NamespacedName{
+		Namespace: config.Namespace,
+		Name:      gerritOwner.Name,
+	}
+
+	ownerCr := &v1alpha1.Gerrit{}
+	err := r.client.Get(context.TODO(), nsn, ownerCr)
+	return ownerCr, err
+}
+
+func getGerritOwner(references []v1.OwnerReference) *v1.OwnerReference {
+	for _, el := range references {
+		if el.Kind == "Gerrit" {
+			return &el
+		}
+	}
+	return nil
+}
+
+func findCROwnerName(instance v1alpha1.GerritReplicationConfig) *string {
+	if len(instance.Spec.OwnerName) == 0 {
+		return nil
+	}
+	own := strings.ToLower(instance.Spec.OwnerName)
+	return &own
+}
+
+func (r *ReconcileGerritReplicationConfig) getGerritInstance(ownerName *string, namespace string) (*v1alpha1.Gerrit, error) {
+	var gerritInstance v1alpha1.Gerrit
+	options := client.ListOptions{Namespace: namespace}
+	list := &v1alpha1.GerritList{}
+	if ownerName == nil {
+		err := r.client.List(context.TODO(), &options, list)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		gerritInstance = list.Items[0]
+	} else {
+		gerritInstance = v1alpha1.Gerrit{}
+		err := r.client.Get(context.TODO(), client.ObjectKey{
+			Namespace: namespace,
+			Name:      *ownerName,
+		}, &gerritInstance)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			return nil, err
+		}
+	}
+
+	return &gerritInstance, nil
+}
+
+func (r *ReconcileGerritReplicationConfig) setOwnerReference(gerritInstance *v1alpha1.Gerrit,
+	instance *v1alpha1.GerritReplicationConfig) v1alpha1.GerritReplicationConfig {
+	var listOwnReference []v1.OwnerReference
+
+	ownRef := v1.OwnerReference{
+		APIVersion:         gerritInstance.APIVersion,
+		Kind:               gerritInstance.Kind,
+		Name:               gerritInstance.Name,
+		UID:                gerritInstance.UID,
+		BlockOwnerDeletion: helper.NewTrue(),
+		Controller:         helper.NewTrue(),
+	}
+
+	listOwnReference = append(listOwnReference, ownRef)
+
+	instance.SetOwnerReferences(listOwnReference)
+
+	return *instance
+}
+
+func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1.GerritReplicationConfig, gerrit *v1alpha1.Gerrit) error {
+	return nil
 }

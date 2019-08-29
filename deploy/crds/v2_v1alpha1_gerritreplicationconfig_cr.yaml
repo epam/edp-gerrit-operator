@@ -3,5 +3,5 @@ kind: GerritReplicationConfig
 metadata:
   name: example-gerritreplicationconfig
 spec:
-  ssh_url: ""
-
+  ssh_url: "test"
+  owner_name: "example-gerrit"
