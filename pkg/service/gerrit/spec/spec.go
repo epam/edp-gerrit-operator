@@ -64,6 +64,9 @@ const (
 	//LocalConfigsRelativePath - default directory for configs
 	LocalConfigsRelativePath = "configs"
 
+	//LocalTemplatesRelativePath - default directory for templates
+	LocalTemplatesRelativePath = "templates"
+
 	//GerritCIToolsGroupName - default group name for Continuous Integration users
 	GerritCIToolsGroupName = "Continuous Integration Tools"
 
@@ -108,4 +111,19 @@ const (
 
 	//EdpCiUserKeySuffix entity prefix for integration functionality
 	EdpProjectCreatorSshKeySuffix string = "project-creator-sshkey"
+
+	//DefaultGerritReplicationConfigPath replication config path
+	DefaultGerritReplicationConfigPath = "/var/gerrit/review_site/etc/replication.config"
+
+	//DefaultGerritSSHConfigPath ssh config path
+	DefaultGerritSSHConfigPath = "/var/gerrit/.ssh"
+
+	//GerritDefaultTemplatesPath - default templates for Gerrit
+	GerritDefaultTemplatesPath = "/usr/local/templates"
+
+	//GerritDefaultVCSKeyPath - default path for VCS key
+	GerritDefaultVCSKeyPath = "/var/gerrit/review_site/etc"
+
+	//GerritDefaultVCSKeyName - default name for VCS key
+	GerritDefaultVCSKeyName = "vcs-autouser"
 )

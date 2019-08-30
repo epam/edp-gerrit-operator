@@ -1,7 +1,7 @@
 apiVersion: v2.edp.epam.com/v1alpha1
 kind: GerritReplicationConfig
 metadata:
-  name: example-gerritreplicationconfig
+  name: test-project
 spec:
-  ssh_url: "test"
+  ssh_url: "git@git.epam.com:epmd-edp/temp/test-project.git"
   owner_name: "example-gerrit"

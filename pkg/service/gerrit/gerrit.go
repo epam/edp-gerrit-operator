@@ -30,6 +30,8 @@ type Interface interface {
 	Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, bool, error)
 	ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
 	Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
+	GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error)
+	GetServicePort(instance *v1alpha1.Gerrit) (int32, error)
 }
 
 // ComponentService implements gerrit.Interface
@@ -103,7 +105,7 @@ func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, 
 
 // Configure contains logic related to self configuration of the Gerrit EDP Component
 func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, bool, error) {
-	gerritUrl, err := s.getGerritSSHUrl(instance)
+	gerritUrl, err := s.GetGerritSSHUrl(instance)
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Unable to get Gerrit SSH URL")
 	}
@@ -117,7 +119,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/%v/scripts", executableFilePath, spec.LocalConfigsRelativePath))
 	}
 
-	sshPortService, err := s.getServicePort(instance)
+	sshPortService, err := s.GetServicePort(instance)
 	if err != nil {
 		return instance, false, err
 	}
@@ -381,12 +383,12 @@ func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
 }
 
 func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
-	gerritUrl, err := s.getGerritSSHUrl(instance)
+	gerritUrl, err := s.GetGerritSSHUrl(instance)
 	if err != nil {
 		return err
 	}
 
-	sshPortService, err := s.getServicePort(instance)
+	sshPortService, err := s.GetServicePort(instance)
 	if err != nil {
 		return err
 	}
@@ -416,7 +418,7 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 	return gerritApiUrl, nil
 }
 
-func (s ComponentService) getGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
+func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
 	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
 		gerritRoute, _, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
@@ -453,7 +455,7 @@ func (s ComponentService) createSSHKeyPairs(instance *v1alpha1.Gerrit, secretNam
 	return privateKey, publicKey, nil
 }
 
-func (s ComponentService) getServicePort(instance *v1alpha1.Gerrit) (int32, error) {
+func (s ComponentService) GetServicePort(instance *v1alpha1.Gerrit) (int32, error) {
 	service, err := s.PlatformService.GetService(instance.Namespace, instance.Name)
 	if err != nil {
 		return 0, err

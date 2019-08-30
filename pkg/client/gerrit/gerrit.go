@@ -138,6 +138,22 @@ func (gc *Client) ChangePassword(username string, password string) error {
 	return nil
 }
 
+func (gc *Client) ReloadPlugin(plugin string) error {
+	cmd := &ssh.SSHCommand{
+		Path:   fmt.Sprintf("gerrit plugin reload \"%v\"", plugin),
+		Env:    []string{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	_, err := gc.sshClient.RunCommand(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "Reloading %v plugin failed", plugin)
+	}
+	return nil
+}
+
 func (gc *Client) CreateUser(username string, password string, fullname string, publicKey string) error {
 	userStatus, err := gc.GetUser(username)
 	if err != nil {

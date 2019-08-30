@@ -1,0 +1,6 @@
+[remote \"{{.ObjectMeta.Name}}\"]
+  url = {{.Spec.SSHUrl}}
+  fetch = +refs/*:refs/*
+  push = +refs/heads/*:refs/heads/*
+  projects = {{.ObjectMeta.Name}}
+  replicatePermissions = false

@@ -1,0 +1,8 @@
+Host {{.Hostname}}
+  HostName {{.Hostname}}
+  Port 22
+  User git
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  IdentityFile {{.KeyPath}}
+  IdentitiesOnly yes

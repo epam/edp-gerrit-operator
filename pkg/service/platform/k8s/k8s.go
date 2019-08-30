@@ -107,7 +107,7 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 		Tty:    false,
 	})
 	if err != nil {
-		return "", "", err
+		return "", stderr.String(), err
 	}
 
 	return stdout.String(), stderr.String(), nil
