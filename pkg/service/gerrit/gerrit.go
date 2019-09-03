@@ -183,7 +183,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	if status == 401 {
 		err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, spec.GerritDefaultAdminPassword)
 		if err != nil {
-			return instance, false, errors.Wrapf(err, "[ERROR] Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
+			return instance, false, errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 		}
 		status, err = s.gerritClient.CheckCredentials()
 
@@ -191,28 +191,13 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			instance, err := s.gerritClient.InitAdminUser(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
 				string(gerritAdminPublicKey))
 			if err != nil {
-				return &instance, false, errors.Wrapf(err, "[ERROR] Failed to initialize Gerrit Admin User")
+				return &instance, false, errors.Wrapf(err, "Failed to initialize Gerrit Admin User")
 			}
+		}
 
-			gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
-			if err != nil {
-				return &instance, false, err
-			}
-
-			err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
-			if err != nil {
-				return &instance, false, err
-			}
-
-			err = s.gerritClient.ChangePassword("admin", gerritAdminPassword)
-			if err != nil {
-				return &instance, false, err
-			}
-
-			err = s.gerritClient.InitNewRestClient(&instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
-			if err != nil {
-				return &instance, false, errors.Wrapf(err, "[ERROR] Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
-			}
+		err := s.setGerritAdminUserPassword(*instance, gerritUrl, gerritAdminPassword, gerritApiUrl, sshPortService)
+		if err != nil {
+			return instance, false, err
 		}
 	}
 
@@ -453,6 +438,31 @@ func (s ComponentService) createSSHKeyPairs(instance *v1alpha1.Gerrit, secretNam
 	}
 
 	return privateKey, publicKey, nil
+}
+
+func (s ComponentService) setGerritAdminUserPassword(instance v1alpha1.Gerrit, gerritUrl, gerritAdminPassword,
+	gerritApiUrl string, sshPortService int32) error {
+	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get Gerrit admin secret for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to initialize Gerrit SSH client for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	err = s.gerritClient.ChangePassword("admin", gerritAdminPassword)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to set Gerrit admin password for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	err = s.gerritClient.InitNewRestClient(&instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	return nil
 }
 
 func (s ComponentService) GetServicePort(instance *v1alpha1.Gerrit) (int32, error) {

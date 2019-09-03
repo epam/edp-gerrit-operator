@@ -131,9 +131,9 @@ func (gc *Client) ChangePassword(username string, password string) error {
 		Stderr: os.Stderr,
 	}
 
-	_, err := gc.sshClient.RunCommand(cmd)
+	out, err := gc.sshClient.RunCommand(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "Changing %v password failed", username)
+		return errors.Wrapf(err, "Changing %v password failed. %v", username, bytes.NewBuffer(out).String())
 	}
 	return nil
 }
