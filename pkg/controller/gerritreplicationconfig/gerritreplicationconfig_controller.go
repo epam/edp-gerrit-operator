@@ -163,6 +163,13 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) 
 		}
 	}
 
+	err = r.updateAvailableStatus(instance, true)
+	if err != nil {
+		log.Info("Failed update avalability status for Gerrit Replication Config object with name %s", instance.Name)
+		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	reqLogger.Info(fmt.Sprintf("Reconciling Gerrit Replication Config component %v/%v has been finished", request.Namespace, request.Name))
 	return reconcile.Result{}, nil
 }
 
@@ -461,4 +468,19 @@ func resolveSshTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName
 	}
 
 	return &config, nil
+}
+
+func (r ReconcileGerritReplicationConfig) updateAvailableStatus(instance *v1alpha1.GerritReplicationConfig, value bool) error {
+	if instance.Status.Available != value {
+		instance.Status.Available = value
+		instance.Status.LastTimeUpdated = time.Now()
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			err := r.client.Update(context.TODO(), instance)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
