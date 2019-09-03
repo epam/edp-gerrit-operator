@@ -14,8 +14,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"strings"
 )
+
+var log = logf.Log.WithName("client_gerrit")
 
 type Client struct {
 	instance  *v1alpha1.Gerrit
@@ -42,7 +45,7 @@ func (gc Client) CheckCredentials() (int, error) {
 	return resp.StatusCode(), nil
 }
 
-// CheckCredentials checks gerrit group
+// CheckGroup checks gerrit group
 func (gc Client) CheckGroup(groupName string) (*int, error) {
 	statusNotFound := http.StatusNotFound
 	uuid, err := gc.getGroupUuid(groupName)
@@ -179,18 +182,29 @@ func (gc *Client) CreateUser(username string, password string, fullname string, 
 	return nil
 }
 
-func (gc *Client) AddUserToGroup(userName, groupName string) error {
-	cmd := &ssh.SSHCommand{
-		Path:   fmt.Sprintf("gerrit set-members --add \"%v\" \"%v\"", userName, groupName),
-		Env:    []string{},
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
+func (gc *Client) AddUserToGroups(userName string, groupNames []string) error {
+	for _, group := range groupNames {
+		groupStatus, err := gc.CheckGroup(group)
+		if err != nil {
+			return err
+		}
 
-	_, err := gc.sshClient.RunCommand(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to add user %v to group %v", userName, groupName)
+		if *groupStatus == 404 {
+			log.Info(fmt.Sprintf("Group %v not found in Gerrit", group))
+		} else {
+			cmd := &ssh.SSHCommand{
+				Path:   fmt.Sprintf("gerrit set-members --add \"%v\" \"%v\"", userName, group),
+				Env:    []string{},
+				Stdin:  os.Stdin,
+				Stdout: os.Stdout,
+				Stderr: os.Stderr,
+			}
+
+			_, err := gc.sshClient.RunCommand(cmd)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to add user %v to group %v", userName, group)
+			}
+		}
 	}
 	return nil
 }

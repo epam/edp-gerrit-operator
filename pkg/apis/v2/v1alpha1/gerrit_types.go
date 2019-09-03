@@ -21,9 +21,16 @@ type GerritSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type    string          `json:"type"`
-	Version string          `json:"version"`
-	Volumes []GerritVolumes `json:"volumes,omitempty"`
+	Type         string          `json:"type"`
+	Version      string          `json:"version"`
+	Volumes      []GerritVolumes `json:"volumes,omitempty"`
+	KeycloakSpec KeycloakSpec    `json:"keycloakSpec"`
+	Users        []GerritUsers   `json:"users, omitempty"`
+}
+
+type GerritUsers struct {
+	Username string   `json:"username"`
+	Groups   []string `json:"groups, omitempty"`
 }
 
 // GerritStatus defines the observed state of Gerrit
@@ -38,6 +45,12 @@ type GerritStatus struct {
 	ExternalUrl     string    `json:"externalUrl"`
 }
 
+type KeycloakSpec struct {
+	Enabled bool   `json:"enabled"`
+	Url     string `json:"url, omitempty"`
+	Realm   string `json:"realm, omitempty"`
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Gerrit is the Schema for the gerrits API
@@ -45,9 +58,8 @@ type GerritStatus struct {
 type Gerrit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   GerritSpec   `json:"spec,omitempty"`
-	Status GerritStatus `json:"status,omitempty"`
+	Spec              GerritSpec   `json:"spec,omitempty"`
+	Status            GerritStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

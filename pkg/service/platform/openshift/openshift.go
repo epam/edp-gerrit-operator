@@ -5,13 +5,8 @@ import (
 	"fmt"
 	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/service/gerrit/spec"
-	"log"
-	"reflect"
-
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform/k8s"
-	"k8s.io/apimachinery/pkg/types"
-
 	appsV1Api "github.com/openshift/api/apps/v1"
 	routeV1Api "github.com/openshift/api/route/v1"
 	securityV1Api "github.com/openshift/api/security/v1"
@@ -27,8 +22,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
+	"log"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -171,7 +169,14 @@ func (s *OpenshiftService) CreateSecurityContext(gerrit *v1alpha1.Gerrit, sa *co
 
 // CreateDeployConf creates a new DeploymentConfig resource for a Gerrit EDP Component
 func (s *OpenshiftService) CreateDeployConf(gerrit *v1alpha1.Gerrit) error {
-	gerritDCObject := newGerritDeploymentConfig(gerrit)
+	gerritRoute, protocol, err := s.GetRoute(gerrit.Namespace, gerrit.Name)
+	if err != nil {
+		return helpers.LogErrorAndReturn(err)
+	}
+
+	externalUrl := fmt.Sprintf("%s://%s", protocol, gerritRoute.Spec.Host)
+
+	gerritDCObject := newGerritDeploymentConfig(gerrit, externalUrl)
 
 	if err := controllerutil.SetControllerReference(gerrit, gerritDCObject, s.Scheme); err != nil {
 		return helpers.LogErrorAndReturn(err)
@@ -285,7 +290,6 @@ func (s *OpenshiftService) PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -312,7 +316,7 @@ func newGerritRoute(name, namespace string) *routeV1Api.Route {
 	}
 }
 
-func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit) *appsV1Api.DeploymentConfig {
+func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *appsV1Api.DeploymentConfig {
 	labels := helpers.GenerateLabels(gerrit.Name)
 	return &appsV1Api.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -345,6 +349,10 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit) *appsV1Api.DeploymentCon
 								{
 									Name:  "HTTPD_LISTENURL",
 									Value: "proxy-https://*:8080",
+								},
+								{
+									Name:  "WEBURL",
+									Value: externalUrl,
 								},
 								{
 									Name: "GERRIT_INIT_ARGS",

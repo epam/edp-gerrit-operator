@@ -5,7 +5,14 @@ metadata:
 spec:
   type: "Gerrit"
   version: '2.16.10'
+  keycloakSpec:
+    enabled: false
+    url: ""
   volumes:
     - name: "data"
       storage_class: "efs"
       capacity: "1Gi"
+  users:
+    - username: test@edp.com
+      groups:
+        - Administrators

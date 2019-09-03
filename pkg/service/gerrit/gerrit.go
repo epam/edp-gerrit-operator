@@ -1,6 +1,7 @@
 package gerrit
 
 import (
+	"context"
 	"fmt"
 	"gerrit-operator/pkg/apis/v2/v1alpha1"
 	"gerrit-operator/pkg/client/gerrit"
@@ -9,16 +10,17 @@ import (
 	"gerrit-operator/pkg/service/helpers"
 	"gerrit-operator/pkg/service/platform"
 	"github.com/dchest/uniuri"
+	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"strconv"
-	"time"
 )
 
 var log = logf.Log.WithName("service_gerrit")
@@ -54,7 +56,7 @@ func (s ComponentService) IsDeploymentConfigReady(instance v1alpha1.Gerrit) (boo
 	if err != nil {
 		return gerritIsReady, helpers.LogErrorAndReturn(err)
 	}
-	if GerritDc.Status.AvailableReplicas == 1 {
+	if GerritDc.Status.UpdatedReplicas == 1 && GerritDc.Status.AvailableReplicas == 1 {
 		gerritIsReady = true
 	}
 	return gerritIsReady, nil
@@ -145,7 +147,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	if dcUpdated {
-		return instance, false, errors.Wrapf(errors.New("[INFO] Restarting Gerrit after SSH port change"), "[INFO] Restarting Gerrit after SSH port change")
+		return instance, true, nil
 	}
 
 	gerritApiUrl, err := s.getGerritRestApiUrl(instance)
@@ -250,7 +252,23 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 	}
 
-	return instance, true, nil
+	for _, user := range instance.Spec.Users {
+		userStatus, err := s.gerritClient.GetUser(user.Username)
+		if err != nil {
+			return instance, false, errors.Wrapf(err, "Getting %v user failed", user.Username)
+		}
+
+		if *userStatus == 404 {
+			log.Info(fmt.Sprintf("User %v not found in Gerrit", user.Username))
+		} else {
+			err := s.gerritClient.AddUserToGroups(user.Username, user.Groups)
+			if err != nil {
+				return instance, false, errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
+			}
+		}
+	}
+
+	return instance, false, nil
 }
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
@@ -325,26 +343,63 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		return instance, errors.Wrapf(err, "Failed to create project-creator user %v in Gerrit", spec.GerritDefaultProjectCreatorUser)
 	}
 
-	userGroups := []map[string]string{
-		{spec.GerritDefaultCiUserUser: spec.GerritCIToolsGroupName},
-		{spec.GerritDefaultCiUserUser: spec.GerritNonInteractiveUsersGroup},
-		{spec.GerritDefaultProjectCreatorUser: spec.GerritProjectBootstrappersGroupName},
-		{spec.GerritDefaultProjectCreatorUser: spec.GerritAdministratorsGroup},
+	userGroups := map[string][]string{
+		spec.GerritDefaultCiUserUser:         {spec.GerritCIToolsGroupName, spec.GerritNonInteractiveUsersGroup},
+		spec.GerritDefaultProjectCreatorUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup},
 	}
 
-	for _, userGroup := range userGroups {
-		for user, group := range userGroup {
-			if err := s.gerritClient.AddUserToGroup(user, group); err != nil {
-				return instance, errors.Wrapf(err, "Failed to add user %v to group %v", user, group)
-			}
+	for _, user := range reflect.ValueOf(userGroups).MapKeys() {
+		if err := s.gerritClient.AddUserToGroups(reflect.Value.String(user), userGroups[reflect.Value.String(user)]); err != nil {
+			return instance, errors.Wrapf(err, "Failed to add user %v to groups %v",
+				reflect.Value.String(user), userGroups[reflect.Value.String(user)])
 		}
+
 	}
 
+	_ = s.k8sClient.Update(context.TODO(), instance)
+
+	if instance.Spec.KeycloakSpec.Enabled {
+		secret, err := uuid.NewUUID()
+		if err != nil {
+			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to generate secret for Gerrit in Keycloack"))
+		}
+
+		identityServiceClientCredentials := map[string][]byte{
+			"client_id":     []byte(instance.Name),
+			"client_secret": []byte(secret.String()),
+		}
+
+		identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
+		err = s.PlatformService.CreateSecret(instance, identityServiceSecretName, identityServiceClientCredentials)
+		if err != nil {
+			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to create secret %v", identityServiceSecretName))
+		}
+
+		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
+		s.setAnnotation(instance, annotationKey, fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
+		_ = s.k8sClient.Update(context.TODO(), instance)
+	}
 	return instance, nil
 }
 
 // Integrate applies actions required for the integration with the other EDP Components
 func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	if instance.Spec.KeycloakSpec.Enabled {
+		keycloakEnvironmentValue := s.PlatformService.GenerateKeycloakSettings(instance)
+
+		deployConf, err := s.PlatformService.GetDeploymentConfig(*instance)
+		if err != nil {
+			return instance, err
+		}
+		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, keycloakEnvironmentValue); err != nil {
+			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to add identity service information"))
+		}
+		return instance, nil
+
+	} else {
+		log.V(1).Info("Keycloak integration not enabled.")
+	}
+
 	return instance, nil
 }
 
@@ -521,7 +576,6 @@ func (s ComponentService) updateDeploymentConfigPort(sshPortDC, sshPortService i
 		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, newEnv); err != nil {
 			return false, err
 		}
-		time.Sleep(5 * time.Second)
 		return true, nil
 	}
 	return false, nil
