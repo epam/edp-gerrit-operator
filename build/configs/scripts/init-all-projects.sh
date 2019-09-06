@@ -10,13 +10,11 @@ if [[ \"\$origin\" != \"/var/gerrit/review_site/git/All-Projects.git\" ]]; then
 fi
 git fetch -q origin refs/meta/config:refs/remotes/origin/meta/config
 git checkout meta/config
-echo \$1 > project.config
-echo -e \"global:Change-Owner\tChange Owner\" > groups
-echo -e \"\$2\tContinuous Integration Tools\" >> groups
-echo -e \"\$3\tProject Bootstrappers\" >> groups
+printf \"\$1\" >> project.config
+printf \"global:Change-Owner\\tChange Owner\\n\" >> groups
+printf \"\$2\\tContinuous Integration Tools\\n\" >> groups
+printf \"\$3\\tProject Bootstrappers\\n\" >> groups
 git add .
 git commit -a -m \"Uploaded EDP Gerrit config\"
 git push origin HEAD:refs/meta/config
-rm -rf groups
-git rm groups
 git config -f /var/gerrit/review_site/etc/gerrit.config auth.trustedOpenID ^.*\$

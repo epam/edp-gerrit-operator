@@ -270,7 +270,7 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
 		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\"",
-			gerritConfig, ciToolsGroupUuid, projectBootstrappersGroupUuid)})
+			string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid)})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
 	}
