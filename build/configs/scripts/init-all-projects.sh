@@ -11,9 +11,9 @@ fi
 git fetch -q origin refs/meta/config:refs/remotes/origin/meta/config
 git checkout meta/config
 echo \$1 > project.config
-echo \"global:Change-Owner\tChange Owner\" > groups
-echo \$2 > groups
-echo \$3 > groups
+echo -e \"global:Change-Owner\tChange Owner\" > groups
+echo -e \"\$2\tContinuous Integration Tools\" >> groups
+echo -e \"\$3\tProject Bootstrappers\" >> groups
 git add .
 git commit -a -m \"Uploaded EDP Gerrit config\"
 git push origin HEAD:refs/meta/config
