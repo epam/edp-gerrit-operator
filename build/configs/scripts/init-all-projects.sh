@@ -16,7 +16,7 @@ echo \$2 > groups
 echo \$3 > groups
 git add .
 git commit -a -m \"Uploaded EDP Gerrit config\"
-git push origin meta/config:meta/config
+git push origin HEAD:refs/meta/config
 rm -rf groups
 git rm groups
 git config -f /var/gerrit/review_site/etc/gerrit.config auth.trustedOpenID ^.*\$
