@@ -10,7 +10,7 @@ if [[ \"\$origin\" != \"/var/gerrit/review_site/git/All-Projects.git\" ]]; then
 fi
 git fetch -q origin refs/meta/config:refs/remotes/origin/meta/config
 git checkout meta/config
-printf \"\$1\" >> project.config
+printf \"\$1\" > project.config
 printf \"global:Change-Owner\\tChange Owner\\n\" >> groups
 printf \"\$2\\tContinuous Integration Tools\\n\" >> groups
 printf \"\$3\\tProject Bootstrappers\\n\" >> groups
