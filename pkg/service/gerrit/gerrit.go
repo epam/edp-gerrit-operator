@@ -311,13 +311,13 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 			instance.Namespace, instance.Name)
 	}
 
-	_, ciUserPublicKey, err := s.createSSHKeyPairs(instance, instance.Name+"-ciuser")
+	_, ciUserPublicKey, err := s.createSSHKeyPairs(instance, instance.Name+"-ciuser"+spec.SshKeyPostfix)
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Gerrit CI User SSH keypair %v/%v", instance.Namespace, instance.Name)
 	}
 
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
-	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, instance.Name+"-ciuser")
+	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, instance.Name+"-ciuser"+spec.SshKeyPostfix)
 	projectCreatorUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorSshKeySuffix)
 	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 

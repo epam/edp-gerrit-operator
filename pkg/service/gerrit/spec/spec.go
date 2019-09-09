@@ -129,4 +129,7 @@ const (
 
 	//IdentityServiceCredentialsSecretPostfix
 	IdentityServiceCredentialsSecretPostfix = "is-credentials"
+
+	//SshKeyPostfix - default name for Ssh key postfix
+	SshKeyPostfix = "-sshkey"
 )
