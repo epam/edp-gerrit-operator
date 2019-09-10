@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"gerrit-operator/pkg/controller/gerritreplicationconfig"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller/gerritreplicationconfig"
 )
 
 func init() {

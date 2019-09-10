@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"gerrit-operator/pkg/apis/v2/v1alpha1"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 )
 
 func init() {

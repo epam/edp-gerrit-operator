@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"gerrit-operator/pkg/service/gerrit/spec"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
 	"golang.org/x/crypto/ssh"
 	"log"
 )

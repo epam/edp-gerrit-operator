@@ -3,12 +3,12 @@ package gerrit
 import (
 	"context"
 	"fmt"
-	"gerrit-operator/pkg/apis/v2/v1alpha1"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	logPrint "log"
 	"time"
 
-	"gerrit-operator/pkg/service/gerrit"
-	"gerrit-operator/pkg/service/platform"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
 
 	errorsf "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"

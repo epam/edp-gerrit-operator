@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"gerrit-operator/pkg/controller/gerrit"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller/gerrit"
 )
 
 func init() {

@@ -5,14 +5,14 @@ import (
 	"context"
 	coreerrors "errors"
 	"fmt"
-	"gerrit-operator/pkg/apis/v2/v1alpha1"
-	gerritClient "gerrit-operator/pkg/client/gerrit"
-	"gerrit-operator/pkg/controller/gerrit"
-	"gerrit-operator/pkg/controller/helper"
-	serviceHelper "gerrit-operator/pkg/helper"
-	gerritService "gerrit-operator/pkg/service/gerrit"
-	"gerrit-operator/pkg/service/gerrit/spec"
-	"gerrit-operator/pkg/service/platform"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritClient "github.com/epmd-edp/gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller/gerrit"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller/helper"
+	serviceHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
+	gerritService "github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -365,8 +365,8 @@ func (r *ReconcileGerritReplicationConfig) createReplicationConfig(namespace, po
 func (r *ReconcileGerritReplicationConfig) createSshConfig(namespace, podName string) error {
 	_, _, err := r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
-			spec.DefaultGerritSSHConfigPath + "/config", spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath + "/config", spec.DefaultGerritSSHConfigPath + "/config")})
+			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
+			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")})
 	if err != nil {
 		return err
 	}
@@ -387,7 +387,7 @@ func (r *ReconcileGerritReplicationConfig) saveSshReplicationKey(namespace, podN
 
 func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, podName string,
 	grc v1alpha1.GerritReplicationConfig, templatePath string) error {
-	config, err := resolveReplicationTemplate(grc, templatePath,"replication-conf.tmpl")
+	config, err := resolveReplicationTemplate(grc, templatePath, "replication-conf.tmpl")
 	if err != nil {
 		return err
 	}
@@ -414,7 +414,7 @@ func (r *ReconcileGerritReplicationConfig) updateSshConfig(namespace, podName st
 	}
 
 	_, _, err = r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
-		fmt.Sprintf("echo \"%v\" >> %v", config.String(), spec.DefaultGerritSSHConfigPath +"/config")})
+		fmt.Sprintf("echo \"%v\" >> %v", config.String(), spec.DefaultGerritSSHConfigPath+"/config")})
 	if err != nil {
 		return err
 	}
@@ -454,7 +454,7 @@ func resolveSshTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName
 
 	data := struct {
 		Hostname string
-		KeyPath string
+		KeyPath  string
 	}{host[1], keyPath}
 
 	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(fmt.Sprintf("%v/%v", path, templateName)))

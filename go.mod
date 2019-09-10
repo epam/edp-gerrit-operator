@@ -1,4 +1,4 @@
-module gerrit-operator
+module github.com/epmd-edp/gerrit-operator/v2
 
 go 1.12
 
