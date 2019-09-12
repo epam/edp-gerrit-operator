@@ -39,7 +39,7 @@ func (gc Client) CheckCredentials() (int, error) {
 		SetHeader("accept", "application/json").
 		Get("config/server/summary")
 	if err != nil {
-		return 401, errors.Wrapf(err, "[ERROR] Unable to verify Gerrit credentials")
+		return 401, errors.Wrapf(err, "Unable to verify Gerrit credentials")
 	}
 
 	return resp.StatusCode(), nil
@@ -85,25 +85,25 @@ func (gc Client) GetUser(username string) (*int, error) {
 func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (v1alpha1.Gerrit, error) {
 	addInitialAdminUserScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
 	if err != nil {
-		return instance, errors.Wrapf(err, "[ERROR] Failed to read add-initial-admin-user.sh script")
+		return instance, errors.Wrapf(err, "Failed to read add-initial-admin-user.sh script")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
 		[]string{"/bin/sh", "-c", "mkdir -p /tmp/scripts && touch /tmp/scripts/add-initial-admin-user.sh && chmod +x /tmp/scripts/add-initial-admin-user.sh"})
 	if err != nil {
-		return instance, errors.Wrapf(err, "[ERROR] Failed to create add-initial-admin-user.sh script inside gerrit pod")
+		return instance, errors.Wrapf(err, "Failed to create add-initial-admin-user.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
 		[]string{"/bin/sh", "-c", fmt.Sprintf("echo \"%v\" > /tmp/scripts/add-initial-admin-user.sh", string(addInitialAdminUserScript))})
 	if err != nil {
-		return instance, errors.Wrapf(err, "[ERROR] Failed to add content to add-initial-admin-user.sh script inside gerrit pod")
+		return instance, errors.Wrapf(err, "Failed to add content to add-initial-admin-user.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
 		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/add-initial-admin-user.sh \"%v\"", gerritAdminPublicKey)})
 	if err != nil {
-		return instance, errors.Wrapf(err, "[ERROR] Failed to execute add-initial-admin-user.sh script inside gerrit pod")
+		return instance, errors.Wrapf(err, "Failed to execute add-initial-admin-user.sh script inside gerrit pod")
 	}
 
 	return instance, nil

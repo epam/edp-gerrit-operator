@@ -21,7 +21,10 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"log"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
+
+var logV2 = logf.Log.WithName("platform")
 
 // K8SService implements platform.Service interface (k8s platform integration)
 type K8SService struct {
@@ -395,4 +398,33 @@ func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]c
 	}
 
 	return ports, nil
+}
+
+func (s *K8SService) CreateConfigMapFromData(instance *v1alpha1.Gerrit, configMapName string,
+	configMapData map[string]string, labels map[string]string, ownerReference metav1.Object) error {
+	configMapObject := &coreV1Api.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: instance.Namespace,
+			Labels:    labels,
+		},
+		Data: configMapData,
+	}
+
+	if err := controllerutil.SetControllerReference(ownerReference, configMapObject, s.Scheme); err != nil {
+		return errors.Wrapf(err, "Couldn't set reference for Config Map %v object", configMapObject.Name)
+	}
+
+	cm, err := s.CoreClient.ConfigMaps(instance.Namespace).Get(configMapObject.Name, metav1.GetOptions{})
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			cm, err = s.CoreClient.ConfigMaps(configMapObject.Namespace).Create(configMapObject)
+			if err != nil {
+				return errors.Wrapf(err, "Couldn't create Config Map %v object", cm.Name)
+			}
+			logV2.Info(fmt.Sprintf("ConfigMap %s/%s has been created", cm.Namespace, cm.Name))
+		}
+		return errors.Wrapf(err, "Couldn't get ConfigMap %v object", configMapObject.Name)
+	}
+	return nil
 }

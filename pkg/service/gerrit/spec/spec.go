@@ -58,14 +58,25 @@ const (
 	//Gerrit port
 	GerritPort = "8080"
 
-	//GerritDefaultScriptsPath - default scripts for uploading to Gerrit
-	GerritDefaultScriptsPath = "/usr/local/configs/scripts"
+	DefaultConfigFilesAbsolutePath = "/usr/local/"
 
 	//LocalConfigsRelativePath - default directory for configs
 	LocalConfigsRelativePath = "configs"
 
+	//DefaultScriptsDirectory
+	DefaultTemplatesDirectory = "templates"
+
+	//DefaultTemplatesDirectory
+	DefaultScriptsDirectory = "scripts"
+
 	//LocalTemplatesRelativePath - default directory for templates
-	LocalTemplatesRelativePath = "templates"
+	LocalTemplatesRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + DefaultTemplatesDirectory
+
+	//LocalScriptsRelativePath - scripts
+	LocalScriptsRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + DefaultScriptsDirectory
+
+	//JenkinsPluginConfigFileName
+	JenkinsPluginConfigFileName = "config-gerrit-plugin.tmpl"
 
 	//GerritCIToolsGroupName - default group name for Continuous Integration users
 	GerritCIToolsGroupName = "Continuous Integration Tools"
@@ -106,6 +117,9 @@ const (
 	//GerritDefaultCiUserSecretPostfix - default CI user secret postfix for Gerrit
 	GerritDefaultProjectCreatorSecretPostfix = "project-creator"
 
+	//JenkinsPluginConfigPostfix
+	JenkinsPluginConfigPostfix = "jenkins-plugin-config"
+
 	//EdpCiUserSuffix entity prefix for integration functionality
 	EdpProjectCreatorUserSuffix string = "project-creator-credentials"
 
@@ -117,9 +131,6 @@ const (
 
 	//DefaultGerritSSHConfigPath ssh config path
 	DefaultGerritSSHConfigPath = "/var/gerrit/.ssh"
-
-	//GerritDefaultTemplatesPath - default templates for Gerrit
-	GerritDefaultTemplatesPath = "/usr/local/templates"
 
 	//GerritDefaultVCSKeyPath - default path for VCS key
 	GerritDefaultVCSKeyPath = "/var/gerrit/review_site/etc"

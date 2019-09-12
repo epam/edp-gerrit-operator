@@ -1,0 +1,62 @@
+/* Copyright 2018 EPAM Systems.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+See the License for the specific language governing permissions and
+limitations under the License. */
+
+import com.sonyericsson.hudson.plugins.gerrit.trigger.GerritServer
+import com.sonyericsson.hudson.plugins.gerrit.trigger.PluginImpl
+import com.sonyericsson.hudson.plugins.gerrit.trigger.config.PluginConfig
+import net.sf.json.*
+
+PluginImpl plugin = PluginImpl.getInstance();
+PluginConfig pluginConfig = plugin.getPluginConfig();
+
+for (gerritServer in plugin.getServers()) {
+    if (gerritServer.name == "{{ .ServerName }}") {
+   		println("Server with name {{ .ServerName }} already exists")
+    	return
+    }
+}
+
+server = new GerritServer("{{ .ServerName }}", false)
+def config = server.getConfig()
+
+def triggerConfig = [
+        'gerritBuildStartedVerifiedValue'     : 0,
+        'gerritBuildStartedCodeReviewValue'   : 0,
+        'gerritBuildSuccessfulVerifiedValue'  : 1,
+        'gerritBuildSuccessfulCodeReviewValue': 0,
+        'gerritBuildFailedVerifiedValue'      : -1,
+        'gerritBuildFailedCodeReviewValue'    : 0,
+        'gerritBuildUnstableVerifiedValue'    : 0,
+        'gerritBuildUnstableCodeReviewValue'  : 0,
+        'gerritBuildNotBuiltVerifiedValue'    : 0,
+        'gerritBuildNotBuiltCodeReviewValue'  : 0,
+]
+config.setValues(JSONObject.fromObject(triggerConfig))
+server.setConfig(config)
+
+server.getConfig().setNumberOfSendingWorkerThreads(pluginConfig.getNumberOfSendingWorkerThreads())
+server.getConfig().setGerritHostName("{{ .ServerName }}")
+server.getConfig().setGerritFrontEndURL("{{ .ExternalUrl }}")
+server.getConfig().setGerritAuthKeyFile(new File("${System.getenv().get('JENKINS_HOME')}/.ssh/id_rsa"))
+server.getConfig().setGerritSshPort({{ .SshPort }})
+server.getConfig().setGerritUserName("{{ .UserName }}")
+server.getConfig().setUseRestApi(true)
+server.getConfig().setGerritHttpUserName("{{ .UserName }}")
+server.getConfig().setGerritHttpPassword("{{ .HttpPassword }}")
+server.getConfig().setRestCodeReview(true)
+server.getConfig().setRestVerified(true)
+
+plugin.addServer(server)
+server.start()
+plugin.save()

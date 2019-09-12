@@ -46,11 +46,12 @@ func Add(mgr manager.Manager) error {
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	platformService := platform.NewService(mgr.GetScheme())
 	client := mgr.GetClient()
-	componentService := gerritService.NewComponentService(platformService, client)
+	scheme := mgr.GetScheme()
+	componentService := gerritService.NewComponentService(platformService, client, scheme)
 
 	return &ReconcileGerritReplicationConfig{
 		client:           client,
-		scheme:           mgr.GetScheme(),
+		scheme:           scheme,
 		platform:         platformService,
 		componentService: componentService,
 	}
@@ -284,14 +285,14 @@ func (r *ReconcileGerritReplicationConfig) setOwnerReference(gerritInstance *v1a
 }
 
 func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1.GerritReplicationConfig, gerrit *v1alpha1.Gerrit) error {
-	GerritTemplatesPath := spec.GerritDefaultTemplatesPath
+	GerritTemplatesPath := spec.LocalTemplatesRelativePath
 	executableFilePath, err := serviceHelper.GetExecutableFilePath()
 	if err != nil {
 		return err
 	}
 
 	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		GerritTemplatesPath = filepath.FromSlash(fmt.Sprintf("%v/%v", executableFilePath, spec.LocalTemplatesRelativePath))
+		GerritTemplatesPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, spec.LocalConfigsRelativePath, spec.DefaultTemplatesDirectory)
 	}
 
 	podList, err := r.platform.GetPods(gerrit.Namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", gerrit.Name)})

@@ -10,7 +10,7 @@ spec:
     url: ""
   volumes:
     - name: "data"
-      storage_class: "efs"
+      storage_class: "gp2"
       capacity: "1Gi"
   users:
     - username: test@edp.com

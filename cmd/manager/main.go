@@ -12,6 +12,7 @@ import (
 
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller"
+	jenkinsApis "github.com/epmd-edp/jenkins-operator/v2/pkg/apis"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
@@ -84,8 +85,7 @@ func main() {
 
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
-		Namespace:          namespace,
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		Namespace: namespace,
 	})
 	if err != nil {
 		log.Error(err, "")
@@ -96,6 +96,11 @@ func main() {
 
 	// Setup Scheme for all resources
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	if err := jenkinsApis.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

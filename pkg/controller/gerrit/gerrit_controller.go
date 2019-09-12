@@ -71,7 +71,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileGerrit{
 		client:  client,
 		scheme:  scheme,
-		service: gerrit.NewComponentService(platform.NewService(scheme), client),
+		service: gerrit.NewComponentService(platform.NewService(scheme), client, scheme),
 	}
 }
 

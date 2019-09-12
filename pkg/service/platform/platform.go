@@ -31,6 +31,7 @@ type PlatformService interface {
 	PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error
 	UpdateService(svc coreV1Api.Service, port int32) error
 	GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV1Api.EnvVar
+	CreateConfigMapFromData(instance *v1alpha1.Gerrit, configMapName string, configMapData map[string]string, labels map[string]string, ownerReference metav1.Object) error
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided
