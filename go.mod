@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
-	github.com/operator-framework/operator-sdk v0.7.0
+	github.com/operator-framework/operator-sdk v0.0.0-20190530173525-d6f9cdf2f52e
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/pflag v1.0.3
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
