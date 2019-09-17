@@ -401,8 +401,6 @@ func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, keycloakEnvironmentValue); err != nil {
 			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to add identity service information"))
 		}
-		return instance, nil
-
 	} else {
 		log.V(1).Info("Keycloak integration not enabled.")
 	}
