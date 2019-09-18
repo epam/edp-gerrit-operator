@@ -212,7 +212,7 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 		reqLogger.Info("Exposing configuration has finished")
 		err = r.updateStatus(instance, StatusExposeFinish)
 		if err != nil {
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil 
 		}
 	}
 

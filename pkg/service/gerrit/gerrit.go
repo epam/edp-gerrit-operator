@@ -322,7 +322,7 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s",instance.Name, spec.SshKeyPostfix)
 	if err := s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
-		"username": []byte(fmt.Sprintf("%s-ciuser",instance.Name)),
+		"username": []byte(ciUserSshSecretName),
 		"id_rsa":     privateKey,
 		"id_rsa.pub": publicKey,
 	}); err != nil {
