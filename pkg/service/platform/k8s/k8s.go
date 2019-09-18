@@ -7,6 +7,10 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/client"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
+	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
+	jenkinsV1Api "github.com/epmd-edp/jenkins-operator/v2/pkg/apis/v2/v1alpha1"
+	jenkinsScriptV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/client"
+	JenkinsSAV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsserviceaccount/client"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -19,18 +23,19 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"log"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
-var logV2 = logf.Log.WithName("platform")
+var log = logf.Log.WithName("platform")
 
 // K8SService implements platform.Service interface (k8s platform integration)
 type K8SService struct {
-	Scheme     *runtime.Scheme
-	CoreClient *coreV1Client.CoreV1Client
-	EdpClient  *client.EdpV1Client
+	Scheme                      *runtime.Scheme
+	CoreClient                  *coreV1Client.CoreV1Client
+	EdpClient                   *client.EdpV1Client
+	JenkinsServiceAccountClient *JenkinsSAV1Client.EdpV1Client
+	JenkinsScriptClient         *jenkinsScriptV1Client.EdpV1Client
 }
 
 // Init process with K8SService instance initialization actions
@@ -39,7 +44,7 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 
 	coreClient, err := coreV1Client.NewForConfig(config)
 	if err != nil {
-		return helpers.LogErrorAndReturn(err)
+		return err
 	}
 	s.CoreClient = coreClient
 
@@ -48,6 +53,18 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 		return errors.Wrap(err, "EDP Client initialization failed!")
 	}
 	s.EdpClient = edpClient
+
+	jenkinsSAClient, err := JenkinsSAV1Client.NewForConfig(config)
+	if err != nil {
+		return errors.Wrapf(err, "Jenkins Service Account client initialization failed!")
+	}
+	s.JenkinsServiceAccountClient = jenkinsSAClient
+
+	jenkinsScriptClient, err := jenkinsScriptV1Client.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+	s.JenkinsScriptClient = jenkinsScriptClient
 
 	return nil
 }
@@ -90,10 +107,10 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV
 func (service K8SService) GetSecretData(namespace string, name string) (map[string][]byte, error) {
 	secret, err := service.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil && k8serr.IsNotFound(err) {
-		log.Printf("Secret %v in namespace %v not found", name, namespace)
+		log.Info(fmt.Sprintf("Secret %v in namespace %v not found", name, namespace))
 		return nil, nil
 	} else if err != nil {
-		return nil, errors.Wrap(err, "Unable to get secret data")
+		return nil, err
 	}
 	return secret.Data, nil
 }
@@ -130,7 +147,10 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 			TTY:       false,
 		}, scheme.ParameterCodec)
 
-	restConfig := newRestConfig()
+	restConfig, err := newRestConfig()
+	if err != nil {
+		return "", "", err
+	}
 
 	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
 	if err != nil {
@@ -166,18 +186,20 @@ func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, da
 	gerritSecretObject := newGerritSecret(secretName, gerrit.Name, gerrit.Namespace, data)
 
 	if err := controllerutil.SetControllerReference(gerrit, gerritSecretObject, s.Scheme); err != nil {
-		return helpers.LogErrorAndReturn(err)
+		return err
 	}
 
 	if _, err := s.CoreClient.Secrets(gerritSecretObject.Namespace).Get(gerritSecretObject.Name, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Printf("Creating a new Secret %s/%s for Gerrit", gerritSecretObject.Namespace, gerritSecretObject.Name)
+			msg := fmt.Sprintf("Creating a new Secret %s/%s for Gerrit", gerritSecretObject.Namespace, gerritSecretObject.Name)
+			log.V(1).Info(msg)
 			if _, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(gerritSecretObject); err != nil {
-				return helpers.LogErrorAndReturn(err)
+				return err
 			}
-			log.Printf("Secret %s/%s has been created", gerritSecretObject.Namespace, gerritSecretObject.Name)
+			msg = fmt.Sprintf("Secret %s/%s has been created", gerritSecretObject.Namespace, gerritSecretObject.Name)
+			log.Info(msg)
 		} else {
-			return helpers.LogErrorAndReturn(err)
+			return err
 		}
 	}
 	return nil
@@ -195,19 +217,21 @@ func (s *K8SService) CreateVolume(gerrit *v1alpha1.Gerrit) error {
 
 // CreateServiceAccount creates a new ServiceAcount resource for a Gerrit EDP Component
 func (s *K8SService) CreateServiceAccount(gerrit *v1alpha1.Gerrit) (account *coreV1Api.ServiceAccount, e error) {
-	gerritServiceAccountObject := newGerritServiceAccount(gerrit.Name, gerrit.Namespace)
+	gerritSAObject := newGerritServiceAccount(gerrit.Name, gerrit.Namespace)
 
-	if err := controllerutil.SetControllerReference(gerrit, gerritServiceAccountObject, s.Scheme); err != nil {
-		return nil, helpers.LogErrorAndReturn(err)
+	if err := controllerutil.SetControllerReference(gerrit, gerritSAObject, s.Scheme); err != nil {
+		return nil, err
 	}
 
-	if account, e = s.CoreClient.ServiceAccounts(gerritServiceAccountObject.Namespace).Get(gerritServiceAccountObject.Name, metav1.GetOptions{}); e != nil {
+	if account, e = s.CoreClient.ServiceAccounts(gerritSAObject.Namespace).Get(gerritSAObject.Name, metav1.GetOptions{}); e != nil {
 		if k8serr.IsNotFound(e) {
-			log.Printf("Creating a new ServiceAccount %s/%s for Gerrit %s", gerritServiceAccountObject.Namespace, gerritServiceAccountObject.Name, gerrit.Name)
-			if account, e = s.CoreClient.ServiceAccounts(gerritServiceAccountObject.Namespace).Create(gerritServiceAccountObject); e != nil {
+			msg := fmt.Sprintf("Creating a new ServiceAccount %s for Gerrit %s/%s",gerritSAObject.Name, gerrit.Name, gerrit.Name)
+			log.V(1).Info(msg)
+			if account, e = s.CoreClient.ServiceAccounts(gerritSAObject.Namespace).Create(gerritSAObject); e != nil {
 				return nil, helpers.LogErrorAndReturn(e)
 			}
-			log.Printf("ServiceAccount %s/%s has been created", gerritServiceAccountObject.Namespace, gerritServiceAccountObject.Name)
+			msg = fmt.Sprintf("ServiceAccount %s/%s has been created", gerritSAObject.Namespace, gerritSAObject.Name)
+			log.Info(msg)
 		} else if e != nil {
 			return nil, helpers.LogErrorAndReturn(e)
 		}
@@ -220,10 +244,10 @@ func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte
 	secret, err := s.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Printf("Secret %v in namespace %v not found", name, namespace)
+			log.Info(fmt.Sprintf("Secret %v in namespace %v not found", name, namespace))
 			return nil, nil
 		}
-		return nil, helpers.LogErrorAndReturn(err)
+		return nil, err
 	}
 	return secret.Data, nil
 }
@@ -233,10 +257,10 @@ func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Servi
 	service, err := s.CoreClient.Services(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Printf("Service %v in namespace %v not found", name, namespace)
+			log.Info("Service %v in namespace %v not found", name, namespace)
 			return nil, nil
 		}
-		return nil, helpers.LogErrorAndReturn(err)
+		return nil, err
 	}
 	return service, nil
 }
@@ -259,18 +283,20 @@ func (s *K8SService) createGerritPersistentVolume(gerrit *v1alpha1.Gerrit, gerri
 	gerritVolumeObject := newGerritPersistentVolumeClaim(gerritVolume, gerrit.Name, gerrit.Namespace)
 
 	if err := controllerutil.SetControllerReference(gerrit, gerritVolumeObject, s.Scheme); err != nil {
-		return helpers.LogErrorAndReturn(err)
+		return err
 	}
 
 	if _, err := s.CoreClient.PersistentVolumeClaims(gerritVolumeObject.Namespace).Get(gerritVolumeObject.Name, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Printf("Creating a new PersistantVolumeClaim %s/%s for %s", gerritVolumeObject.Namespace, gerritVolumeObject.Name, gerrit.Name)
+			msg := fmt.Sprintf("Creating a new PersistantVolumeClaim %s for %s/%s", gerritVolumeObject.Name,gerrit.Namespace, gerrit.Name)
+			log.V(1).Info(msg)
 			if _, err = s.CoreClient.PersistentVolumeClaims(gerritVolumeObject.Namespace).Create(gerritVolumeObject); err != nil {
-				return helpers.LogErrorAndReturn(err)
+				return err
 			}
-			log.Printf("PersistantVolumeClaim %s/%s has been created", gerritVolumeObject.Namespace, gerritVolumeObject.Name)
+			msg = fmt.Sprintf("PersistantVolumeClaim %s/%s has been created", gerritVolumeObject.Namespace, gerritVolumeObject.Name)
+			log.Info(msg)
 		} else {
-			return helpers.LogErrorAndReturn(err)
+			return err
 		}
 	}
 	return nil
@@ -281,18 +307,20 @@ func (s *K8SService) createGerritService(serviceName string, gerrit *v1alpha1.Ge
 	gerritServiceObject := newGerritInternalBalancingService(serviceName, gerrit.Namespace, portMap[serviceName])
 
 	if err := controllerutil.SetControllerReference(gerrit, gerritServiceObject, s.Scheme); err != nil {
-		return helpers.LogErrorAndReturn(err)
+		return err
 	}
 
 	if _, err := s.CoreClient.Services(gerrit.Namespace).Get(serviceName, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Printf("Creating a new service %s/%s for gerrit %s", gerritServiceObject.Namespace, gerritServiceObject.Name, gerrit.Name)
+			msg := fmt.Sprintf("Creating a new service %s for gerrit %s/%s",gerritServiceObject.Name, gerrit.Namespace, gerrit.Name)
+			log.V(1).Info(msg)
 			if _, err = s.CoreClient.Services(gerritServiceObject.Namespace).Create(gerritServiceObject); err != nil {
-				return helpers.LogErrorAndReturn(err)
+				return err
 			}
-			log.Printf("Service %s/%s has been created", gerritServiceObject.Namespace, gerritServiceObject.Name)
+			msg = fmt.Sprintf("Service %s/%s has been created", gerritServiceObject.Namespace, gerritServiceObject.Name)
+			log.Info(msg)
 		} else {
-			return helpers.LogErrorAndReturn(err)
+			return err
 		}
 	}
 	return nil
@@ -303,7 +331,7 @@ func newGerritServiceAccount(name, namespace string) *coreV1Api.ServiceAccount {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			Labels:    helpers.GenerateLabels(name),
+			Labels:    platformHelper.GenerateLabels(name),
 		},
 	}
 }
@@ -313,7 +341,7 @@ func newGerritPersistentVolumeClaim(volume v1alpha1.GerritVolumes, gerritName, n
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gerritName + "-" + volume.Name,
 			Namespace: namespace,
-			Labels:    helpers.GenerateLabels(gerritName),
+			Labels:    platformHelper.GenerateLabels(gerritName),
 		},
 		Spec: coreV1Api.PersistentVolumeClaimSpec{
 			AccessModes: []coreV1Api.PersistentVolumeAccessMode{
@@ -347,7 +375,7 @@ func newGerritPortMap(gerritName string) map[string][]coreV1Api.ServicePort {
 }
 
 func newGerritInternalBalancingService(serviceName, namespace string, ports []coreV1Api.ServicePort) *coreV1Api.Service {
-	labels := helpers.GenerateLabels(serviceName)
+	labels := platformHelper.GenerateLabels(serviceName)
 	return &coreV1Api.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
@@ -367,25 +395,24 @@ func newGerritSecret(name, gerritName, namespace string, data map[string][]byte)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			Labels:    helpers.GenerateLabels(gerritName),
+			Labels:    platformHelper.GenerateLabels(gerritName),
 		},
 		Data: data,
 		Type: "Opaque",
 	}
 }
 
-func newRestConfig() *rest.Config {
+func newRestConfig() (*rest.Config, error) {
 	config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),
 		&clientcmd.ConfigOverrides{},
 	)
 	restConfig, err := config.ClientConfig()
 	if err != nil {
-		helpers.LogErrorAndReturn(err)
-		return nil
+		return nil,err
 	}
 
-	return restConfig
+	return restConfig, nil
 }
 
 func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]coreV1Api.ServicePort, error) {
@@ -400,8 +427,8 @@ func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]c
 	return ports, nil
 }
 
-func (s *K8SService) CreateConfigMapFromData(instance *v1alpha1.Gerrit, configMapName string,
-	configMapData map[string]string, labels map[string]string, ownerReference metav1.Object) error {
+func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName string, configMapData map[string]string) error {
+	labels := platformHelper.GenerateLabels(instance.Name)
 	configMapObject := &coreV1Api.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
@@ -411,7 +438,7 @@ func (s *K8SService) CreateConfigMapFromData(instance *v1alpha1.Gerrit, configMa
 		Data: configMapData,
 	}
 
-	if err := controllerutil.SetControllerReference(ownerReference, configMapObject, s.Scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, configMapObject, s.Scheme); err != nil {
 		return errors.Wrapf(err, "Couldn't set reference for Config Map %v object", configMapObject.Name)
 	}
 
@@ -422,9 +449,62 @@ func (s *K8SService) CreateConfigMapFromData(instance *v1alpha1.Gerrit, configMa
 			if err != nil {
 				return errors.Wrapf(err, "Couldn't create Config Map %v object", cm.Name)
 			}
-			logV2.Info(fmt.Sprintf("ConfigMap %s/%s has been created", cm.Namespace, cm.Name))
+			log.Info(fmt.Sprintf("ConfigMap %s/%s has been created", cm.Namespace, cm.Name))
 		}
 		return errors.Wrapf(err, "Couldn't get ConfigMap %v object", configMapObject.Name)
 	}
 	return nil
+}
+
+func (s K8SService) CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error {
+	jsa := &jenkinsV1Api.JenkinsServiceAccount{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Spec: jenkinsV1Api.JenkinsServiceAccountSpec{
+			Type:        serviceAccountType,
+			Credentials: secretName,
+		},
+	}
+
+	_, err := s.JenkinsServiceAccountClient.Get(secretName, namespace, metav1.GetOptions{})
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			_, err = s.JenkinsServiceAccountClient.Create(jsa, namespace)
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s K8SService) CreateJenkinsScript(namespace string, configMap string) error {
+	js := &jenkinsV1Api.JenkinsScript{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMap,
+			Namespace: namespace,
+		},
+		Spec: jenkinsV1Api.JenkinsScriptSpec{
+			SourceCmName: configMap,
+		},
+	}
+
+	_, err := s.JenkinsScriptClient.Get(configMap, namespace, metav1.GetOptions{})
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			_, err = s.JenkinsScriptClient.Create(js, namespace)
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	}
+	return nil
+
 }

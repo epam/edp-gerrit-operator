@@ -21,12 +21,7 @@ func LogErrorAndReturn(err error) error {
 	return err
 }
 
-// GenerateLabels returns initialized map using name parameter
-func GenerateLabels(name string) map[string]string {
-	return map[string]string{
-		"app": name,
-	}
-}
+
 
 // GeneratePrivateKey generates private key
 func generatePrivateKey() (*rsa.PrivateKey, error) {

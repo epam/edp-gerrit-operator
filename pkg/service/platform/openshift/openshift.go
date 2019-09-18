@@ -6,6 +6,7 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
+	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/k8s"
 	appsV1Api "github.com/openshift/api/apps/v1"
 	routeV1Api "github.com/openshift/api/route/v1"
@@ -214,7 +215,7 @@ func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", gerrit.Name, projectName),
 			Namespace: gerrit.Namespace,
-			Labels:    helpers.GenerateLabels(gerrit.Name),
+			Labels:    platformHelper.GenerateLabels(gerrit.Name),
 		},
 		Volumes: []securityV1Api.FSType{
 			securityV1Api.FSTypeSecret,
@@ -298,7 +299,7 @@ func newGerritRoute(name, namespace string) *routeV1Api.Route {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			Labels:    helpers.GenerateLabels(name),
+			Labels:    platformHelper.GenerateLabels(name),
 		},
 		Spec: routeV1Api.RouteSpec{
 			TLS: &routeV1Api.TLSConfig{
@@ -317,7 +318,7 @@ func newGerritRoute(name, namespace string) *routeV1Api.Route {
 }
 
 func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *appsV1Api.DeploymentConfig {
-	labels := helpers.GenerateLabels(gerrit.Name)
+	labels := platformHelper.GenerateLabels(gerrit.Name)
 	return &appsV1Api.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gerrit.Name,

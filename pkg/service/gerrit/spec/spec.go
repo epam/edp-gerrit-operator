@@ -58,26 +58,6 @@ const (
 	//Gerrit port
 	GerritPort = "8080"
 
-	DefaultConfigFilesAbsolutePath = "/usr/local/"
-
-	//LocalConfigsRelativePath - default directory for configs
-	LocalConfigsRelativePath = "configs"
-
-	//DefaultScriptsDirectory
-	DefaultTemplatesDirectory = "templates"
-
-	//DefaultTemplatesDirectory
-	DefaultScriptsDirectory = "scripts"
-
-	//LocalTemplatesRelativePath - default directory for templates
-	LocalTemplatesRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultTemplatesDirectory
-
-	//LocalScriptsRelativePath - scripts
-	LocalScriptsRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultScriptsDirectory
-
-	//JenkinsPluginConfigFileName
-	JenkinsPluginConfigFileName = "config-gerrit-plugin.tmpl"
-
 	//GerritCIToolsGroupName - default group name for Continuous Integration users
 	GerritCIToolsGroupName = "Continuous Integration Tools"
 

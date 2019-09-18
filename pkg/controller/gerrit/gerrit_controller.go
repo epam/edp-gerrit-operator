@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	logPrint "log"
 	"time"
 
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit"
@@ -129,7 +128,7 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	if instance.Status.Status == "" || instance.Status.Status == StatusFailed {
-		logPrint.Printf("[INFO] Installation of %v/%v object with name has been started", instance.Namespace, instance.Name)
+		reqLogger.Info(fmt.Sprintf("%v/%v Gerrit installation started", instance.Namespace, instance.Name))
 		err = r.updateStatus(instance, StatusInstall)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
@@ -138,27 +137,29 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 
 	instance, err = r.service.Install(instance)
 	if err != nil {
-		logPrint.Printf("[ERROR] Cannot install Gerrit %s. The reason: %s", instance.Name, err)
+		reqLogger.Info(fmt.Sprintf("%s/%s Gerrit installation failed!",instance.Name, instance.Namespace))
 		r.resourceActionFailed(instance, err)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
 
 	if instance.Status.Status == StatusInstall {
-		logPrint.Printf("[INFO] Installation of %v/%v object with name has been finished", instance.Namespace, instance.Name)
+		reqLogger.Info(fmt.Sprintf("%v/%v Gerrit has been installed", instance.Namespace, instance.Name))
 		r.updateStatus(instance, StatusCreated)
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	if dcIsReady, err := r.service.IsDeploymentConfigReady(*instance); err != nil {
-		logPrint.Printf("[ERROR] Checking if Deployment config for %v/%v object is ready has been failed", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("Failed to check Deployment config for %v/%v object!", instance.Namespace, instance.Name)
+		reqLogger.Info(msg)
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	} else if !dcIsReady {
-		logPrint.Printf("[WARNING] Deployment config for %v/%v object is not ready for configuration yet", instance.Namespace, instance.Name)
+		reqLogger.Info(fmt.Sprintf("Deployment config for %v/%v object is not ready for configuration yet", instance.Namespace, instance.Name))
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	if instance.Status.Status == StatusCreated || instance.Status.Status == "" {
-		logPrint.Printf("[INFO] Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("Configuration for %v/%v object has started", instance.Namespace, instance.Name)
+		reqLogger.Info(msg)
 		err := r.updateStatus(instance, StatusConfiguring)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
@@ -167,25 +168,27 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 
 	instance, dcPatched, err := r.service.Configure(instance)
 	if err != nil {
-		logPrint.Printf("[ERROR] Configuration of %v/%v object has been failed\n%v", instance.Namespace, instance.Name, err)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		msg := fmt.Sprintf("%v/%v Gerrit configuration has failed", instance.Namespace, instance.Name)
+		reqLogger.Info(msg)
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
 
 	if dcPatched {
-		logPrint.Printf("[INFO] Restarting deployment after configuration changed")
+		reqLogger.Info("Restarting deployment after configuration change")
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	if dcIsReady, err := r.service.IsDeploymentConfigReady(*instance); err != nil {
-		logPrint.Printf("[ERROR] Checking if Deployment config for %v/%v object is ready has been failed", instance.Namespace, instance.Name)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		reqLogger.Info(fmt.Sprintf("Failed to check Deployment config for %v/%v Gerrit!", instance.Namespace, instance.Name))
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	} else if !dcIsReady {
-		logPrint.Printf("[WARNING] Deployment config for %v/%v object is not ready for configuration yet", instance.Namespace, instance.Name)
+		reqLogger.Info(fmt.Sprintf("Deployment config for %v/%v Gerrit is not ready for configuration yet", instance.Namespace, instance.Name))
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	if instance.Status.Status == StatusConfiguring {
-		logPrint.Printf("[INFO] Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("%v/%v Gerrit configuration has finished", instance.Namespace, instance.Name)
+		reqLogger.Info(msg)
 		err = r.updateStatus(instance, StatusConfigured)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
@@ -227,7 +230,8 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	if instance.Status.Status == StatusIntegrationStart {
-		logPrint.Printf("[INFO] Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
+		reqLogger.Info(msg)
 		err = r.updateStatus(instance, StatusReady)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
@@ -236,7 +240,8 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 
 	err = r.updateAvailableStatus(instance, true)
 	if err != nil {
-		logPrint.Printf("[WARNING] Failed update avalability status for Gerrit object with name %s", instance.Name)
+		msg := fmt.Sprintf("Failed update avalability status for Gerrit object with name %s", instance.Name)
+		reqLogger.Info(msg)
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
@@ -254,8 +259,7 @@ func (r *ReconcileGerrit) updateStatus(instance *v1alpha1.Gerrit, status string)
 			return err
 		}
 	}
-
-	logPrint.Printf("Status for Gerrit %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated)
+	log.Info(fmt.Sprintf("Status for Gerrit %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
 	return nil
 }
 

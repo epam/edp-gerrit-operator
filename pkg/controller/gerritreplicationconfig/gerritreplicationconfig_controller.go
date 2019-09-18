@@ -13,6 +13,7 @@ import (
 	gerritService "github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
+	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -285,14 +286,14 @@ func (r *ReconcileGerritReplicationConfig) setOwnerReference(gerritInstance *v1a
 }
 
 func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1.GerritReplicationConfig, gerrit *v1alpha1.Gerrit) error {
-	GerritTemplatesPath := spec.LocalTemplatesRelativePath
+	GerritTemplatesPath := platformHelper.LocalTemplatesRelativePath
 	executableFilePath, err := serviceHelper.GetExecutableFilePath()
 	if err != nil {
 		return err
 	}
 
 	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		GerritTemplatesPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, spec.LocalConfigsRelativePath, spec.DefaultTemplatesDirectory)
+		GerritTemplatesPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
 	}
 
 	podList, err := r.platform.GetPods(gerrit.Namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", gerrit.Name)})

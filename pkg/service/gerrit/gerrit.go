@@ -1,7 +1,6 @@
 package gerrit
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/dchest/uniuri"
@@ -10,8 +9,8 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
-	serviceHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
+	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
 	jenkinsHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
 	"github.com/google/uuid"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -25,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"strconv"
-	"text/template"
 )
 
 var log = logf.Log.WithName("service_gerrit")
@@ -122,9 +120,9 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, errors.Wrapf(err, "Unable to get executable file path")
 	}
 
-	GerritScriptsPath := spec.LocalScriptsRelativePath
+	GerritScriptsPath := platformHelper.LocalScriptsRelativePath
 	if _, err = k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, spec.LocalConfigsRelativePath, spec.DefaultScriptsDirectory))
+		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
 	sshPortService, err := s.GetServicePort(instance)
@@ -317,9 +315,23 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 			instance.Namespace, instance.Name)
 	}
 
-	_, ciUserPublicKey, err := s.createSSHKeyPairs(instance, instance.Name+"-ciuser"+spec.SshKeyPostfix)
+	privateKey, publicKey, err := helpers.GenerateKeyPairs()
 	if err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Gerrit CI User SSH keypair %v/%v", instance.Namespace, instance.Name)
+		return instance, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
+	}
+
+	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s",instance.Name, spec.SshKeyPostfix)
+	if err := s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
+		"username": []byte(fmt.Sprintf("%s-ciuser",instance.Name)),
+		"id_rsa":     privateKey,
+		"id_rsa.pub": publicKey,
+	}); err != nil {
+		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
+	}
+
+	err = s.PlatformService.CreateJenkinsServiceAccount(instance.Namespace, ciUserSshSecretName,"ssh")
+	if err != nil {
+		return instance, errors.Wrapf(err, "Failed to create Jenkins Service Account %s", ciUserSshSecretName)
 	}
 
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
@@ -328,7 +340,7 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 
 	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials["password"]),
-		"CI Jenkins", string(ciUserPublicKey)); err != nil {
+		"CI Jenkins", string(publicKey)); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", spec.GerritDefaultCiUserUser)
 	}
 
@@ -603,15 +615,6 @@ func (s ComponentService) setAnnotation(instance *v1alpha1.Gerrit, key string, v
 }
 
 func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerrit) error {
-	executableFilePath, err := helper.GetExecutableFilePath()
-	if err != nil {
-		return errors.Wrapf(err, "Unable to get executable file path")
-	}
-	templatesDirectoryPath := spec.LocalTemplatesRelativePath
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		templatesDirectoryPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, spec.LocalConfigsRelativePath, spec.DefaultTemplatesDirectory)
-	}
-
 	route, scheme, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
@@ -622,51 +625,35 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerr
 		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)
 	}
 
-	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix))
+	ciUserCredentialsName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserCredentialsName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Secret for CI user for %v/%v", instance.Namespace, instance.Name)
 	}
 
-	var jenkinsPluginConfigurationScriptContext bytes.Buffer
-	templateAbsolutePath := fmt.Sprintf("%v/%v", templatesDirectoryPath, spec.JenkinsPluginConfigFileName)
-	t := template.Must(template.New(spec.JenkinsPluginConfigFileName).ParseFiles(templateAbsolutePath))
-	data := struct {
-		ServerName   string
-		ExternalUrl  string
-		SshPort      int32
-		UserName     string
-		HttpPassword string
-	}{
-		instance.Name,
-		fmt.Sprintf("%v://%v", scheme, route.Spec.Host),
-		sshPort,
-		string(ciUserCredentials["user"]),
-		string(ciUserCredentials["password"]),
-	}
-	err = t.Execute(&jenkinsPluginConfigurationScriptContext, data)
-	if err != nil {
-		return errors.Wrapf(err, "Couldn't parse template %v", spec.JenkinsPluginConfigFileName)
-	}
+	externalUrl := fmt.Sprintf("%v://%v", scheme, route.Spec.Host)
+	jenkinsPluginInfo := platformHelper.InitNewJenkinsPluginInfo()
+	jenkinsPluginInfo.ServerName = instance.Name
+	jenkinsPluginInfo.ExternalUrl = externalUrl
+	jenkinsPluginInfo.SshPort = sshPort
+	jenkinsPluginInfo.UserName = string(ciUserCredentials["user"])
+	jenkinsPluginInfo.HttpPassword = string(ciUserCredentials["password"])
 
-	jenkinsPluginConfigurationName := fmt.Sprintf("%v-%v", instance.Name, spec.JenkinsPluginConfigPostfix)
-
-	jenkinsScript, err := jenkinsHelper.CreateJenkinsScript(
-		jenkinsHelper.K8sClient{s.k8sClient, s.k8sScheme},
-		jenkinsPluginConfigurationName,
-		jenkinsPluginConfigurationName,
-		instance.Namespace,
-		false,
-		nil)
-	if err != nil {
-		return errors.Wrapf(err, "Couldn't create Jenkins Script %v", jenkinsPluginConfigurationName)
-	}
-
-	labels := serviceHelper.GenerateLabels(instance.Name)
-	configMapData := map[string]string{jenkinsHelper.JenkinsDefaultScriptConfigMapKey: jenkinsPluginConfigurationScriptContext.String()}
-	err = s.PlatformService.CreateConfigMapFromData(instance, jenkinsPluginConfigurationName, configMapData, labels, jenkinsScript)
+	jenkinsScriptContext, err := platformHelper.ParseDefaultTemplate(jenkinsPluginInfo)
 	if err != nil {
 		return err
 	}
+
+	jenkinsPluginConfigurationName := fmt.Sprintf("%v-%v", instance.Name, spec.JenkinsPluginConfigPostfix)
+	configMapData := map[string]string{
+		jenkinsHelper.JenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
+	}
+	err = s.PlatformService.CreateConfigMap(instance, jenkinsPluginConfigurationName, configMapData)
+	if err != nil {
+		return err
+	}
+
+	err = s.PlatformService.CreateJenkinsScript(instance.Namespace, jenkinsPluginConfigurationName)
 
 	return nil
 }
