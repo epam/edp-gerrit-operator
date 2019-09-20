@@ -13,6 +13,7 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller"
 	jenkinsApis "github.com/epmd-edp/jenkins-operator/v2/pkg/apis"
+	keycloakApis "github.com/epmd-edp/keycloak-operator/pkg/apis"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
@@ -101,6 +102,11 @@ func main() {
 	}
 
 	if err := jenkinsApis.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	if err := keycloakApis.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

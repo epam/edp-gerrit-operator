@@ -30,7 +30,7 @@ type PlatformService interface {
 	GetService(namespace string, name string) (*coreV1Api.Service, error)
 	PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error
 	UpdateService(svc coreV1Api.Service, port int32) error
-	GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV1Api.EnvVar
+	GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]coreV1Api.EnvVar, error)
 	CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error
 	CreateJenkinsScript(namespace string, configMap string) error
 	CreateConfigMap(instance *v1alpha1.Gerrit, configMapName string, configMapData map[string]string) error

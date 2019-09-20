@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/client"
@@ -11,18 +12,22 @@ import (
 	jenkinsV1Api "github.com/epmd-edp/jenkins-operator/v2/pkg/apis/v2/v1alpha1"
 	jenkinsScriptV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/client"
 	JenkinsSAV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsserviceaccount/client"
+	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
@@ -36,6 +41,7 @@ type K8SService struct {
 	EdpClient                   *client.EdpV1Client
 	JenkinsServiceAccountClient *JenkinsSAV1Client.EdpV1Client
 	JenkinsScriptClient         *jenkinsScriptV1Client.EdpV1Client
+	k8sClient                   k8sclient.Client
 }
 
 // Init process with K8SService instance initialization actions
@@ -66,13 +72,28 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	}
 	s.JenkinsScriptClient = jenkinsScriptClient
 
+	cl, err := k8sclient.New(config, k8sclient.Options{
+		Scheme: s.Scheme,
+	})
+	s.k8sClient = cl
+
 	return nil
 }
 
 // GenerateKeycloakSettings generates a set of environment var
-func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV1Api.EnvVar {
+func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]coreV1Api.EnvVar, error) {
 	identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
-	return []coreV1Api.EnvVar{
+	realm, err := s.getKeycloakRealm(instance)
+	if err != nil {
+		return nil, nil
+	}
+
+	keycloakUrl, err := s.getKeycloakRootUrl(instance)
+	if err != nil {
+		return nil, nil
+	}
+
+	envVar := []coreV1Api.EnvVar{
 		{
 			Name:  "AUTH_TYPE",
 			Value: "OAUTH",
@@ -83,11 +104,11 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV
 		},
 		{
 			Name:  "OAUTH_KEYCLOAK_REALM",
-			Value: instance.Spec.KeycloakSpec.Realm,
+			Value: realm.Spec.RealmName,
 		},
 		{
 			Name:  "OAUTH_KEYCLOAK_ROOT_URL",
-			Value: instance.Spec.KeycloakSpec.Url,
+			Value: *keycloakUrl,
 		},
 		{
 			Name: "OAUTH_KEYCLOAK_CLIENT_SECRET",
@@ -101,6 +122,50 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) []coreV
 			},
 		},
 	}
+
+	return &envVar, nil
+}
+
+func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakRealm, error) {
+	realm := &keycloakApi.KeycloakRealm{}
+	err := s.k8sClient.Get(context.TODO(), types.NamespacedName{
+		Name:      "main",
+		Namespace: instance.Namespace,
+	}, realm)
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return realm, nil
+}
+
+func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, error) {
+	realm, err := s.getKeycloakRealm(instance)
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	keycloak := &keycloakApi.Keycloak{}
+	err = s.k8sClient.Get(context.TODO(), types.NamespacedName{
+		Name:      realm.OwnerReferences[0].Name,
+		Namespace: instance.Namespace,
+	}, keycloak)
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	keycloakUrl := keycloak.Spec.Url
+
+	return &keycloakUrl, nil
 }
 
 // GetSecret return data field of Secret
@@ -225,7 +290,7 @@ func (s *K8SService) CreateServiceAccount(gerrit *v1alpha1.Gerrit) (account *cor
 
 	if account, e = s.CoreClient.ServiceAccounts(gerritSAObject.Namespace).Get(gerritSAObject.Name, metav1.GetOptions{}); e != nil {
 		if k8serr.IsNotFound(e) {
-			msg := fmt.Sprintf("Creating a new ServiceAccount %s for Gerrit %s/%s",gerritSAObject.Name, gerrit.Name, gerrit.Name)
+			msg := fmt.Sprintf("Creating a new ServiceAccount %s for Gerrit %s/%s", gerritSAObject.Name, gerrit.Name, gerrit.Name)
 			log.V(1).Info(msg)
 			if account, e = s.CoreClient.ServiceAccounts(gerritSAObject.Namespace).Create(gerritSAObject); e != nil {
 				return nil, helpers.LogErrorAndReturn(e)
@@ -288,7 +353,7 @@ func (s *K8SService) createGerritPersistentVolume(gerrit *v1alpha1.Gerrit, gerri
 
 	if _, err := s.CoreClient.PersistentVolumeClaims(gerritVolumeObject.Namespace).Get(gerritVolumeObject.Name, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			msg := fmt.Sprintf("Creating a new PersistantVolumeClaim %s for %s/%s", gerritVolumeObject.Name,gerrit.Namespace, gerrit.Name)
+			msg := fmt.Sprintf("Creating a new PersistantVolumeClaim %s for %s/%s", gerritVolumeObject.Name, gerrit.Namespace, gerrit.Name)
 			log.V(1).Info(msg)
 			if _, err = s.CoreClient.PersistentVolumeClaims(gerritVolumeObject.Namespace).Create(gerritVolumeObject); err != nil {
 				return err
@@ -312,7 +377,7 @@ func (s *K8SService) createGerritService(serviceName string, gerrit *v1alpha1.Ge
 
 	if _, err := s.CoreClient.Services(gerrit.Namespace).Get(serviceName, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			msg := fmt.Sprintf("Creating a new service %s for gerrit %s/%s",gerritServiceObject.Name, gerrit.Namespace, gerrit.Name)
+			msg := fmt.Sprintf("Creating a new service %s for gerrit %s/%s", gerritServiceObject.Name, gerrit.Namespace, gerrit.Name)
 			log.V(1).Info(msg)
 			if _, err = s.CoreClient.Services(gerritServiceObject.Namespace).Create(gerritServiceObject); err != nil {
 				return err
@@ -409,7 +474,7 @@ func newRestConfig() (*rest.Config, error) {
 	)
 	restConfig, err := config.ClientConfig()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	return restConfig, nil

@@ -12,12 +12,16 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
 	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
 	jenkinsHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
+	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
+	v1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -320,16 +324,16 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		return instance, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
 	}
 
-	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s",instance.Name, spec.SshKeyPostfix)
+	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 	if err := s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
-		"username": []byte(ciUserSshSecretName),
+		"username":   []byte(ciUserSshSecretName),
 		"id_rsa":     privateKey,
 		"id_rsa.pub": publicKey,
 	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
 
-	err = s.PlatformService.CreateJenkinsServiceAccount(instance.Namespace, ciUserSshSecretName,"ssh")
+	err = s.PlatformService.CreateJenkinsServiceAccount(instance.Namespace, ciUserSshSecretName, "ssh")
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Jenkins Service Account %s", ciUserSshSecretName)
 	}
@@ -403,26 +407,94 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 // Integrate applies actions required for the integration with the other EDP Components
 func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	route, scheme, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	externalUrl := fmt.Sprintf("%v://%v", scheme, route.Spec.Host)
+
 	if instance.Spec.KeycloakSpec.Enabled {
-		keycloakEnvironmentValue := s.PlatformService.GenerateKeycloakSettings(instance)
+		client, err := s.getKeycloakClient(instance)
+		if err != nil {
+			return instance, err
+		}
+
+		if client == nil {
+			err = s.createKeycloakClient(*instance, externalUrl)
+			if err != nil {
+				return instance, err
+			}
+		}
+
+		keycloakEnvironmentValue, err := s.PlatformService.GenerateKeycloakSettings(instance)
+		if err != nil {
+			return instance, err
+		}
 
 		deployConf, err := s.PlatformService.GetDeploymentConfig(*instance)
 		if err != nil {
 			return instance, err
 		}
-		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, keycloakEnvironmentValue); err != nil {
+		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, *keycloakEnvironmentValue); err != nil {
 			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to add identity service information"))
 		}
 	} else {
 		log.V(1).Info("Keycloak integration not enabled.")
 	}
 
-	err := s.configureGerritPluginInJenkins(instance)
+	err = s.configureGerritPluginInJenkins(instance, *route, scheme)
 	if err != nil {
 		return nil, err
 	}
 
 	return instance, nil
+}
+
+func (s ComponentService) getKeycloakClient(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakClient, error) {
+	client := &keycloakApi.KeycloakClient{}
+	err := s.k8sClient.Get(context.TODO(), types.NamespacedName{
+		Name:      instance.Name,
+		Namespace: instance.Namespace,
+	}, client)
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return client, nil
+}
+
+func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externalUrl string) error {
+	client := &keycloakApi.KeycloakClient{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "KeycloakClient",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		},
+		Spec: keycloakApi.KeycloakClientSpec{
+			ClientId:                instance.Name,
+			Public:                  true,
+			WebUrl:                  externalUrl,
+			AdvancedProtocolMappers: true,
+			RealmRoles: &[]keycloakApi.RealmRole{
+				{
+					Name:      "gerrit-administrators",
+					Composite: "administrator",
+				},
+				{
+					Name:      "gerrit-users",
+					Composite: "developer",
+				},
+			},
+		},
+	}
+
+	return s.k8sClient.Create(context.TODO(), client)
 }
 
 func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
@@ -614,12 +686,7 @@ func (s ComponentService) setAnnotation(instance *v1alpha1.Gerrit, key string, v
 	}
 }
 
-func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerrit) error {
-	route, scheme, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
-	}
-
+func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerrit, route v1.Route, scheme string) error {
 	sshPort, err := s.GetServicePort(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)

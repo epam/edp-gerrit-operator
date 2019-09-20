@@ -10,6 +10,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/epmd-edp/jenkins-operator/v2 v2.1.0-43
+	github.com/epmd-edp/keycloak-operator v1.0.29-alpha-54
 	github.com/go-openapi/spec v0.19.3
 	github.com/google/uuid v1.1.1
 	github.com/openshift/api v3.9.0+incompatible
