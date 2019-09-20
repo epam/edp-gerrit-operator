@@ -480,7 +480,7 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 			ClientId:                instance.Name,
 			Public:                  true,
 			WebUrl:                  externalUrl,
-			AdvancedProtocolMappers: true,
+			AdvancedProtocolMappers: false,
 			RealmRoles: &[]keycloakApi.RealmRole{
 				{
 					Name:      "gerrit-administrators",

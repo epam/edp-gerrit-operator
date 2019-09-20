@@ -63,6 +63,7 @@ github.com/epmd-edp/keycloak-operator v1.0.28-alpha-53 h1:o64nXwRlslZOodZxA9dQ23
 github.com/epmd-edp/keycloak-operator v1.0.28-alpha-53/go.mod h1:n78SGdVQhCkr29STKtz2qKDnYBiWk4TUoGATKF6nOH8=
 github.com/epmd-edp/keycloak-operator v1.0.29-alpha-54 h1:vEGYDZnOIP2Q9CbBYQn80QG9qT42swVBF45gqvco/yc=
 github.com/epmd-edp/keycloak-operator v1.0.29-alpha-54/go.mod h1:n78SGdVQhCkr29STKtz2qKDnYBiWk4TUoGATKF6nOH8=
+github.com/epmd-edp/keycloak-operator v1.0.30-alpha-55/go.mod h1:n78SGdVQhCkr29STKtz2qKDnYBiWk4TUoGATKF6nOH8=
 github.com/evanphx/json-patch v4.0.0+incompatible h1:xregGRMLBeuRcwiOTHRCsPPuzCQlqhxUPbqdw+zNkLc=
 github.com/evanphx/json-patch v4.0.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.5.0+incompatible h1:ouOWdg56aJriqS0huScTkVXPC5IcNrDCXZ6OoTAWu7M=
