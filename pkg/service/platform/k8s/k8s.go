@@ -15,7 +15,6 @@ import (
 	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,12 +84,12 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]cor
 	identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
 	realm, err := s.getKeycloakRealm(instance)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	keycloakUrl, err := s.getKeycloakRootUrl(instance)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	envVar := []coreV1Api.EnvVar{
@@ -133,9 +132,6 @@ func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.Ke
 		Namespace: instance.Namespace,
 	}, realm)
 	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 
@@ -145,9 +141,6 @@ func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.Ke
 func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, error) {
 	realm, err := s.getKeycloakRealm(instance)
 	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 
@@ -157,9 +150,6 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 		Namespace: instance.Namespace,
 	}, keycloak)
 	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 
