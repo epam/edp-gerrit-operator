@@ -39,7 +39,7 @@ func (gc Client) CheckCredentials() (int, error) {
 		SetHeader("accept", "application/json").
 		Get("config/server/summary")
 	if err != nil {
-		return 401, errors.Wrapf(err, "Unable to verify Gerrit credentials")
+		return 0, errors.Wrapf(err, "Unable to verify Gerrit credentials")
 	}
 
 	return resp.StatusCode(), nil

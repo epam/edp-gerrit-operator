@@ -189,6 +189,9 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	status, err := s.gerritClient.CheckCredentials()
+	if (status != 401 && status >= 400 && status <= 600) || err != nil {
+		return instance, false, errors.Wrapf(err, "Failed to check credentials in Gerrit")
+	}
 
 	if status == 401 {
 		err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, spec.GerritDefaultAdminPassword)
@@ -196,6 +199,9 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			return instance, false, errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 		}
 		status, err = s.gerritClient.CheckCredentials()
+		if (status != 401 && status >= 400 && status <= 600) || err != nil {
+			return instance, false, errors.Wrapf(err, "Failed to check credentials in Gerrit")
+		}
 
 		if status == 401 {
 			instance, err := s.gerritClient.InitAdminUser(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
