@@ -580,19 +580,27 @@ func (s ComponentService) getGerritAdminPassword(instance *v1alpha1.Gerrit) (str
 }
 
 func (s ComponentService) createSSHKeyPairs(instance *v1alpha1.Gerrit, secretName string) ([]byte, []byte, error) {
-	privateKey, publicKey, err := helpers.GenerateKeyPairs()
+	secretData, err := s.PlatformService.GetSecretData(instance.Namespace, secretName)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
+		return nil, nil, errors.Wrapf(err, "Unable to get data from secret %v", secretName)
 	}
 
-	if err := s.PlatformService.CreateSecret(instance, secretName, map[string][]byte{
-		"id_rsa":     privateKey,
-		"id_rsa.pub": publicKey,
-	}); err != nil {
-		return nil, nil, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
+	if secretData == nil {
+		privateKey, publicKey, err := helpers.GenerateKeyPairs()
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
+		}
+
+		if err := s.PlatformService.CreateSecret(instance, secretName, map[string][]byte{
+			"id_rsa":     privateKey,
+			"id_rsa.pub": publicKey,
+		}); err != nil {
+			return nil, nil, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
+		}
+		return privateKey, publicKey, nil
 	}
 
-	return privateKey, publicKey, nil
+	return secretData["id_rsa"], secretData["id_rsa.pub"], nil
 }
 
 func (s ComponentService) setGerritAdminUserPassword(instance v1alpha1.Gerrit, gerritUrl, gerritAdminPassword,
