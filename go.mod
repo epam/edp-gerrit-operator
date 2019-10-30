@@ -6,11 +6,9 @@ replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
 
 require (
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
-	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
-	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/epmd-edp/jenkins-operator/v2 v2.1.0-43
-	github.com/epmd-edp/keycloak-operator v1.0.30-alpha-55
+	github.com/epmd-edp/edp-component-operator v0.0.1-2
+	github.com/epmd-edp/jenkins-operator/v2 v2.2.0-92
+	github.com/epmd-edp/keycloak-operator v1.0.31-alpha-56
 	github.com/go-openapi/spec v0.19.3
 	github.com/google/uuid v1.1.1
 	github.com/openshift/api v3.9.0+incompatible

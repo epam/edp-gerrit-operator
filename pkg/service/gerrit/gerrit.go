@@ -1,7 +1,9 @@
 package gerrit
 
 import (
+	"bufio"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/dchest/uniuri"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
@@ -12,16 +14,19 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
 	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
 	jenkinsHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
+	jenPlatformHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
 	v1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -31,6 +36,11 @@ import (
 )
 
 var log = logf.Log.WithName("service_gerrit")
+
+const (
+	imgFolder  = "img"
+	gerritIcon = "gerrit.svg"
+)
 
 // Interface expresses behaviour of the Gerrit EDP Component
 type Interface interface {
@@ -408,7 +418,50 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		s.setAnnotation(instance, annotationKey, fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
 		_ = s.k8sClient.Update(context.TODO(), instance)
 	}
-	return instance, nil
+
+	err = s.createEDPComponent(*instance)
+
+	return instance, err
+}
+
+func (s ComponentService) createEDPComponent(gerrit v1alpha1.Gerrit) error {
+	url, err := s.getUrl(gerrit)
+	if err != nil {
+		return err
+	}
+	icon, err := getIcon()
+	if err != nil {
+		return err
+	}
+	return s.PlatformService.CreateEDPComponentIfNotExist(gerrit, *url, *icon)
+}
+
+func (s ComponentService) getUrl(gerrit v1alpha1.Gerrit) (*string, error) {
+	route, scheme, err := s.PlatformService.GetRoute(gerrit.Namespace, gerrit.Name)
+	if err != nil {
+		return nil, err
+	}
+	url := fmt.Sprintf("%v://%v", scheme, route.Spec.Host)
+	return &url, nil
+}
+
+func getIcon() (*string, error) {
+	p, err := jenPlatformHelper.CreatePathToTemplateDirectory(imgFolder)
+	if err != nil {
+		return nil, err
+	}
+	fp := fmt.Sprintf("%v/%v", p, gerritIcon)
+	f, err := os.Open(fp)
+	if err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(f)
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	encoded := base64.StdEncoding.EncodeToString(content)
+	return &encoded, nil
 }
 
 // Integrate applies actions required for the integration with the other EDP Components

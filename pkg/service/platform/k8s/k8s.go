@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	edpCompApi "github.com/epmd-edp/edp-component-operator/pkg/apis/v1/v1alpha1"
+	edpCompClient "github.com/epmd-edp/edp-component-operator/pkg/client"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/client"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
@@ -41,6 +43,7 @@ type K8SService struct {
 	JenkinsServiceAccountClient *JenkinsSAV1Client.EdpV1Client
 	JenkinsScriptClient         *jenkinsScriptV1Client.EdpV1Client
 	k8sClient                   k8sclient.Client
+	edpCompClient               edpCompClient.EDPComponentV1Client
 }
 
 // Init process with K8SService instance initialization actions
@@ -75,6 +78,12 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 		Scheme: s.Scheme,
 	})
 	s.k8sClient = cl
+
+	compCl, err := edpCompClient.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "failed to init edp component client")
+	}
+	s.edpCompClient = *compCl
 
 	return nil
 }
@@ -562,4 +571,38 @@ func (s K8SService) CreateJenkinsScript(namespace string, configMap string) erro
 	}
 	return nil
 
+}
+
+func (s K8SService) CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error {
+	comp, err := s.edpCompClient.
+		EDPComponents(gerrit.Namespace).
+		Get(gerrit.Name, metav1.GetOptions{})
+	if err == nil {
+		log.Info("edp component already exists", "name", comp.Name)
+		return nil
+	}
+	if k8serr.IsNotFound(err) {
+		return s.createEDPComponent(gerrit, url, icon)
+	}
+	return errors.Wrapf(err, "failed to get edp component: %v", gerrit.Name)
+}
+
+func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon string) error {
+	obj := &edpCompApi.EDPComponent{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: gerrit.Name,
+		},
+		Spec: edpCompApi.EDPComponentSpec{
+			Type: "gerrit",
+			Url:  url,
+			Icon: icon,
+		},
+	}
+	if err := controllerutil.SetControllerReference(&gerrit, obj, s.Scheme); err != nil {
+		return err
+	}
+	_, err := s.edpCompClient.
+		EDPComponents(gerrit.Namespace).
+		Create(obj)
+	return err
 }

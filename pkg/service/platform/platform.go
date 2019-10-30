@@ -34,6 +34,7 @@ type PlatformService interface {
 	CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error
 	CreateJenkinsScript(namespace string, configMap string) error
 	CreateConfigMap(instance *v1alpha1.Gerrit, configMapName string, configMapData map[string]string) error
+	CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided
