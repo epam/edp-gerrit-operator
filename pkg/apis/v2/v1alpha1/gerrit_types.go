@@ -26,6 +26,7 @@ type GerritSpec struct {
 	Volumes      []GerritVolumes `json:"volumes,omitempty"`
 	KeycloakSpec KeycloakSpec    `json:"keycloakSpec"`
 	Users        []GerritUsers   `json:"users, omitempty"`
+	SshPort      int             `json:"sshPort, omitempty"`
 }
 
 type GerritUsers struct {

@@ -4,6 +4,7 @@ metadata:
   name: example-gerrit
 spec:
   type: "Gerrit"
+  sshPort: ""
   version: '2.16.10'
   keycloakSpec:
     enabled: false
