@@ -367,7 +367,7 @@ func (s *K8SService) createGerritPersistentVolume(gerrit *v1alpha1.Gerrit, gerri
 }
 
 func (s *K8SService) createGerritService(serviceName string, gerrit *v1alpha1.Gerrit) error {
-	portMap := newGerritPortMap(gerrit.Name)
+	portMap := newGerritPortMap(*gerrit)
 	gerritServiceObject := newGerritInternalBalancingService(serviceName, gerrit.Namespace, portMap[serviceName])
 
 	if err := controllerutil.SetControllerReference(gerrit, gerritServiceObject, s.Scheme); err != nil {
@@ -421,20 +421,38 @@ func newGerritPersistentVolumeClaim(volume v1alpha1.GerritVolumes, gerritName, n
 	}
 }
 
-func newGerritPortMap(gerritName string) map[string][]coreV1Api.ServicePort {
-	return map[string][]coreV1Api.ServicePort{
-		gerritName: {
-			{
-				TargetPort: intstr.IntOrString{StrVal: "ui"},
-				Port:       spec.Port,
-				Name:       "ui",
+func newGerritPortMap(i v1alpha1.Gerrit) map[string][]coreV1Api.ServicePort {
+	if i.Spec.SshPort != 0 {
+		return map[string][]coreV1Api.ServicePort{
+			i.Name: {
+				{
+					TargetPort: intstr.IntOrString{StrVal: "ui"},
+					Port:       spec.Port,
+					Name:       "ui",
+				},
+				{
+					TargetPort: intstr.IntOrString{StrVal: spec.SSHPortName},
+					Port:       spec.SSHPort,
+					Name:       spec.SSHPortName,
+					NodePort:   i.Spec.SshPort,
+				},
 			},
-			{
-				TargetPort: intstr.IntOrString{StrVal: spec.SSHPortName},
-				Port:       spec.SSHPort,
-				Name:       spec.SSHPortName,
+		}
+	} else {
+		return map[string][]coreV1Api.ServicePort{
+			i.Name: {
+				{
+					TargetPort: intstr.IntOrString{StrVal: "ui"},
+					Port:       spec.Port,
+					Name:       "ui",
+				},
+				{
+					TargetPort: intstr.IntOrString{StrVal: spec.SSHPortName},
+					Port:       spec.SSHPort,
+					Name:       spec.SSHPortName,
+				},
 			},
-		},
+		}
 	}
 }
 
