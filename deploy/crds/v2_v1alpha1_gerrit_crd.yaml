@@ -29,6 +29,12 @@ spec:
           type: object
         spec:
           properties:
+            image:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "operator-sdk generate k8s" to regenerate code after
+                modifying this file Add custom validation using kubebuilder tags:
+                https://book.kubebuilder.io/beyond_basics/generating_crd.html'
+              type: string
             keycloakSpec:
               properties:
                 enabled:
@@ -37,13 +43,7 @@ spec:
               - enabled
               type: object
             type:
-              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                Important: Run "operator-sdk generate k8s" to regenerate code after
-                modifying this file Add custom validation using kubebuilder tags:
-                https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: string
-            sshPort:
-              type: int32
             version:
               type: string
             volumes:
@@ -59,6 +59,7 @@ spec:
                 type: object
               type: array
           required:
+          - image
           - type
           - version
           - keycloakSpec

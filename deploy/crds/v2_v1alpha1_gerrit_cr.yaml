@@ -6,6 +6,7 @@ spec:
   type: "Gerrit"
   sshPort: 0
   version: '2.16.10'
+  image: "openfrontier/gerrit"
   keycloakSpec:
     enabled: false
     url: ""

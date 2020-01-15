@@ -1,9 +1,6 @@
 package spec
 
 const (
-	// Image = openfrontier/gerrit
-	Image = "openfrontier/gerrit"
-
 	// Port = 8080
 	Port = 8080
 

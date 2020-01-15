@@ -344,7 +344,7 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *app
 					Containers: []coreV1Api.Container{
 						{
 							Name:            gerrit.Name,
-							Image:           spec.Image + ":" + gerrit.Spec.Version,
+							Image:           fmt.Sprintf("%s:%s", gerrit.Spec.Image, gerrit.Spec.Version),
 							ImagePullPolicy: coreV1Api.PullIfNotPresent,
 							Env: []coreV1Api.EnvVar{
 								{
