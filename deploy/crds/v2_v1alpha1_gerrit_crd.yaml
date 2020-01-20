@@ -42,8 +42,6 @@ spec:
                 modifying this file Add custom validation using kubebuilder tags:
                 https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: string
-            sshPort:
-              type: int32
             version:
               type: string
             volumes:
