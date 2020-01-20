@@ -17,104 +17,78 @@ kind: Template
 metadata:
   name: "gerrit-operator"
   annotations:
-    iconClass: "icon-spring"
-    description: Openshift template for spring-boot application/service deploying
+    iconClass: icon-other
+    description: Openshift template for Other core application/service deploying
     template.openshift.io/provider-display-name: EPAM
     template.openshift.io/support-url: https://www.epam.com
 objects:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: "gerrit-operator"
-    labels:
-      app: "gerrit-operator"
-  spec:
-    ports:
-    - name: "gerrit-operator"
-      port: 8080
-      protocol: TCP
-      targetPort: 8080
-    selector:
-      app: "gerrit-operator"
-    type: ClusterIP
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: "gerrit-operator"
-
-
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    name: "gerrit-operator"
-    labels:
-      app: "gerrit-operator"
-  spec:
-    replicas: 1
-    selector:
-      app: "gerrit-operator"
-    strategy:
-      activeDeadlineSeconds: 21600
-      type: Rolling
-      rollingParams:
-        failurePolicy: Abort
-        intervalSeconds: 1
-        maxSurge: 25%
-        maxUnavailable: 25%
-        timeoutSeconds: 600
-        updatePeriodSeconds: 1
-    template:
-      metadata:
-        labels:
-          app: "gerrit-operator"
-      spec:
-
-        serviceAccountName: "gerrit-operator"
-        containers:
-        - name: "gerrit-operator"
-          image: "docker-registry.default.svc:5000/${IMAGE_NAME}:${APP_VERSION}"
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8080
-              protocol: TCP
-          livenessProbe:
-            failureThreshold: 5
-            initialDelaySeconds: 180
-            periodSeconds: 20
-            successThreshold: 1
-            tcpSocket:
-              port: 8080
-            timeoutSeconds: 5
-          readinessProbe:
-            failureThreshold: 5
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            successThreshold: 1
-            tcpSocket:
-              port: 8080
-            timeoutSeconds: 5
-          resources:
-            requests:
-              memory: 500Mi
-
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-    triggers:
-      - type: ConfigChange
+  - apiVersion: authorization.openshift.io/v1
+    kind: RoleBinding
+    metadata:
+      name: sonar-operator
+    roleRef:
+      name: edp-deploy-role
+    subjects:
+      - kind: ServiceAccount
+        name: edp
+        namespace: ${NAMESPACE}
+    userNames:
+      - system:serviceaccount:${NAMESPACE}:edp
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: edp
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: gerrit-operator
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          name: gerrit-operator
+      template:
+        metadata:
+          labels:
+            name: gerrit-operator
+        spec:
+          serviceAccountName: edp
+          securityContext:
+            runAsUser: 1001
+            runAsNonRoot: true
+            runAsGroup: 1001
+            fsGroup: 1001
+          containers:
+            - name: gerrit-operator
+              # Replace this with the built image name
+              image: "docker-registry.default.svc:5000/${IMAGE_NAME}:${APP_VERSION}"
+              command:
+                - gerrit-operator
+              imagePullPolicy: Always
+              securityContext:
+                allowPrivilegeEscalation: false
+              env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: "gerrit-operator"
+                - name: PLATFORM_TYPE
+                  value: "openshift"
 parameters:
-- displayName: Application image name
-  name: IMAGE_NAME
-  required: true
-  value: "gerrit-operator"
-- displayName: Application version
-  name: APP_VERSION
-  required: true
-  value: "latest"
-- displayName: Current namespace
-  name: NAMESPACE
-  required: true
+  - displayName: Application image name
+    name: IMAGE_NAME
+    required: true
+    value: gerrit-operator
+  - displayName: Application version
+    name: APP_VERSION
+    required: true
+    value: "latest"
+  - displayName: Current namespace
+    name: NAMESPACE
+    required: true
