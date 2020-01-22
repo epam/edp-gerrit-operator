@@ -25,7 +25,7 @@ objects:
   - apiVersion: authorization.openshift.io/v1
     kind: RoleBinding
     metadata:
-      name: sonar-operator
+      name: gerrit-operator
     roleRef:
       name: edp-deploy-role
     subjects:
