@@ -1,0 +1,51 @@
+{{- if eq .Values.platform "openshift" -}}
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    openshift.io/description: Role for admin-console-operator-edp service account
+    openshift.io/reconcile-protect: "false"
+  name: gerrit-operator-role-{{ .Values.namespace }}
+rules:
+- apiGroups:
+    - '*'
+  attributeRestrictions: null
+  resources:
+    - securitycontextconstraints
+  verbs:
+    - patch
+    - update
+    - delete
+    - get
+    - list
+    - create
+- apiGroups:
+    - '*'
+  attributeRestrictions: null
+  resources:
+    - gerrits
+    - gerrits/finalizers
+    - gerrits/status
+    - gerritreplicationconfigs
+    - gerritreplicationconfigs/status
+  verbs:
+    - '*'
+- apiGroups:
+    - '*'
+  attributeRestrictions: null
+  resources:
+    - gerrits
+    - gerrits/finalizers
+    - gerrits/status
+    - gerritreplicationconfigs
+    - gerritreplicationconfigs/status
+    - keycloaks
+    - keycloaks/status
+    - keycloakclients
+    - keycloakclients/finalizers
+    - keycloakclients/status
+    - keycloakrealms
+    - keycloakrealms/status
+  verbs:
+    - '*'
+{{ end }}
