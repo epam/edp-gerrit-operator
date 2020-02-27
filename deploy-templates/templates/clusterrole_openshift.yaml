@@ -47,6 +47,7 @@ rules:
     - keycloakrealms
     - keycloakrealms/status
     - jenkinsserviceaccounts
+    - jenkinsscripts
     - edpcomponents
   verbs:
     - '*'
