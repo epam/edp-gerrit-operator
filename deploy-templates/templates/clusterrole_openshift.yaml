@@ -46,6 +46,7 @@ rules:
     - keycloakclients/status
     - keycloakrealms
     - keycloakrealms/status
+    - jenkinsserviceaccounts
   verbs:
     - '*'
 {{ end }}
