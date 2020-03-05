@@ -341,6 +341,7 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *app
 					Labels: labels,
 				},
 				Spec: coreV1Api.PodSpec{
+					ImagePullSecrets: gerrit.Spec.ImagePullSecrets,
 					Containers: []coreV1Api.Container{
 						{
 							Name:            gerrit.Name,

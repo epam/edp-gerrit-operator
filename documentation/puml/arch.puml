@@ -14,6 +14,7 @@ package com.epam.edp.gerrit {
         String image
         String type
         String version
+        []LocalObjectReference imagePullSecrets
         []GerritVolumes volumes
         KeycloakSpec keycloakSpec
         []GerritUsers users
@@ -64,6 +65,10 @@ Gerrit -u-> JenkinsServiceAccount : creates (gerrit-ciuser-sshkey)
 Gerrit -u-> KeycloakClient : creates
 Gerrit -u-> EDPComponent : creates, owner
 Gerrit .u.> GitServer : creates
+class LocalObjectReference {
+    String name
+}
+Gerrit -l-> LocalObjectReference : imagePullSecrets
 class GitServer <<tbd>> {
 }
 
