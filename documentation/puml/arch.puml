@@ -1,0 +1,87 @@
+@startuml
+
+skinparam class {
+    BackgroundColor #white
+	BackgroundColor<<wip>> LightGoldenRodYellow
+	BackgroundColor<<tbd>> Khaki
+}
+
+package com.epam.edp.gerrit {
+    class Gerrit {
+      -- metadata --
+        String name
+      -- spec --
+        String image
+        String type
+        String version
+        []LocalObjectReference imagePullSecrets
+        []GerritVolumes volumes
+        KeycloakSpec keycloakSpec
+        []GerritUsers users
+        Integer sshPort
+      -- status --
+        Boolean available
+        Date lastTimeUpdated
+        String status
+        String externalUrl
+    }
+
+    Gerrit "1" --* "1..*" GerritVolumes : internal structure
+    class GerritVolumes {
+        String name
+        String storageClass
+        String capacity
+    }
+
+    Gerrit "1" --* "0..*" GerritUsers : internal structure
+    class GerritUsers {
+        String username
+        []String groups
+    }
+
+    Gerrit "1" --* "1" KeycloakSpec : internal structure
+    class KeycloakSpec {
+        Boolean enabled
+        String url
+        String realm
+    }
+
+    Gerrit "1" -* "0..*" GerritReplicationConfig : owner
+    class GerritReplicationConfig {
+        --metadata--
+            String name
+        --spec--
+            String sshUrl
+            String ownerName
+        --status--
+            Boolean available
+            Date lastTimeUpdated
+            String status
+    }
+}
+
+Gerrit -u-> JenkinsScript : creates (jenkins-plugin-config)
+Gerrit -u-> JenkinsServiceAccount : creates (gerrit-ciuser-sshkey)
+Gerrit -u-> KeycloakClient : creates
+Gerrit -u-> EDPComponent : creates, owner
+Gerrit .u.> GitServer : creates
+class LocalObjectReference {
+    String name
+}
+Gerrit -l-> LocalObjectReference : imagePullSecrets
+class GitServer <<tbd>> {
+}
+
+
+legend
+|<back:LightGoldenRodYellow>    </back>| Work In Progress |
+|<back:White>    </back>| Implemented |
+|<back:Khaki>    </back>| TBD |
+endlegend
+
+skinparam class {
+	backgroundColor<<impl>> LightGoldenRodYellow
+	backgroundColor<<wip>> LightGreen
+	backgroundColor<<tbd>> Khaki
+}
+@enduml

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
@@ -21,12 +22,14 @@ type GerritSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type         string          `json:"type"`
-	Version      string          `json:"version"`
-	Volumes      []GerritVolumes `json:"volumes,omitempty"`
-	KeycloakSpec KeycloakSpec    `json:"keycloakSpec"`
-	Users        []GerritUsers   `json:"users, omitempty"`
-	SshPort      int32           `json:"sshPort, omitempty"`
+	Image            string                           `json:"image"`
+	Type             string                           `json:"type"`
+	Version          string                           `json:"version"`
+	ImagePullSecrets []coreV1Api.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	Volumes          []GerritVolumes                  `json:"volumes,omitempty"`
+	KeycloakSpec     KeycloakSpec                     `json:"keycloakSpec"`
+	Users            []GerritUsers                    `json:"users,omitempty"`
+	SshPort          int32                            `json:"sshPort,omitempty"`
 }
 
 type GerritUsers struct {
@@ -40,9 +43,9 @@ type GerritStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Available       bool      `json:"available, omitempty"`
-	LastTimeUpdated time.Time `json:"lastTimeUpdated, omitempty"`
-	Status          string    `json:"status, omitempty"`
+	Available       bool      `json:"available,omitempty"`
+	LastTimeUpdated time.Time `json:"lastTimeUpdated,omitempty"`
+	Status          string    `json:"status,omitempty"`
 	ExternalUrl     string    `json:"externalUrl"`
 }
 
