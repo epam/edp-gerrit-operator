@@ -319,6 +319,11 @@ func newGerritRoute(name, namespace string) *routeV1Api.Route {
 
 func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *appsV1Api.DeploymentConfig {
 	labels := platformHelper.GenerateLabels(gerrit.Name)
+	img := gerrit.Spec.Image
+	if img == "" {
+		img = spec.Image
+	}
+
 	return &appsV1Api.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gerrit.Name,
@@ -341,10 +346,11 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *app
 					Labels: labels,
 				},
 				Spec: coreV1Api.PodSpec{
+					ImagePullSecrets: gerrit.Spec.ImagePullSecrets,
 					Containers: []coreV1Api.Container{
 						{
 							Name:            gerrit.Name,
-							Image:           spec.Image + ":" + gerrit.Spec.Version,
+							Image:           img + ":" + gerrit.Spec.Version,
 							ImagePullPolicy: coreV1Api.PullIfNotPresent,
 							Env: []coreV1Api.EnvVar{
 								{
