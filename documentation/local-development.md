@@ -1,5 +1,8 @@
-## Local Development
-### Requirements
+# Local Development
+
+In order to proceed with the local development of the Gerrit operator, first, make sure to have the described requirements.
+
+## Requirements
 * Golang version higher than 1.13;
 
 >_**NOTE**: The GOPATH and GOROOT environment variables should be added in PATH._
@@ -11,8 +14,8 @@
 * Configured access to the VCS, for details, refer to the [Gerrit Setup for Developer](https://kb.epam.com/display/EPMDEDP/Gerrit+Setup+for+Developer) page;
 * GoLand IntelliJ IDEA or another IDE.
 
-### Operator Launch
-In order to run the operator, follow the steps above:
+## Operator Launch
+In order to run the operator, follow the steps below:
 
 1. Clone repository;
 2. Open folder in GoLand Intellij IDEA, click the ![add_config_button](../readme-resource/add_config_button.png "add_config_button") button and select the **Go Build** option:
@@ -44,9 +47,9 @@ In order to run the operator, follow the steps above:
 {"level":"info","ts":1580910959.3751302,"logger":"kubebuilder.controller","msg":"Starting workers","controller":"gerrit-controller","worker count":1}
 ```
 
-### Exceptional Cases
+## Exceptional Cases
 
-##### CASE 1
+#### CASE 1
 
 After starting the Go build process, the following error will appear: 
 ```
@@ -63,11 +66,10 @@ To resolve the issue, update the go dependency by applying the Golang command:
 go get github.com/openshift/api@v3.9.0
 ```
 
-##### CASE 2
+#### CASE 2
 
 If you get the **Unauthorized** error in logs, check the current **KUBECONFIG** path. Before running the operator in the Go build configuration (see point 4), you can specify another **KUBECONFIG** path:
 
 ```
 WATCH_NAMESPACE=test-deploy-platform;PLATFORM_TYPE=openshift;KUBECONFIG=C:\Users\<<username>>\.kube\kubeconfig
-```
 ```

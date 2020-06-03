@@ -4,12 +4,12 @@ EDP installation can be applied on two container orchestration platforms: OpenSh
 
 _**NOTE:** Installation of operators is platform-independent, that is why there is a unified instruction for deploying._
 
-### Prerequisites
+## Prerequisites
 1. Linux machine or Windows Subsystem for Linux instance with [Helm 3](https://helm.sh/docs/intro/install/) installed;
 2. Cluster admin access to the cluster;
 3. EDP project/namespace is deployed by following one of the instructions: [edp-install-openshift](https://github.com/epmd-edp/edp-install/blob/master/documentation/openshift_install_edp.md#edp-project) or [edp-install-kubernetes](https://github.com/epmd-edp/edp-install/blob/master/documentation/kubernetes_install_edp.md#edp-namespace).
 
-### Installation
+## Installation
 * Go to the [releases](https://github.com/epmd-edp/gerrit-operator/releases) page of this repository, choose a version, download an archive and unzip it;
 
 _**NOTE:** It is highly recommended to use the latest released version._
@@ -29,5 +29,9 @@ helm install gerrit-operator --namespace <edp_cicd_project> --set name=gerrit-op
 
 * Check the <edp_cicd_project> namespace that should contain Deployment with your operator in a running status
 
-### Local Development
+## Local Development
 In order to develop the operator, first set up a local environment. For details, please refer to the [Local Development](documentation/local-development.md) page.
+
+### Related Articles
+- [Gerrit Operator Architecture Scheme](documentation/arch.md)
+- [Replicate Gerrit to GitLab](documentation/replicate_gerrit_to_gitlab.md)
