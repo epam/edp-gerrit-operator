@@ -1,7 +1,24 @@
 name: gerrit-operator
 namespace: ""
 platform: "openshift"
-dnsWildcard: ""
 image:
   name: epamedp/gerrit-operator
   version: v2.4.0
+
+gerrit:
+  deploy: true
+  name: "gerrit"
+  image: "openfrontier/gerrit"
+  sshPort: "22"
+  version: "3.1.4"
+  admins:
+    - "userOne"
+    - "userTwo"
+
+gitServer:
+  name: "gerrit"
+  user: "jenkins"
+  httpsPort: 443
+  nameSshKeySecret: "gerrit-ciuser-sshkey"
+  sshPort: 22
+  dnsWildCard: ""

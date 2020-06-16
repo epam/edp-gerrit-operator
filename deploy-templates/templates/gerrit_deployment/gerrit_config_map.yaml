@@ -1,0 +1,8 @@
+{{- if .Values.gerrit.deploy -}}
+apiVersion: v1
+data:
+  sshPort: "{{.Values.gerrit.sshPort}}"
+kind: ConfigMap
+metadata:
+  name: {{.Values.gerrit.name}}
+{{end}}

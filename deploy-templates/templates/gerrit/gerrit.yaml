@@ -1,0 +1,23 @@
+{{- if .Values.gerrit.deploy -}}
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: Gerrit
+metadata:
+  name: {{.Values.gerrit.name}}
+spec:
+  image: {{.Values.gerrit.image}}
+  keycloakSpec:
+    enabled: true
+  sshPort: {{.Values.gerrit.sshPort}}
+  type: Gerrit
+  users:
+  {{- range .Values.gerrit.admins }}
+  - groups:
+      - Administrators
+    username: {{ . }}
+  {{ end }}
+  version: {{.Values.gerrit.version}}
+  volumes:
+    - capacity: 1Gi
+      name: data
+      storage_class: gp2
+{{end}}
