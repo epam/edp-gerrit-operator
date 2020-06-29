@@ -45,7 +45,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	platformService := platform.NewService(mgr.GetScheme())
+	pt := helper.GetPlatformTypeEnv()
+	platformService, _ := platform.NewService(pt, mgr.GetScheme())
 	client := mgr.GetClient()
 	scheme := mgr.GetScheme()
 	componentService := gerritService.NewComponentService(platformService, client, scheme)

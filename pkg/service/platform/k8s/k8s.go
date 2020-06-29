@@ -3,6 +3,7 @@ package k8s
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	edpCompApi "github.com/epmd-edp/edp-component-operator/pkg/apis/v1/v1alpha1"
 	edpCompClient "github.com/epmd-edp/edp-component-operator/pkg/client"
@@ -17,6 +18,7 @@ import (
 	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,13 +26,17 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
+	appsV1Client "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
+	extensionsV1Client "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	"strconv"
 )
 
 var log = logf.Log.WithName("platform")
@@ -39,11 +45,84 @@ var log = logf.Log.WithName("platform")
 type K8SService struct {
 	Scheme                      *runtime.Scheme
 	CoreClient                  *coreV1Client.CoreV1Client
+	appsV1Client                *appsV1Client.AppsV1Client
 	EdpClient                   *client.EdpV1Client
 	JenkinsServiceAccountClient *JenkinsSAV1Client.EdpV1Client
 	JenkinsScriptClient         *jenkinsScriptV1Client.EdpV1Client
+	extensionsV1Client          extensionsV1Client.ExtensionsV1beta1Client
 	k8sClient                   k8sclient.Client
 	edpCompClient               edpCompClient.EDPComponentV1Client
+}
+
+func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
+	i, err := s.extensionsV1Client.Ingresses(namespace).Get(name, metav1.GetOptions{})
+	if err != nil && k8sErrors.IsNotFound(err) {
+		return "", "", errors.New(fmt.Sprintf("Ingress %v in namespace %v not found", name, namespace))
+	} else if err != nil {
+		return "", "", err
+	}
+
+	return i.Spec.Rules[0].Host, platformHelper.RouteHTTPSScheme, nil
+}
+
+func (s *K8SService) CreateExternalEndpoint(g *v1alpha1.Gerrit) error {
+	//CreateExternalEndpoint - Obsolete interface method. To be removed when refactored
+	return nil
+}
+
+func (s *K8SService) CreateSecurityContext(g *v1alpha1.Gerrit, sa *coreV1Api.ServiceAccount) error {
+	//CreateSecurityContext - Obsolete interface method. To be removed when refactored
+	return nil
+}
+
+func (s *K8SService) CreateDeployment(g *v1alpha1.Gerrit) error {
+	//CreateDeployment - Obsolete interface method. To be removed when refactored
+	return nil
+}
+
+func (s *K8SService) IsDeploymentReady(gerrit *v1alpha1.Gerrit) (bool, error) {
+	deployment, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	if deployment.Status.UpdatedReplicas == 1 && deployment.Status.AvailableReplicas == 1 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (s *K8SService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
+	d, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	if len(env) == 0 {
+		return nil
+	}
+
+	container, err := platformHelper.SelectContainer(d.Spec.Template.Spec.Containers, gerrit.Name)
+	if err != nil {
+		return err
+	}
+
+	container.Env = platformHelper.UpdateEnv(container.Env, env)
+
+	d.Spec.Template.Spec.Containers = append(d.Spec.Template.Spec.Containers, container)
+
+	jsonDc, err := json.Marshal(d)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.appsV1Client.Deployments(d.Namespace).Patch(d.Name, types.StrategicMergePatchType, jsonDc)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Init process with K8SService instance initialization actions
@@ -55,6 +134,18 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 		return err
 	}
 	s.CoreClient = coreClient
+
+	appsClient, err := appsV1Client.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+	s.appsV1Client = appsClient
+
+	extensionsClient, err := extensionsV1Client.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "Failed to init extensions V1 client for K8S")
+	}
+	s.extensionsV1Client = *extensionsClient
 
 	edpClient, err := client.NewForConfig(config)
 	if err != nil {
@@ -86,6 +177,32 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	s.edpCompClient = *compCl
 
 	return nil
+}
+
+func (service K8SService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
+	d, err := service.appsV1Client.Deployments(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == spec.SSHListnerEnvName {
+			re := regexp.MustCompile(`[0-9]+`)
+			if re.MatchString(env.Value) {
+				ports := re.FindStringSubmatch(env.Value)
+				if len(ports) != 1 {
+					return 0, nil
+				}
+				portNumber, err := strconv.ParseInt(ports[0], 10, 32)
+				if err != nil {
+					return 0, err
+				}
+				return int32(portNumber), nil
+			}
+		}
+	}
+
+	return 0, nil
 }
 
 // GenerateKeycloakSettings generates a set of environment var

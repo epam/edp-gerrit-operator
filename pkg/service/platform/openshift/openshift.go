@@ -28,7 +28,9 @@ import (
 	"k8s.io/client-go/rest"
 	"log"
 	"reflect"
+	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strconv"
 )
 
 // OpenshiftService implements platform.Service interface (OpenShift platform integration)
@@ -88,21 +90,20 @@ func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) err
 	return nil
 }
 
-// GetRoute returns Route object from Openshift
-func (service OpenshiftService) GetRoute(namespace string, name string) (*routeV1Api.Route, string, error) {
+func (service OpenshiftService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
 	route, err := service.routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
 	if err != nil && k8serrors.IsNotFound(err) {
 		log.Printf("Route %v in namespace %v not found", name, namespace)
-		return nil, "", nil
+		return "", "", err
 	} else if err != nil {
-		return nil, "", err
+		return "", "", err
 	}
 
-	var routeScheme = "http"
+	var routeScheme = platformHelper.RouteHTTPScheme
 	if route.Spec.TLS.Termination != "" {
-		routeScheme = "https"
+		routeScheme = platformHelper.RouteHTTPSScheme
 	}
-	return route, routeScheme, nil
+	return route.Spec.Host, routeScheme, nil
 }
 
 // CreateExternalEndpoint creates a new Endpoint resource for a Gerrit EDP Component
@@ -168,14 +169,14 @@ func (s *OpenshiftService) CreateSecurityContext(gerrit *v1alpha1.Gerrit, sa *co
 	return nil
 }
 
-// CreateDeployConf creates a new DeploymentConfig resource for a Gerrit EDP Component
-func (s *OpenshiftService) CreateDeployConf(gerrit *v1alpha1.Gerrit) error {
-	gerritRoute, protocol, err := s.GetRoute(gerrit.Namespace, gerrit.Name)
+// CreateDeployment creates a new DeploymentConfig resource for a Gerrit EDP Component
+func (s *OpenshiftService) CreateDeployment(gerrit *v1alpha1.Gerrit) error {
+	h, sc, err := s.GetExternalEndpoint(gerrit.Namespace, gerrit.Name)
 	if err != nil {
 		return helpers.LogErrorAndReturn(err)
 	}
 
-	externalUrl := fmt.Sprintf("%s://%s", protocol, gerritRoute.Spec.Host)
+	externalUrl := fmt.Sprintf("%s://%s", sc, h)
 
 	gerritDCObject := newGerritDeploymentConfig(gerrit, externalUrl)
 
@@ -198,14 +199,32 @@ func (s *OpenshiftService) CreateDeployConf(gerrit *v1alpha1.Gerrit) error {
 	return nil
 }
 
-// GetDeploymentConfig returns DeploymentConfig object from Openshift
-func (service OpenshiftService) GetDeploymentConfig(instance v1alpha1.Gerrit) (*appsV1Api.DeploymentConfig, error) {
-	deploymentConfig, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+func (service OpenshiftService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
+	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, helpers.LogErrorAndReturn(err)
+		return 0, err
 	}
 
-	return deploymentConfig, nil
+	for _, env := range dc.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == spec.SSHListnerEnvName {
+			p, err := getPort(env.Value)
+			if err != nil {
+				return 0, err
+			}
+			return p, nil
+		}
+	}
+
+	return 0, nil
+}
+
+func (service OpenshiftService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error) {
+	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	return dc.Status.UpdatedReplicas == 1 && dc.Status.AvailableReplicas == 1, nil
 }
 
 // newGerritSCC returns a new instance of securityV1Api.SecurityContextConstraints type
@@ -267,18 +286,23 @@ func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.
 	return gerritSccObject, nil
 }
 
-func (s *OpenshiftService) PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error {
+func (s *OpenshiftService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
+
+	dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
 
 	if len(env) == 0 {
 		return nil
 	}
 
-	container, err := selectContainer(dc.Spec.Template.Spec.Containers, gerrit.Name)
+	container, err := platformHelper.SelectContainer(dc.Spec.Template.Spec.Containers, gerrit.Name)
 	if err != nil {
 		return err
 	}
 
-	container.Env = updateEnv(container.Env, env)
+	container.Env = platformHelper.UpdateEnv(container.Env, env)
 
 	dc.Spec.Template.Spec.Containers = append(dc.Spec.Template.Spec.Containers, container)
 
@@ -423,44 +447,19 @@ func generateProbe(delay int32) *coreV1Api.Probe {
 	}
 }
 
-func selectContainer(containers []coreV1Api.Container, name string) (coreV1Api.Container, error) {
-	for _, c := range containers {
-		if c.Name == name {
-			return c, nil
+func getPort(value string) (int32, error) {
+	re := regexp.MustCompile(`[0-9]+`)
+	if re.MatchString(value) {
+		ports := re.FindStringSubmatch(value)
+		if len(ports) != 1 {
+			return 0, nil
 		}
+		portNumber, err := strconv.ParseInt(ports[0], 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		return int32(portNumber), nil
 	}
 
-	return coreV1Api.Container{}, errors.New("No matching container in spec found!")
-}
-
-func updateEnv(existing []coreV1Api.EnvVar, env []coreV1Api.EnvVar) []coreV1Api.EnvVar {
-	var out []coreV1Api.EnvVar
-	var covered []string
-
-	for _, e := range existing {
-		newer, ok := findEnv(env, e.Name)
-		if ok {
-			covered = append(covered, e.Name)
-			out = append(out, newer)
-			continue
-		}
-		out = append(out, e)
-	}
-	for _, e := range env {
-		if helpers.IsStringInSlice(e.Name, covered) {
-			continue
-		}
-		covered = append(covered, e.Name)
-		out = append(out, e)
-	}
-	return out
-}
-
-func findEnv(env []coreV1Api.EnvVar, name string) (coreV1Api.EnvVar, bool) {
-	for _, e := range env {
-		if e.Name == name {
-			return e, true
-		}
-	}
-	return coreV1Api.EnvVar{}, false
+	return 0, nil
 }

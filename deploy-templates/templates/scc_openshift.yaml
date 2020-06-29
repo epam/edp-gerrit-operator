@@ -17,7 +17,7 @@ kind: SecurityContextConstraints
 metadata:
   labels:
     app: {{.Values.gerrit.name}}
-  name: "{{.Values.gerrit.name}}-{{.Values.global.edpName}}"
+  name: {{.Values.gerrit.name}}-{{.Values.global.edpName}}
 priority: 1
 readOnlyRootFilesystem: false
 requiredDropCapabilities: []
@@ -28,7 +28,7 @@ seLinuxContext:
 supplementalGroups:
   type: RunAsAny
 users:
-  - "system:serviceaccount:{{.Values.global.edpName}}:{{.Values.gerrit.name}}"
+  - system:serviceaccount:{{.Values.global.edpName}}:{{.Values.gerrit.name}}
 volumes:
   - configMap
   - downwardAPI

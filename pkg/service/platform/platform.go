@@ -3,19 +3,20 @@ package platform
 import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/k8s"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/openshift"
-	appsV1Api "github.com/openshift/api/apps/v1"
-	routeV1Api "github.com/openshift/api/route/v1"
+	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
+	"strings"
 )
 
 // PlatformService defines common behaviour of the services for the supported platforms
 type PlatformService interface {
 	GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error)
-	GetRoute(namespace string, name string) (*routeV1Api.Route, string, error)
+	GetExternalEndpoint(namespace string, name string) (string, string, error)
 	ExecInPod(namespace string, podName string, command []string) (string, string, error)
 	GetSecretData(namespace string, name string) (map[string][]byte, error)
 	CreateExternalEndpoint(gerrit *v1alpha1.Gerrit) error
@@ -25,10 +26,11 @@ type PlatformService interface {
 	CreateVolume(gerrit *v1alpha1.Gerrit) error
 	CreateServiceAccount(gerrit *v1alpha1.Gerrit) (*coreV1Api.ServiceAccount, error)
 	GetSecret(namespace string, name string) (map[string][]byte, error)
-	CreateDeployConf(gerrit *v1alpha1.Gerrit) error
-	GetDeploymentConfig(instance v1alpha1.Gerrit) (*appsV1Api.DeploymentConfig, error)
+	CreateDeployment(gerrit *v1alpha1.Gerrit) error
+	IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error)
+	PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error
+	GetDeploymentSSHPort(gerrit *v1alpha1.Gerrit) (int32, error)
 	GetService(namespace string, name string) (*coreV1Api.Service, error)
-	PatchDeployConfEnv(gerrit v1alpha1.Gerrit, dc *appsV1Api.DeploymentConfig, env []coreV1Api.EnvVar) error
 	UpdateService(svc coreV1Api.Service, port int32) error
 	GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]coreV1Api.EnvVar, error)
 	CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error
@@ -38,7 +40,7 @@ type PlatformService interface {
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided
-func NewService(scheme *runtime.Scheme) PlatformService {
+func NewService(platformType string, scheme *runtime.Scheme) (PlatformService, error) {
 	config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),
 		&clientcmd.ConfigOverrides{},
@@ -47,13 +49,26 @@ func NewService(scheme *runtime.Scheme) PlatformService {
 	restConfig, err := config.ClientConfig()
 	if err != nil {
 		helpers.LogErrorAndReturn(err)
-		return nil
+		return nil, errors.Wrap(err, "Failed to get rest configs for platform")
 	}
 
-	platform := &openshift.OpenshiftService{}
-	if err = platform.Init(restConfig, scheme); err != nil {
-		helpers.LogErrorAndReturn(err)
-		return nil
+	switch strings.ToLower(platformType) {
+	case "openshift":
+		platform := &openshift.OpenshiftService{}
+		if err = platform.Init(restConfig, scheme); err != nil {
+			helpers.LogErrorAndReturn(err)
+			return nil, errors.Wrap(err, "Failed to init for Openshift platform")
+		}
+		return platform, nil
+	case "kubernetes":
+		platform := &k8s.K8SService{}
+		err := platform.Init(restConfig, scheme)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to init for Kubernetes platform")
+		}
+		return platform, nil
+
+	default:
+		return nil, errors.Wrap(err, "Unknown platform type")
 	}
-	return platform
 }
