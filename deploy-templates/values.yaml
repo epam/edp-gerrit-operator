@@ -1,30 +1,31 @@
 global:
-  edpName: ""
-  platform: "openshift"
-  dnsWildCard: "delivery.aws.main.edp.projects.epam.com"
+  edpName: "skostenko-test"
+  platform: "kubernetes"
+  dnsWildCard: "eks-delivery.aws.main.edp.projects.epam.com"
   admins:
     - "stub_user_one@example.com"
 
 name: gerrit-operator
 image:
   name: epamedp/gerrit-operator
-  version: v2.4.0
+  version: :v2.4.0
 
 gerrit:
   deploy: true
   name: "gerrit"
   image: "openfrontier/gerrit"
-  sshPort: "22"
+  sshPort: "30678"
   port: "8080"
   version: "3.1.4"
   imagePullSecrets:
   storage:
     size: 1Gi
     class: gp2
+  basePath: ""
 
 gitServer:
   name: "gerrit"
   user: "jenkins"
   httpsPort: 443
-  nameSshKeySecret: "gerrit-ciuser-sshkey"  
-  sshPort: 22  
+  nameSshKeySecret: "gerrit-ciuser-sshkey"
+  sshPort: 22

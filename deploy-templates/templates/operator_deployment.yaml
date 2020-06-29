@@ -12,7 +12,7 @@ spec:
       labels:
         name: {{ .Values.name }}
     spec:
-      serviceAccountName: {{ .Values.name }}-edp
+      serviceAccountName: "{{ .Values.name }}-edp"
       securityContext:
         runAsNonRoot: true
       containers:

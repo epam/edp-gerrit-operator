@@ -7,7 +7,7 @@ metadata:
         app: {{.Values.gerrit.name}}
     name: {{.Values.gerrit.name}}
 spec:
-    host: {{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}{{.Values.gerrit.name}}-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
+    host: {{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}gerrit-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
     path: {{if .Values.gerrit.basePath}}/{{.Values.gerrit.basePath}}(/|$)(.*){{else}}/{{end}}
     port:
         targetPort: {{.Values.gerrit.port}}

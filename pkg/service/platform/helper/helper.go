@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
 	gerritHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
+	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
+	coreV1Api "k8s.io/api/core/v1"
 	"text/template"
 )
 
@@ -30,6 +32,12 @@ const (
 
 	//JenkinsPluginConfigFileName
 	JenkinsPluginConfigFileName = "config-gerrit-plugin.tmpl"
+
+	//RouteHTTPSScheme
+	RouteHTTPSScheme = "https"
+
+	//RouteHTTPScheme
+	RouteHTTPScheme = "http"
 )
 
 type JenkinsPluginData struct {
@@ -75,4 +83,46 @@ func GenerateLabels(name string) map[string]string {
 	return map[string]string{
 		"app": name,
 	}
+}
+
+func SelectContainer(containers []coreV1Api.Container, name string) (coreV1Api.Container, error) {
+	for _, c := range containers {
+		if c.Name == name {
+			return c, nil
+		}
+	}
+
+	return coreV1Api.Container{}, errors.New("No matching container in spec found!")
+}
+
+func UpdateEnv(existing []coreV1Api.EnvVar, env []coreV1Api.EnvVar) []coreV1Api.EnvVar {
+	var out []coreV1Api.EnvVar
+	var covered []string
+
+	for _, e := range existing {
+		newer, ok := findEnv(env, e.Name)
+		if ok {
+			covered = append(covered, e.Name)
+			out = append(out, newer)
+			continue
+		}
+		out = append(out, e)
+	}
+	for _, e := range env {
+		if helpers.IsStringInSlice(e.Name, covered) {
+			continue
+		}
+		covered = append(covered, e.Name)
+		out = append(out, e)
+	}
+	return out
+}
+
+func findEnv(env []coreV1Api.EnvVar, name string) (coreV1Api.EnvVar, bool) {
+	for _, e := range env {
+		if e.Name == name {
+			return e, true
+		}
+	}
+	return coreV1Api.EnvVar{}, false
 }

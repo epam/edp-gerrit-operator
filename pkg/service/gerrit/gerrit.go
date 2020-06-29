@@ -17,7 +17,6 @@ import (
 	jenPlatformHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
-	v1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -29,10 +28,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	"strconv"
 )
 
 var log = logf.Log.WithName("service_gerrit")
@@ -44,7 +41,7 @@ const (
 
 // Interface expresses behaviour of the Gerrit EDP Component
 type Interface interface {
-	IsDeploymentConfigReady(instance v1alpha1.Gerrit) (bool, error)
+	IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error)
 	Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
 	Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, bool, error)
 	ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
@@ -67,17 +64,9 @@ func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runt
 	return ComponentService{PlatformService: ps, k8sClient: kc, k8sScheme: ks}
 }
 
-// IsDeploymentConfigReady check if DC for Gerrit is ready
-func (s ComponentService) IsDeploymentConfigReady(instance v1alpha1.Gerrit) (bool, error) {
-	gerritIsReady := false
-	GerritDc, err := s.PlatformService.GetDeploymentConfig(instance)
-	if err != nil {
-		return gerritIsReady, helpers.LogErrorAndReturn(err)
-	}
-	if GerritDc.Status.UpdatedReplicas == 1 && GerritDc.Status.AvailableReplicas == 1 {
-		gerritIsReady = true
-	}
-	return gerritIsReady, nil
+// IsDeploymentReady check if DC for Gerrit is ready
+func (s ComponentService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error) {
+	return s.PlatformService.IsDeploymentReady(instance)
 }
 
 // Install has a minimal set of logic, required to install "vanilla" Gerrit EDP Component
@@ -108,7 +97,7 @@ func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, 
 			instance.Namespace, instance.Name)
 	}
 
-	if err := s.PlatformService.CreateDeployConf(instance); err != nil {
+	if err := s.PlatformService.CreateDeployment(instance); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Deploy Config for %v/%v",
 			instance.Namespace, instance.Name)
 	}
@@ -144,7 +133,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, err
 	}
 
-	sshPortDC, err := s.getDcSshPortNumber(instance)
+	sshPort, err := s.PlatformService.GetDeploymentSSHPort(instance)
 	if err != nil {
 		return instance, false, err
 	}
@@ -159,12 +148,12 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, errors.Wrapf(err, "Unable to update Gerrit service")
 	}
 
-	dcUpdated, err := s.updateDeploymentConfigPort(sshPortDC, sshPortService, instance)
+	dUpdated, err := s.updateDeploymentConfigPort(sshPort, sshPortService, instance)
 	if err != nil {
 		return instance, false, err
 	}
 
-	if dcUpdated {
+	if dUpdated {
 		return instance, true, nil
 	}
 
@@ -178,7 +167,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %v/%v", instance.Namespace, instance.Name)
 	}
 
-	podList, err := s.PlatformService.GetPods(instance.Namespace, metav1.ListOptions{LabelSelector: "deploymentconfig=" + instance.Name})
+	podList, err := s.PlatformService.GetPods(instance.Namespace, metav1.ListOptions{LabelSelector: "app=" + instance.Name})
 	if err != nil || len(podList.Items) != 1 {
 		return instance, false, errors.Wrapf(err, "Unable to determine Gerrit pod name: %v", len(podList.Items))
 	}
@@ -437,11 +426,11 @@ func (s ComponentService) createEDPComponent(gerrit v1alpha1.Gerrit) error {
 }
 
 func (s ComponentService) getUrl(gerrit v1alpha1.Gerrit) (*string, error) {
-	route, scheme, err := s.PlatformService.GetRoute(gerrit.Namespace, gerrit.Name)
+	h, sc, err := s.PlatformService.GetExternalEndpoint(gerrit.Namespace, gerrit.Name)
 	if err != nil {
 		return nil, err
 	}
-	url := fmt.Sprintf("%v://%v", scheme, route.Spec.Host)
+	url := fmt.Sprintf("%v://%v", sc, h)
 	return &url, nil
 }
 
@@ -466,12 +455,12 @@ func getIcon() (*string, error) {
 
 // Integrate applies actions required for the integration with the other EDP Components
 func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
-	route, scheme, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
+	h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
 	}
 
-	externalUrl := fmt.Sprintf("%v://%v", scheme, route.Spec.Host)
+	externalUrl := fmt.Sprintf("%v://%v", sc, h)
 
 	if instance.Spec.KeycloakSpec.Enabled {
 		client, err := s.getKeycloakClient(instance)
@@ -491,18 +480,14 @@ func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			return instance, err
 		}
 
-		deployConf, err := s.PlatformService.GetDeploymentConfig(*instance)
-		if err != nil {
-			return instance, err
-		}
-		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, *keycloakEnvironmentValue); err != nil {
+		if err = s.PlatformService.PatchDeploymentEnv(*instance, *keycloakEnvironmentValue); err != nil {
 			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to add identity service information"))
 		}
 	} else {
 		log.V(1).Info("Keycloak integration not enabled.")
 	}
 
-	err = s.configureGerritPluginInJenkins(instance, *route, scheme)
+	err = s.configureGerritPluginInJenkins(instance, h, sc)
 	if err != nil {
 		return nil, err
 	}
@@ -602,11 +587,11 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
 	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		gerritRoute, gerritRouteScheme, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
+		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
-			return "", errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
+			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
 		}
-		gerritApiUrl = fmt.Sprintf("%v://%v/%v", gerritRouteScheme, gerritRoute.Spec.Host, spec.GerritRestApiUrlPath)
+		gerritApiUrl = fmt.Sprintf("%v://%v/%v", sc, h, spec.GerritRestApiUrlPath)
 	}
 	return gerritApiUrl, nil
 }
@@ -614,11 +599,11 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
 	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
-		gerritRoute, _, err := s.PlatformService.GetRoute(instance.Namespace, instance.Name)
+		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)
 		}
-		gerritSSHUrl = gerritRoute.Spec.Host
+		gerritSSHUrl = h
 	}
 	return gerritSSHUrl, nil
 }
@@ -696,45 +681,15 @@ func (s ComponentService) GetServicePort(instance *v1alpha1.Gerrit) (int32, erro
 	return 0, errors.Wrapf(err, "Unable to determine Gerrit ssh port")
 }
 
-func (s ComponentService) getDcSshPortNumber(instance *v1alpha1.Gerrit) (int32, error) {
-	dc, err := s.PlatformService.GetDeploymentConfig(*instance)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, env := range dc.Spec.Template.Spec.Containers[0].Env {
-		if env.Name == spec.SSHListnerEnvName {
-			re := regexp.MustCompile(`[0-9]+`)
-			if re.MatchString(env.Value) {
-				ports := re.FindStringSubmatch(env.Value)
-				if len(ports) != 1 {
-					return 0, nil
-				}
-				portNumber, err := strconv.ParseInt(ports[0], 10, 32)
-				if err != nil {
-					return 0, err
-				}
-				return int32(portNumber), nil
-			}
-		}
-	}
-
-	return 0, nil
-}
-
-func (s ComponentService) updateDeploymentConfigPort(sshPortDC, sshPortService int32, instance *v1alpha1.Gerrit) (bool, error) {
-	if sshPortDC != sshPortService || sshPortDC == 0 {
+func (s ComponentService) updateDeploymentConfigPort(sshPort, sshPortService int32, instance *v1alpha1.Gerrit) (bool, error) {
+	if sshPort != sshPortService || sshPort == 0 {
 		newEnv := []coreV1Api.EnvVar{
 			{
 				Name:  spec.SSHListnerEnvName,
 				Value: fmt.Sprintf("*:%d", sshPortService),
 			},
 		}
-		deployConf, err := s.PlatformService.GetDeploymentConfig(*instance)
-		if err != nil {
-			return false, err
-		}
-		if err = s.PlatformService.PatchDeployConfEnv(*instance, deployConf, newEnv); err != nil {
+		if err := s.PlatformService.PatchDeploymentEnv(*instance, newEnv); err != nil {
 			return false, err
 		}
 		return true, nil
@@ -753,7 +708,7 @@ func (s ComponentService) setAnnotation(instance *v1alpha1.Gerrit, key string, v
 	}
 }
 
-func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerrit, route v1.Route, scheme string) error {
+func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerrit, host string, scheme string) error {
 	sshPort, err := s.GetServicePort(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)
@@ -765,7 +720,7 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerr
 		return errors.Wrapf(err, "Failed to get Secret for CI user for %v/%v", instance.Namespace, instance.Name)
 	}
 
-	externalUrl := fmt.Sprintf("%v://%v", scheme, route.Spec.Host)
+	externalUrl := fmt.Sprintf("%v://%v", scheme, host)
 	jenkinsPluginInfo := platformHelper.InitNewJenkinsPluginInfo()
 	jenkinsPluginInfo.ServerName = instance.Name
 	jenkinsPluginInfo.ExternalUrl = externalUrl

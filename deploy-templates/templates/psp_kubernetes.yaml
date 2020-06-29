@@ -1,0 +1,29 @@
+{{if eq .Values.global.platform "kubernetes"}}
+{{if .Values.gerrit.deploy}}
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{.Values.gerrit.name}}-{{.Values.global.edpName}}
+spec:
+  hostIPC: true
+  hostPID: false
+  hostNetwork: false
+  requiredDropCapabilities: []
+  readOnlyRootFilesystem: false
+  seLinux:
+    rule: MustRunAs
+  supplementalGroups:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  volumes:
+    - configMap
+    - downwardAPI
+    - emptyDir
+    - persistentVolumeClaim
+    - projected
+    - secret
+{{end}}
+{{end}}
