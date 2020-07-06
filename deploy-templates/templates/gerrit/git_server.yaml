@@ -5,7 +5,7 @@ metadata:
 spec:
   createCodeReviewPipeline: false
   edpSpec:
-    dnsWildcard: {{ .Values.gitServer.dnsWildCard }}
+    dnsWildcard: {{ .Values.edp.dnsWildCard }}
   gitHost: 'gerrit.{{ .Values.namespace }}'
   gitUser: {{.Values.gitServer.user}}
   httpsPort: {{.Values.gitServer.httpsPort}}

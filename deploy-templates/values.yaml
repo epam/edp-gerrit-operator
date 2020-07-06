@@ -12,8 +12,7 @@ gerrit:
   sshPort: "22"
   version: "3.1.4"
   admins:
-    - "userOne"
-    - "userTwo"
+    - "stub_user_one@example.com"
 
 gitServer:
   name: "gerrit"
@@ -21,4 +20,6 @@ gitServer:
   httpsPort: 443
   nameSshKeySecret: "gerrit-ciuser-sshkey"
   sshPort: 22
+
+edp:
   dnsWildCard: ""
