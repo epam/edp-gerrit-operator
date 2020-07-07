@@ -72,12 +72,12 @@ In order to replicate Gerrit to GitLab, perform the following steps:
     replicatePermissions = false
     ```
 
-8. Go to Jenkins pods (Applications → Pods → Jenkins → Terminal), and find a port in the Gerrit service:
+8. Go to Jenkins pod (Applications → Pods → Jenkins → Terminal), and find a port in the Gerrit service:
 
 ```bash
-ssh -p 30777 gerrit gerrit plugin reload replication
+LD_PRELOAD=libnss_wrapper.so NSS_WRAPPER_PASSWD=${HOME}/passwd NSS_WRAPPER_GROUP=/etc/group ssh -p 30777 jenkins@gerrit gerrit plugin reload replication
 # wait for 30 sec
-ssh -p 30777 gerrit replication start --all --wait
+LD_PRELOAD=libnss_wrapper.so NSS_WRAPPER_PASSWD=${HOME}/passwd NSS_WRAPPER_GROUP=/etc/group ssh -p 30777 jenkins@gerrit replication start --all --wait
 ```
 
 >_**NOTE**: If you encounter an error, please check the /var/gerrit/review_site/logs/replication.log file._
