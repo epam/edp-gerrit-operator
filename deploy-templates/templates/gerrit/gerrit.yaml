@@ -10,7 +10,7 @@ spec:
   sshPort: {{.Values.gerrit.sshPort}}
   type: Gerrit
   users:
-  {{- range .Values.gerrit.admins }}
+  {{- range .Values.global.admins }}
   - groups:
       - Administrators
     username: {{ . }}

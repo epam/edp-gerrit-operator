@@ -1,11 +1,11 @@
-{{- if eq .Values.platform "openshift" -}}
+{{- if eq .Values.global.platform "openshift" -}}
 apiVersion: authorization.openshift.io/v1
 kind: ClusterRole
 metadata:
   annotations:
     openshift.io/description: Role for admin-console-operator-edp service account
     openshift.io/reconcile-protect: "false"
-  name: gerrit-operator-role-{{ .Values.namespace }}
+  name: gerrit-operator-role-{{ .Values.global.edpName }}
 rules:
 - apiGroups:
     - '*'

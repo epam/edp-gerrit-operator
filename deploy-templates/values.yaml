@@ -1,6 +1,11 @@
+global:
+  edpName: ""
+  platform: "openshift"
+  dnsWildCard: "delivery.aws.main.edp.projects.epam.com"
+  admins:
+    - "stub_user_one@example.com"
+
 name: gerrit-operator
-namespace: ""
-platform: "openshift"
 image:
   name: epamedp/gerrit-operator
   version: v2.4.0
@@ -11,8 +16,6 @@ gerrit:
   image: "openfrontier/gerrit"
   sshPort: "22"
   version: "3.1.4"
-  admins:
-    - "stub_user_one@example.com"
 
 gitServer:
   name: "gerrit"
@@ -20,6 +23,3 @@ gitServer:
   httpsPort: 443
   nameSshKeySecret: "gerrit-ciuser-sshkey"
   sshPort: 22
-
-edp:
-  dnsWildCard: ""

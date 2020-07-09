@@ -1,15 +1,15 @@
-{{- if eq .Values.platform "openshift" -}}
+{{- if eq .Values.global.platform "openshift" -}}
 apiVersion: authorization.openshift.io/v1
 kind: RoleBinding
 metadata:
-  name: gerrit-operator-admin-{{ .Values.namespace }}
+  name: gerrit-operator-admin-{{ .Values.global.edpName }}
 roleRef:
   name: admin
 subjects:
   - kind: ServiceAccount
     name: gerrit-operator-edp
-    namespace: {{ .Values.namespace }}
+    namespace: {{ .Values.global.edpName }}
 userNames:
-  - system:serviceaccount:{{ .Values.namespace }}:gerrit-operator-edp
+  - system:serviceaccount:{{ .Values.global.edpName }}:gerrit-operator-edp
 groupNames: []
 {{- end -}}
