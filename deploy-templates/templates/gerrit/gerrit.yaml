@@ -5,6 +5,12 @@ metadata:
   name: {{.Values.gerrit.name}}
 spec:
   image: {{.Values.gerrit.image}}
+  {{- if .Values.gerrit.imagePullSecrets}}
+  imagePullSecrets:
+    {{- range .Values.gerrit.imagePullSecrets }}
+    - {{. -}}
+    {{- end -}}
+  {{end}}
   keycloakSpec:
     enabled: true
   sshPort: {{.Values.gerrit.sshPort}}

@@ -16,6 +16,7 @@ gerrit:
   image: "openfrontier/gerrit"
   sshPort: "22"
   version: "3.1.4"
+  imagePullSecrets:
 
 gitServer:
   name: "gerrit"

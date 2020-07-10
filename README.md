@@ -41,6 +41,7 @@ Full available chart parameters list:
     - gerrit.deploy                          # Flag to enable/disable Gerrit deploy;
     - gerrit.name                            # Gerrit name;
     - gerrit.image                           # Gerrit image, e.g. openfrontier/gerrit;
+    - gerrit.imagePullSecrets                # Secrets to pull from private Docker registry;
     - gerrit.version                         # Gerrit version, e.g. 3.1.4;
     - gerrit.sshPort                         # SSH port;
     - gitServer.name                         # GitServer CR name;
