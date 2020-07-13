@@ -23,7 +23,7 @@ spec:
   {{ end }}
   version: {{.Values.gerrit.version}}
   volumes:
-    - capacity: 1Gi
+    - capacity: {{.Values.gerrit.storage.size}}
       name: data
-      storage_class: gp2
+      storage_class: {{.Values.gerrit.storage.class}}
 {{end}}

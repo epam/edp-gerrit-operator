@@ -17,3 +17,6 @@ gerrit:
   sshPort: "22"
   version: "3.1.4"
   imagePullSecrets:
+  storage:
+    size: 1Gi
+    class: gp2
