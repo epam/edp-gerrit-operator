@@ -17,10 +17,3 @@ gerrit:
   sshPort: "22"
   version: "3.1.4"
   imagePullSecrets:
-
-gitServer:
-  name: "gerrit"
-  user: "jenkins"
-  httpsPort: 443
-  nameSshKeySecret: "gerrit-ciuser-sshkey"
-  sshPort: 22

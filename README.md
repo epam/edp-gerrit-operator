@@ -44,11 +44,6 @@ Full available chart parameters list:
     - gerrit.imagePullSecrets                # Secrets to pull from private Docker registry;
     - gerrit.version                         # Gerrit version, e.g. 3.1.4;
     - gerrit.sshPort                         # SSH port;
-    - gitServer.name                         # GitServer CR name;
-    - gitServer.user                         # Git user to connect;
-    - gitServer.httpsPort                    # HTTPS port;
-    - gitServer.nameSshKeySecret             # Name of secret with credentials to Git server;
-    - gitServer.sshPort                      # SSH port;
 ```
 
 _**NOTE:** Follow instruction to create namespace [edp-install-openshift](https://github.com/epmd-edp/edp-install/blob/master/documentation/openshift_install_edp.md#install-edp) or [edp-install-kubernetes](https://github.com/epmd-edp/edp-install/blob/master/documentation/kubernetes_install_edp.md#install-edp)._
