@@ -20,3 +20,9 @@ gerrit:
   storage:
     size: 1Gi
     class: gp2
+
+gitServer:
+  name: "gerrit"
+  user: "jenkins"
+  httpsPort: 443
+  nameSshKeySecret: "gerrit-ciuser-sshkey"    
