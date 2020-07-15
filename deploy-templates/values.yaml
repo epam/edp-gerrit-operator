@@ -25,4 +25,5 @@ gitServer:
   name: "gerrit"
   user: "jenkins"
   httpsPort: 443
-  nameSshKeySecret: "gerrit-ciuser-sshkey"    
+  nameSshKeySecret: "gerrit-ciuser-sshkey"  
+  sshPort: 22  
