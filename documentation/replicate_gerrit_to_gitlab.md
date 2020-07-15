@@ -20,15 +20,15 @@ In order to replicate Gerrit to GitLab, perform the following steps:
 
     ---
         volumes:
-            - name: gerrit-data
+          - name: gerrit-data
             persistentVolumeClaim:
-                claimName: gerrit-data
-            - configMap:
-                defaultMode: 420
-                items:
-                - key: config
-                    path: config
-                name: gerrit
+              claimName: gerrit-data
+          - configMap:
+              defaultMode: 420
+              items:
+                - key: ssh-config
+                  path: config
+              name: gerrit
             name: ssh-config
     ```
 3. Create an RSA key. Go to Applications → Pods → Gerrit → Terminal and enter the corresponding code.
