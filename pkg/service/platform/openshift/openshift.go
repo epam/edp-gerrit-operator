@@ -358,7 +358,9 @@ func newGerritDeploymentConfig(gerrit *v1alpha1.Gerrit, externalUrl string) *app
 								},
 								{
 									Name: "GERRIT_INIT_ARGS",
-									Value: "--install-plugin=commit-message-length-validator " +
+									Value: "--install-plugin=delete-project " +
+										"--install-plugin=plugin-manager " +
+										"--install-plugin=commit-message-length-validator " +
 										"--install-plugin=download-commands --install-plugin=hooks " +
 										"--install-plugin=reviewnotes --install-plugin=singleusergroup " +
 										"--install-plugin=replication",
