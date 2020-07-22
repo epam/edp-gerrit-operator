@@ -68,3 +68,4 @@ In order to develop the operator, first set up a local environment. For details,
 ### Related Articles
 - [Architecture Scheme of Gerrit Operator](documentation/arch.md)
 - [Replicate Gerrit to GitLab](documentation/replicate_gerrit_to_gitlab.md)
+- [Replication of Gerrit Development to Gerrit Production](https://github.com/epmd-edp/edp-install/blob/master/documentation/gerrit_dev_to_prod.md#replication-of-gerrit-development-to-gerrit-production)
