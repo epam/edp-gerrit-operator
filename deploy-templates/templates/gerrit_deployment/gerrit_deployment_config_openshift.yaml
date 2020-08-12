@@ -1,0 +1,78 @@
+{{- if eq .Values.global.platform "openshift" -}}
+{{- if .Values.gerrit.deploy -}}
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: {{ .Values.gerrit.name }}
+  name: {{ .Values.gerrit.name }}
+spec:
+  replicas: 1
+  selector:
+    app: {{ .Values.gerrit.name }}
+  strategy:
+    activeDeadlineSeconds: 21600
+    recreateParams:
+      timeoutSeconds: 6000
+    resources: {}
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.gerrit.name }}
+    spec:
+      {{- if .Values.gerrit.imagePullSecrets}}
+      imagePullSecrets:
+        {{- range .Values.gerrit.imagePullSecrets }}
+        - {{. -}}
+        {{- end -}}
+      {{end}}
+      containers:
+        - env:
+            - name: HTTPD_LISTENURL
+              value: 'proxy-https://*:8080'
+            - name: WEBURL
+              value: https://{{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}{{.Values.gerrit.name}}-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
+            - name: GERRIT_INIT_ARGS
+              value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
+                        --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication'
+          image: {{.Values.gerrit.image}}:{{.Values.gerrit.version}}
+          imagePullPolicy: Always
+          name: {{ .Values.gerrit.name }}
+          ports:
+            - containerPort: {{ .Values.gerrit.port }}
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: {{ .Values.gerrit.port }}
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            requests:
+              memory: 500Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/gerrit/review_site
+              name: {{ .Values.gerrit.name }}-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: {{ .Values.gerrit.name }}
+      serviceAccountName: {{ .Values.gerrit.name }}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: {{ .Values.gerrit.name }}-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.gerrit.name }}-data
+  test: false
+  triggers:
+    - type: ConfigChange
+{{- end -}}
+{{- end -}}

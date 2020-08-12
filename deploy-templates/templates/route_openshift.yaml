@@ -1,0 +1,25 @@
+{{- if eq .Values.global.platform "openshift" -}}
+{{- if .Values.gerrit.deploy -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+    labels:
+        app: {{.Values.gerrit.name}}
+    name: {{.Values.gerrit.name}}
+spec:
+    host: {{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}{{.Values.gerrit.name}}-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
+    path: {{if .Values.gerrit.basePath}}/{{.Values.gerrit.basePath}}(/|$)(.*){{else}}/{{end}}
+    port:
+        targetPort: {{.Values.gerrit.port}}
+    tls:
+        insecureEdgeTerminationPolicy: Redirect
+        termination: edge
+    to:
+        kind: Service
+        name: {{.Values.gerrit.name}}
+        weight: 100
+    wildcardPolicy: None
+status:
+    ingress: []
+{{- end -}}
+{{- end -}}

@@ -1,0 +1,23 @@
+{{- if .Values.gerrit.deploy -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{.Values.gerrit.name}}
+  name: {{.Values.gerrit.name}}
+spec:
+  ports:
+    - name: ui
+      port: {{.Values.gerrit.port}}
+      protocol: TCP
+      targetPort: {{.Values.gerrit.port}}
+    - name: ssh
+      nodePort: {{.Values.gerrit.sshPort}}
+      port: {{.Values.gerrit.sshPort}}
+      protocol: TCP
+      targetPort: {{.Values.gerrit.sshPort}}
+  selector:
+    app: {{.Values.gerrit.name}}
+  sessionAffinity: None
+  type: NodePort
+{{- end -}}
