@@ -18,5 +18,5 @@ spec:
   selector:
     app: {{.Values.gerrit.name}}
   sessionAffinity: None
-  type: ClusterIP
+  type: NodePort
 {{- end -}}
