@@ -1,0 +1,8 @@
+{{- if .Values.gerrit.deploy -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{.Values.gerrit.name}}
+  labels:
+    app: {{.Values.gerrit.name}}
+{{- end -}}

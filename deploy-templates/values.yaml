@@ -15,6 +15,7 @@ gerrit:
   name: "gerrit"
   image: "openfrontier/gerrit"
   sshPort: "22"
+  port: "8080"
   version: "3.1.4"
   imagePullSecrets:
   storage:
