@@ -12,6 +12,7 @@ spec:
       protocol: TCP
       targetPort: {{.Values.gerrit.port}}
     - name: ssh
+      nodePort: {{.Values.gerrit.sshPort}}
       port: {{.Values.gerrit.sshPort}}
       protocol: TCP
       targetPort: {{.Values.gerrit.sshPort}}
