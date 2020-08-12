@@ -6,10 +6,10 @@ allowHostNetwork: false
 allowHostPID: false
 allowHostPorts: false
 allowPrivilegedContainer: false
-allowedCapabilities: null
-allowedFlexVolumes: null
+allowedCapabilities: []
+allowedFlexVolumes: []
 apiVersion: security.openshift.io/v1
-defaultAddCapabilities: null
+defaultAddCapabilities: []
 fsGroup:
   type: RunAsAny
 groups: []
@@ -20,7 +20,7 @@ metadata:
   name: "{{.Values.gerrit.name}}-{{.Values.global.edpName}}"
 priority: 1
 readOnlyRootFilesystem: false
-requiredDropCapabilities: null
+requiredDropCapabilities: []
 runAsUser:
   type: RunAsAny
 seLinuxContext:
