@@ -611,9 +611,10 @@ func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon 
 			Name: gerrit.Name,
 		},
 		Spec: edpCompApi.EDPComponentSpec{
-			Type: "gerrit",
-			Url:  url,
-			Icon: icon,
+			Type:    "gerrit",
+			Url:     url,
+			Icon:    icon,
+			Visible: true,
 		},
 	}
 	if err := controllerutil.SetControllerReference(&gerrit, obj, s.Scheme); err != nil {

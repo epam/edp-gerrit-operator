@@ -9,7 +9,7 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-201808011710
 require (
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
-	github.com/epmd-edp/edp-component-operator v0.0.1-2
+	github.com/epmd-edp/edp-component-operator v0.1.1-0.20200827122548-e87429a916e0
 	github.com/epmd-edp/jenkins-operator/v2 v2.3.0-126
 	github.com/epmd-edp/keycloak-operator v1.0.31-alpha-56
 	github.com/go-openapi/spec v0.19.3
