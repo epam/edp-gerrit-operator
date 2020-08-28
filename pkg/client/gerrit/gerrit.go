@@ -120,7 +120,7 @@ func (gc *Client) CreateGroup(groupName string, groupDescription string) error {
 
 	_, err := gc.sshClient.RunCommand(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "Group %v creation failed: %v", groupName)
+		return errors.Wrapf(err, "Group %v creation failed: ", groupName)
 	}
 	return nil
 }
