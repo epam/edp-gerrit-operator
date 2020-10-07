@@ -1,7 +1,7 @@
 global:
-  edpName: ""
-  platform: "kubernetes"
-  dnsWildCard: "eks-delivery.aws.main.edp.projects.epam.com"
+  edpName: "edp"
+  platform: "openshift"
+  dnsWildCard: ""
   admins:
     - "stub_user_one@example.com"
 
