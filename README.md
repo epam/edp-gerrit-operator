@@ -51,7 +51,6 @@ In order to install the EDP Gerrit Operator, follow the steps below:
     - gitServer.user                         # Git user to connect;
     - gitServer.httpsPort                    # HTTPS port;
     - gitServer.nameSshKeySecret             # Name of secret with credentials to Git server;
-    - gitServer.sshPort                      # SSH port;  
     - gerrit.storage.class                   # Storageclass for Gerrit data volume;
     - gerrit.storage.size                    # Size for Gerrit data volume;
     ```

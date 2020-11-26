@@ -11,5 +11,5 @@ spec:
   gitUser: {{.Values.gitServer.user}}
   httpsPort: {{.Values.gitServer.httpsPort}}
   nameSshKeySecret: {{.Values.gitServer.nameSshKeySecret}}
-  sshPort: {{.Values.gitServer.sshPort}}
+  sshPort: {{.Values.gerrit.sshPort}}
 {{end}}

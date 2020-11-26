@@ -14,7 +14,7 @@ gerrit:
   deploy: true
   name: "gerrit"
   image: "openfrontier/gerrit"
-  sshPort: "22"
+  sshPort: "30022"
   port: "8080"
   version: "3.2.3"
   imagePullSecrets:
@@ -28,4 +28,3 @@ gitServer:
   user: "jenkins"
   httpsPort: 443
   nameSshKeySecret: "gerrit-ciuser-sshkey"
-  sshPort: 22
