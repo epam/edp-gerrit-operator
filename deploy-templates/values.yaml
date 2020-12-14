@@ -16,7 +16,7 @@ gerrit:
   image: "openfrontier/gerrit"
   sshPort: "30022"
   port: "8080"
-  version: "3.2.3"
+  version: "3.2.5.1"
   imagePullSecrets:
   storage:
     size: 1Gi

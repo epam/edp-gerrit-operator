@@ -45,7 +45,7 @@ In order to install the EDP Gerrit Operator, follow the steps below:
     - gerrit.name                            # Gerrit name;
     - gerrit.image                           # Gerrit image, e.g. openfrontier/gerrit;
     - gerrit.imagePullSecrets                # Secrets to pull from private Docker registry;
-    - gerrit.version                         # Gerrit version, e.g. 3.2.3;
+    - gerrit.version                         # Gerrit version, e.g. 3.2.5.1;
     - gerrit.sshPort                         # SSH port;
     - gitServer.name                         # GitServer CR name;
     - gitServer.user                         # Git user to connect;
