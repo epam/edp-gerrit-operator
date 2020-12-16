@@ -35,8 +35,7 @@ spec:
               value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
                         --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication'
           resources:
-            requests:
-              memory: 500Mi
+{{ toYaml .Values.gerrit.resources | indent 12 }}
           volumeMounts:
             - name: {{ .Values.gerrit.name }}-data
               mountPath: /var/gerrit/review_site

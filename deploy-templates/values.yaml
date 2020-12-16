@@ -10,6 +10,14 @@ image:
   name: epamedp/gerrit-operator
   version: v2.5.0
 
+resources:
+  limits:
+    cpu: 200m
+    memory: 192Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
 gerrit:
   deploy: true
   name: "gerrit"
@@ -22,6 +30,14 @@ gerrit:
     size: 1Gi
     class: gp2
   basePath: ""
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
 
 gitServer:
   name: "gerrit"
