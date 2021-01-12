@@ -8,7 +8,8 @@ global:
 name: gerrit-operator
 image:
   name: epamedp/gerrit-operator
-  version: v2.5.0
+  # if not defined then .Chart.AppVersion is used
+  version:
 
 resources:
   limits:
