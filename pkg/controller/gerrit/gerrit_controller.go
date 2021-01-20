@@ -138,13 +138,6 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 	}
 
-	instance, err = r.service.Install(instance)
-	if err != nil {
-		reqLogger.Info(fmt.Sprintf("%s/%s Gerrit installation failed!",instance.Name, instance.Namespace))
-		r.resourceActionFailed(instance, err)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	}
-
 	if instance.Status.Status == StatusInstall {
 		reqLogger.Info(fmt.Sprintf("%v/%v Gerrit has been installed", instance.Namespace, instance.Name))
 		r.updateStatus(instance, StatusCreated)

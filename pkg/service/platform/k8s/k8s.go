@@ -10,7 +10,6 @@ import (
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/client"
 	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
 	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
 	jenkinsV1Api "github.com/epmd-edp/jenkins-operator/v2/pkg/apis/v2/v1alpha1"
 	jenkinsScriptV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/client"
@@ -20,11 +19,9 @@ import (
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	appsV1Client "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -352,16 +349,6 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 	return stdout.String(), stderr.String(), nil
 }
 
-// CreateService creates a new Service Resource for a Gerrit EDP Component
-func (s *K8SService) CreateService(gerrit *v1alpha1.Gerrit) error {
-	for _, serviceName := range []string{gerrit.Name} {
-		if err := s.createGerritService(serviceName, gerrit); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // CreateSecret creates a new Secret Resource for a Gerrit EDP Component
 func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, data map[string][]byte) error {
 	gerritSecretObject := newGerritSecret(secretName, gerrit.Name, gerrit.Namespace, data)
@@ -384,40 +371,6 @@ func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, da
 		}
 	}
 	return nil
-}
-
-// CreateVolume creates a new PersitentVolume resource for a Gerrit EDP Component
-func (s *K8SService) CreateVolume(gerrit *v1alpha1.Gerrit) error {
-	for _, volume := range gerrit.Spec.Volumes {
-		if err := s.createGerritPersistentVolume(gerrit, volume); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// CreateServiceAccount creates a new ServiceAcount resource for a Gerrit EDP Component
-func (s *K8SService) CreateServiceAccount(gerrit *v1alpha1.Gerrit) (account *coreV1Api.ServiceAccount, e error) {
-	gerritSAObject := newGerritServiceAccount(gerrit.Name, gerrit.Namespace)
-
-	if err := controllerutil.SetControllerReference(gerrit, gerritSAObject, s.Scheme); err != nil {
-		return nil, err
-	}
-
-	if account, e = s.CoreClient.ServiceAccounts(gerritSAObject.Namespace).Get(gerritSAObject.Name, metav1.GetOptions{}); e != nil {
-		if k8serr.IsNotFound(e) {
-			msg := fmt.Sprintf("Creating a new ServiceAccount %s for Gerrit %s/%s", gerritSAObject.Name, gerrit.Name, gerrit.Name)
-			log.V(1).Info(msg)
-			if account, e = s.CoreClient.ServiceAccounts(gerritSAObject.Namespace).Create(gerritSAObject); e != nil {
-				return nil, helpers.LogErrorAndReturn(e)
-			}
-			msg = fmt.Sprintf("ServiceAccount %s/%s has been created", gerritSAObject.Namespace, gerritSAObject.Name)
-			log.Info(msg)
-		} else if e != nil {
-			return nil, helpers.LogErrorAndReturn(e)
-		}
-	}
-	return account, nil
 }
 
 // GetSecret returns data section of an existing Secret resource of a Gerrit EDP Component
@@ -458,135 +411,6 @@ func (s *K8SService) UpdateService(svc coreV1Api.Service, nodePort int32) error 
 	}
 
 	return nil
-}
-
-func (s *K8SService) createGerritPersistentVolume(gerrit *v1alpha1.Gerrit, gerritVolume v1alpha1.GerritVolumes) error {
-	gerritVolumeObject := newGerritPersistentVolumeClaim(gerritVolume, gerrit.Name, gerrit.Namespace)
-
-	if err := controllerutil.SetControllerReference(gerrit, gerritVolumeObject, s.Scheme); err != nil {
-		return err
-	}
-
-	if _, err := s.CoreClient.PersistentVolumeClaims(gerritVolumeObject.Namespace).Get(gerritVolumeObject.Name, metav1.GetOptions{}); err != nil {
-		if k8serr.IsNotFound(err) {
-			msg := fmt.Sprintf("Creating a new PersistantVolumeClaim %s for %s/%s", gerritVolumeObject.Name, gerrit.Namespace, gerrit.Name)
-			log.V(1).Info(msg)
-			if _, err = s.CoreClient.PersistentVolumeClaims(gerritVolumeObject.Namespace).Create(gerritVolumeObject); err != nil {
-				return err
-			}
-			msg = fmt.Sprintf("PersistantVolumeClaim %s/%s has been created", gerritVolumeObject.Namespace, gerritVolumeObject.Name)
-			log.Info(msg)
-		} else {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *K8SService) createGerritService(serviceName string, gerrit *v1alpha1.Gerrit) error {
-	portMap := newGerritPortMap(*gerrit)
-	gerritServiceObject := newGerritInternalBalancingService(serviceName, gerrit.Namespace, portMap[serviceName])
-
-	if err := controllerutil.SetControllerReference(gerrit, gerritServiceObject, s.Scheme); err != nil {
-		return err
-	}
-
-	if _, err := s.CoreClient.Services(gerrit.Namespace).Get(serviceName, metav1.GetOptions{}); err != nil {
-		if k8serr.IsNotFound(err) {
-			msg := fmt.Sprintf("Creating a new service %s for gerrit %s/%s", gerritServiceObject.Name, gerrit.Namespace, gerrit.Name)
-			log.V(1).Info(msg)
-			if _, err = s.CoreClient.Services(gerritServiceObject.Namespace).Create(gerritServiceObject); err != nil {
-				return err
-			}
-			msg = fmt.Sprintf("Service %s/%s has been created", gerritServiceObject.Namespace, gerritServiceObject.Name)
-			log.Info(msg)
-		} else {
-			return err
-		}
-	}
-	return nil
-}
-
-func newGerritServiceAccount(name, namespace string) *coreV1Api.ServiceAccount {
-	return &coreV1Api.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    platformHelper.GenerateLabels(name),
-		},
-	}
-}
-
-func newGerritPersistentVolumeClaim(volume v1alpha1.GerritVolumes, gerritName, namespace string) *coreV1Api.PersistentVolumeClaim {
-	return &coreV1Api.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      gerritName + "-" + volume.Name,
-			Namespace: namespace,
-			Labels:    platformHelper.GenerateLabels(gerritName),
-		},
-		Spec: coreV1Api.PersistentVolumeClaimSpec{
-			AccessModes: []coreV1Api.PersistentVolumeAccessMode{
-				coreV1Api.ReadWriteOnce,
-			},
-			StorageClassName: &volume.StorageClass,
-			Resources: coreV1Api.ResourceRequirements{
-				Requests: map[coreV1Api.ResourceName]resource.Quantity{
-					coreV1Api.ResourceStorage: resource.MustParse(volume.Capacity),
-				},
-			},
-		},
-	}
-}
-
-func newGerritPortMap(i v1alpha1.Gerrit) map[string][]coreV1Api.ServicePort {
-	if i.Spec.SshPort != 0 {
-		return map[string][]coreV1Api.ServicePort{
-			i.Name: {
-				{
-					TargetPort: intstr.IntOrString{StrVal: "ui"},
-					Port:       spec.Port,
-					Name:       "ui",
-				},
-				{
-					TargetPort: intstr.IntOrString{StrVal: spec.SSHPortName},
-					Port:       spec.SSHPort,
-					Name:       spec.SSHPortName,
-					NodePort:   i.Spec.SshPort,
-				},
-			},
-		}
-	} else {
-		return map[string][]coreV1Api.ServicePort{
-			i.Name: {
-				{
-					TargetPort: intstr.IntOrString{StrVal: "ui"},
-					Port:       spec.Port,
-					Name:       "ui",
-				},
-				{
-					TargetPort: intstr.IntOrString{StrVal: spec.SSHPortName},
-					Port:       spec.SSHPort,
-					Name:       spec.SSHPortName,
-				},
-			},
-		}
-	}
-}
-
-func newGerritInternalBalancingService(serviceName, namespace string, ports []coreV1Api.ServicePort) *coreV1Api.Service {
-	labels := platformHelper.GenerateLabels(serviceName)
-	return &coreV1Api.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceName,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Spec: coreV1Api.ServiceSpec{
-			Selector: labels,
-			Ports:    ports,
-			Type:     "NodePort",
-		},
-	}
 }
 
 func newGerritSecret(name, gerritName, namespace string, data map[string][]byte) *coreV1Api.Secret {

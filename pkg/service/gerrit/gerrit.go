@@ -42,7 +42,6 @@ const (
 // Interface expresses behaviour of the Gerrit EDP Component
 type Interface interface {
 	IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error)
-	Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
 	Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, bool, error)
 	ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
 	Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
@@ -67,49 +66,6 @@ func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runt
 // IsDeploymentReady check if DC for Gerrit is ready
 func (s ComponentService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error) {
 	return s.PlatformService.IsDeploymentReady(instance)
-}
-
-// Install has a minimal set of logic, required to install "vanilla" Gerrit EDP Component
-func (s ComponentService) Install(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
-	sa, err := s.PlatformService.CreateServiceAccount(instance)
-	if err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Service Account for %v/%v",
-			instance.Namespace, instance.Name)
-	}
-
-	if err := s.PlatformService.CreateSecurityContext(instance, sa); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Security Context for %v/%v",
-			instance.Namespace, instance.Name)
-	}
-
-	if err := s.PlatformService.CreateService(instance); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Service for %v/%v",
-			instance.Namespace, instance.Name)
-	}
-
-	if err := s.PlatformService.CreateExternalEndpoint(instance); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create External Endpoint for %v/%v",
-			instance.Namespace, instance.Name)
-	}
-
-	if err := s.PlatformService.CreateVolume(instance); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Volume for %v/%v",
-			instance.Namespace, instance.Name)
-	}
-
-	if err := s.PlatformService.CreateDeployment(instance); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Deploy Config for %v/%v",
-			instance.Namespace, instance.Name)
-	}
-
-	if err := s.PlatformService.CreateSecret(instance, instance.Name+"-admin-password", map[string][]byte{
-		"user":     []byte(spec.GerritDefaultAdminUser),
-		"password": []byte(uniuri.New()),
-	}); err != nil {
-		return instance, errors.Wrapf(err, "Failed to create admin Secret %v for Gerrit", instance.Name+"-admin-password")
-	}
-
-	return instance, nil
 }
 
 // Configure contains logic related to self configuration of the Gerrit EDP Component

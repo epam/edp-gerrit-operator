@@ -19,14 +19,8 @@ type PlatformService interface {
 	GetExternalEndpoint(namespace string, name string) (string, string, error)
 	ExecInPod(namespace string, podName string, command []string) (string, string, error)
 	GetSecretData(namespace string, name string) (map[string][]byte, error)
-	CreateExternalEndpoint(gerrit *v1alpha1.Gerrit) error
-	CreateSecurityContext(gerrit *v1alpha1.Gerrit, sa *coreV1Api.ServiceAccount) error
-	CreateService(gerrit *v1alpha1.Gerrit) error
 	CreateSecret(gerrit *v1alpha1.Gerrit, name string, data map[string][]byte) error
-	CreateVolume(gerrit *v1alpha1.Gerrit) error
-	CreateServiceAccount(gerrit *v1alpha1.Gerrit) (*coreV1Api.ServiceAccount, error)
 	GetSecret(namespace string, name string) (map[string][]byte, error)
-	CreateDeployment(gerrit *v1alpha1.Gerrit) error
 	IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error)
 	PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error
 	GetDeploymentSSHPort(gerrit *v1alpha1.Gerrit) (int32, error)
