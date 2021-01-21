@@ -62,21 +62,6 @@ func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string,
 	return i.Spec.Rules[0].Host, platformHelper.RouteHTTPSScheme, nil
 }
 
-func (s *K8SService) CreateExternalEndpoint(g *v1alpha1.Gerrit) error {
-	//CreateExternalEndpoint - Obsolete interface method. To be removed when refactored
-	return nil
-}
-
-func (s *K8SService) CreateSecurityContext(g *v1alpha1.Gerrit, sa *coreV1Api.ServiceAccount) error {
-	//CreateSecurityContext - Obsolete interface method. To be removed when refactored
-	return nil
-}
-
-func (s *K8SService) CreateDeployment(g *v1alpha1.Gerrit) error {
-	//CreateDeployment - Obsolete interface method. To be removed when refactored
-	return nil
-}
-
 func (s *K8SService) IsDeploymentReady(gerrit *v1alpha1.Gerrit) (bool, error) {
 	deployment, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
 	if err != nil {

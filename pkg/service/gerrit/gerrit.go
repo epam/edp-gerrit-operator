@@ -84,6 +84,13 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
+	if err := s.PlatformService.CreateSecret(instance, instance.Name+"-admin-password", map[string][]byte{
+		"user":     []byte(spec.GerritDefaultAdminUser),
+		"password": []byte(uniuri.New()),
+	}); err != nil {
+		return instance, false, errors.Wrapf(err, "Failed to create admin Secret %v for Gerrit", instance.Name+"-admin-password")
+	}
+
 	sshPortService, err := s.GetServicePort(instance)
 	if err != nil {
 		return instance, false, err
