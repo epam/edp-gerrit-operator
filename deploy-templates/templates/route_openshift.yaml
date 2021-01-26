@@ -3,9 +3,14 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-    labels:
-        app: {{.Values.gerrit.name}}
-    name: {{.Values.gerrit.name}}
+  name: {{.Values.gerrit.name}}
+  labels:
+    app: {{.Values.gerrit.name}}
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
+  {{- with .Values.gerrit.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
     host: {{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}gerrit-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
     path: {{if .Values.gerrit.basePath}}/{{.Values.gerrit.basePath}}(/|$)(.*){{else}}/{{end}}

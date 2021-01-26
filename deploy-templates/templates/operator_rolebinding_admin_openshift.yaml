@@ -2,14 +2,16 @@
 apiVersion: authorization.openshift.io/v1
 kind: RoleBinding
 metadata:
-  name: gerrit-operator-admin-{{ .Values.global.edpName }}
+  labels:
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
+  name: edp-gerrit-operator-admin-{{ .Values.global.edpName }}
 roleRef:
   name: admin
 subjects:
   - kind: ServiceAccount
-    name: gerrit-operator-edp
+    name: edp-gerrit-operator
     namespace: {{ .Values.global.edpName }}
 userNames:
-  - system:serviceaccount:{{ .Values.global.edpName }}:gerrit-operator-edp
+  - system:serviceaccount:{{ .Values.global.edpName }}:edp-gerrit-operator
 groupNames: []
 {{- end -}}

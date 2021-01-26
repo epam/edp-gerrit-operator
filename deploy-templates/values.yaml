@@ -1,11 +1,15 @@
 global:
   edpName: ""
-  platform: "kubernetes"
+  platform: "openshift"
   dnsWildCard: "eks-delivery.aws.main.edp.projects.epam.com"
   admins:
     - "stub_user_one@example.com"
 
 name: gerrit-operator
+annotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
 image:
   name: epamedp/gerrit-operator
   # if not defined then .Chart.AppVersion is used
@@ -30,6 +34,12 @@ gerrit:
     size: 1Gi
     class: gp2
   basePath: ""
+  annotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  ingress:
+    annotations: {}
 
   resources:
     limits:

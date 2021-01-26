@@ -3,7 +3,9 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: {{.Values.gerrit.name}}-{{.Values.global.edpName}}
+  labels:
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
+  name: edp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}
 spec:
   hostIPC: true
   hostPID: false

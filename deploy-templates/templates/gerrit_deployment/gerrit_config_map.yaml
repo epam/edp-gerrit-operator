@@ -4,5 +4,7 @@ data:
   sshPort: "{{.Values.gerrit.sshPort}}"
 kind: ConfigMap
 metadata:
+  labels:
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
   name: {{.Values.gerrit.name}}
 {{end}}

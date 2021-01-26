@@ -2,10 +2,9 @@
 apiVersion: authorization.openshift.io/v1
 kind: ClusterRole
 metadata:
-  annotations:
-    openshift.io/description: Role for gerrit-operator-edp service account
-    openshift.io/reconcile-protect: "false"
-  name: gerrit-operator-role-{{ .Values.global.edpName }}
+  labels:
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
+  name: edp-{{ .Values.global.edpName }}
 rules:
 - apiGroups:
     - '*'

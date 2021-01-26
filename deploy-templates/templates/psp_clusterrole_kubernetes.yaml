@@ -3,14 +3,16 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: psp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}-clusterrole
+  labels:
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
+  name: edp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}-psp
 rules:
 - apiGroups:
   - extensions
   resources:
   - podsecuritypolicies
   resourceNames:
-  - {{.Values.gerrit.name}}-{{.Values.global.edpName}}
+  - edp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}
   verbs:
   - use
 {{end}}

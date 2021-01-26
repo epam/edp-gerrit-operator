@@ -5,6 +5,7 @@ metadata:
   name: {{.Values.gerrit.name}}-data
   labels:
     app: {{.Values.gerrit.name}}
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce

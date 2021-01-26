@@ -17,6 +17,7 @@ kind: SecurityContextConstraints
 metadata:
   labels:
     app: {{.Values.gerrit.name}}
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
   name: {{.Values.gerrit.name}}-{{.Values.global.edpName}}
 priority: 1
 readOnlyRootFilesystem: false
