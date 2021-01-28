@@ -14,7 +14,4 @@ spec:
             backend:
               serviceName: {{ .Values.gerrit.name }}
               servicePort: 8080
-status:
-  loadBalancer:
-    ingress:
 {{ end }}
