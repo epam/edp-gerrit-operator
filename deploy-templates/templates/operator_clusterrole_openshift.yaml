@@ -8,7 +8,6 @@ metadata:
 rules:
 - apiGroups:
     - '*'
-  attributeRestrictions: null
   resources:
     - securitycontextconstraints
   verbs:
@@ -20,7 +19,6 @@ rules:
     - create
 - apiGroups:
     - '*'
-  attributeRestrictions: null
   resources:
     - gerrits
     - gerrits/finalizers
@@ -31,7 +29,6 @@ rules:
     - '*'
 - apiGroups:
     - '*'
-  attributeRestrictions: null
   resources:
     - gerrits
     - gerrits/finalizers

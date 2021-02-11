@@ -8,7 +8,6 @@ metadata:
 rules:
 - apiGroups:
     - 'rbac.authorization.k8s.io'
-  attributeRestrictions: null
   resources:
     - podsecuritypolicies
   verbs:
@@ -17,7 +16,6 @@ rules:
     - list
 - apiGroups:
     - '*'
-  attributeRestrictions: null
   resources:
     - gerrits
     - gerrits/finalizers
@@ -28,7 +26,6 @@ rules:
     - '*'
 - apiGroups:
     - '*'
-  attributeRestrictions: null
   resources:
     - gerrits
     - gerrits/finalizers
