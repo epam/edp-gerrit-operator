@@ -12,7 +12,7 @@ _**NOTE:** Operator is platform-independent, that is why there is a unified inst
 ## Prerequisites
 1. Linux machine or Windows Subsystem for Linux instance with [Helm 3](https://helm.sh/docs/intro/install/) installed;
 2. Cluster admin access to the cluster;
-3. EDP project/namespace is deployed by following one of the instructions: [edp-install-openshift](https://github.com/epmd-edp/edp-install/blob/master/documentation/openshift_install_edp.md#edp-project) or [edp-install-kubernetes](https://github.com/epmd-edp/edp-install/blob/master/documentation/kubernetes_install_edp.md#edp-namespace).
+3. EDP project/namespace is deployed by following one of the instructions: [edp-install-openshift](https://github.com/epam/edp-install/blob/master/documentation/openshift_install_edp.md#edp-project) or [edp-install-kubernetes](https://github.com/epam/edp-install/blob/master/documentation/kubernetes_install_edp.md#edp-namespace).
 
 ## Installation
 In order to install the EDP Gerrit Operator, follow the steps below:
@@ -67,4 +67,4 @@ In order to develop the operator, first set up a local environment. For details,
 ### Related Articles
 - [Architecture Scheme of Gerrit Operator](documentation/arch.md)
 - [Replicate Gerrit to GitLab](documentation/replicate_gerrit_to_gitlab.md)
-- [Replication of Gerrit Development to Gerrit Production](https://github.com/epmd-edp/edp-install/blob/master/documentation/gerrit_dev_to_prod.md#replication-of-gerrit-development-to-gerrit-production)
+- [Replication of Gerrit Development to Gerrit Production](https://github.com/epam/edp-install/blob/master/documentation/gerrit_dev_to_prod.md#replication-of-gerrit-development-to-gerrit-production)
