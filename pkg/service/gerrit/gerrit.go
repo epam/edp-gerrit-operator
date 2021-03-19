@@ -335,7 +335,7 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	userGroups := map[string][]string{
 		spec.GerritDefaultCiUserUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup,
-			spec.GerritCIToolsGroupName, spec.GerritNonInteractiveUsersGroup},
+			spec.GerritCIToolsGroupName, spec.GerritServiceUsersGroup},
 		spec.GerritDefaultProjectCreatorUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup},
 	}
 

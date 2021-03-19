@@ -67,8 +67,8 @@ const (
 	//GerritProjectBootstrappersGroupDescription - default group description for Project Bootstrappers group
 	GerritProjectBootstrappersGroupDescription = "Grants all the permissions needed to set up a new project"
 
-	//GerritNonInteractiveUsersGroup - group for users who perform batch actions on Gerrit
-	GerritNonInteractiveUsersGroup = "Non-Interactive Users"
+	//GerritServiceUsersGroup - group for users who perform batch actions on Gerrit
+	GerritServiceUsersGroup = "Service Users"
 
 	//GerritAdministratorsGroup - group for users who perform batch actions on Gerrit
 	GerritAdministratorsGroup = "Administrators"
