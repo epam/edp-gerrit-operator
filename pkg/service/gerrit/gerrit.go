@@ -50,6 +50,17 @@ type Interface interface {
 	GetServicePort(instance *v1alpha1.Gerrit) (int32, error)
 }
 
+type ErrUserNotFound string
+
+func (e ErrUserNotFound) Error() string {
+	return string(e)
+}
+
+func IsErrUserNotFound(err error) bool {
+	_, ok := err.(ErrUserNotFound)
+	return ok
+}
+
 // ComponentService implements gerrit.Interface
 type ComponentService struct {
 	// Providing Gerrit EDP component implementation through the interface (platform abstract)
@@ -272,7 +283,9 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 
 		if *userStatus == 404 {
-			log.Info(fmt.Sprintf("User %v not found in Gerrit", user.Username))
+			msg := fmt.Sprintf("User %v not found in Gerrit", user.Username)
+			log.Info(msg)
+			return instance, false, ErrUserNotFound(msg)
 		} else {
 			err := s.gerritClient.AddUserToGroups(user.Username, user.Groups)
 			if err != nil {

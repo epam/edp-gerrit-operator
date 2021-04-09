@@ -171,9 +171,12 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 
 	instance, dPatched, err := r.service.Configure(instance)
 	if err != nil {
-		msg := fmt.Sprintf("%v/%v Gerrit configuration has failed", instance.Namespace, instance.Name)
-		reqLogger.Info(msg)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+		reqLogger.Info(fmt.Sprintf("%v/%v Gerrit configuration has failed", instance.Namespace, instance.Name))
+		reconcileTimeout := 10 * time.Second
+		if gerrit.IsErrUserNotFound(err) {
+			reconcileTimeout = 60 * time.Second
+		}
+		return reconcile.Result{RequeueAfter: reconcileTimeout}, err
 	}
 
 	if dPatched {
