@@ -56,6 +56,10 @@ func (e ErrUserNotFound) Error() string {
 }
 
 func IsErrUserNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+
 	_, ok := err.(ErrUserNotFound)
 	return ok
 }

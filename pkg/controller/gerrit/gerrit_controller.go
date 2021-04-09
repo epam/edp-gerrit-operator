@@ -163,13 +163,14 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	instance, dPatched, err := r.service.Configure(instance)
+	var finalRequeueAfterTimeout time.Duration
 	if err != nil {
 		reqLogger.Info(fmt.Sprintf("%v/%v Gerrit configuration has failed", instance.Namespace, instance.Name))
-		reconcileTimeout := 10 * time.Second
 		if gerrit.IsErrUserNotFound(err) {
-			reconcileTimeout = 60 * time.Second
+			finalRequeueAfterTimeout = 60 * time.Second
+		} else {
+			return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 		}
-		return reconcile.Result{RequeueAfter: reconcileTimeout}, err
 	}
 
 	if dPatched {
@@ -245,7 +246,7 @@ func (r *ReconcileGerrit) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	reqLogger.Info(fmt.Sprintf("Reconciling Gerrit component %v/%v has been finished", request.Namespace, request.Name))
-	return reconcile.Result{}, nil
+	return reconcile.Result{RequeueAfter: finalRequeueAfterTimeout}, nil
 }
 
 func (r *ReconcileGerrit) updateStatus(instance *v1alpha1.Gerrit, status string) error {
