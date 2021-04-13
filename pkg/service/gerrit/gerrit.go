@@ -280,6 +280,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 	}
 
+	var userErr error
 	for _, user := range instance.Spec.Users {
 		userStatus, err := s.gerritClient.GetUser(user.Username)
 		if err != nil {
@@ -289,7 +290,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		if *userStatus == 404 {
 			msg := fmt.Sprintf("User %v not found in Gerrit", user.Username)
 			log.Info(msg)
-			return instance, false, ErrUserNotFound(msg)
+			userErr = ErrUserNotFound(msg)
 		} else {
 			err := s.gerritClient.AddUserToGroups(user.Username, user.Groups)
 			if err != nil {
@@ -298,7 +299,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 	}
 
-	return instance, false, nil
+	return instance, false, userErr
 }
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
