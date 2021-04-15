@@ -1,10 +1,10 @@
 package platform
 
 import (
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/k8s"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/openshift"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/openshift"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

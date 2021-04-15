@@ -3,10 +3,10 @@ package gerrit
 import (
 	"bytes"
 	"fmt"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/client/ssh"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
@@ -14,11 +14,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 )
 
-var log = logf.Log.WithName("client_gerrit")
+var log = ctrl.Log.WithName("client_gerrit")
 
 type Client struct {
 	instance  *v1alpha1.Gerrit

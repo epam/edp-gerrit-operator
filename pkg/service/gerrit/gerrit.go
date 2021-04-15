@@ -6,18 +6,17 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/dchest/uniuri"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
-	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
-	jenkinsHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
-	jenPlatformHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/service/platform/helper"
-	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
+	jenkinsHelper "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
+	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	coreV1Api "k8s.io/api/core/v1"
@@ -28,11 +27,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
-var log = logf.Log.WithName("service_gerrit")
+var log = ctrl.Log.WithName("service_gerrit")
 
 const (
 	imgFolder  = "img"
@@ -95,7 +94,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	GerritScriptsPath := platformHelper.LocalScriptsRelativePath
-	if _, err = k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
@@ -567,7 +566,7 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 
 func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
@@ -579,7 +578,7 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 
 func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)

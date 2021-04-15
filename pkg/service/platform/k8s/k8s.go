@@ -5,16 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	edpCompApi "github.com/epmd-edp/edp-component-operator/pkg/apis/v1/v1alpha1"
-	edpCompClient "github.com/epmd-edp/edp-component-operator/pkg/client"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/client"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
-	jenkinsV1Api "github.com/epmd-edp/jenkins-operator/v2/pkg/apis/v2/v1alpha1"
-	jenkinsScriptV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/client"
-	JenkinsSAV1Client "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsserviceaccount/client"
-	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
+	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
+	edpCompClient "github.com/epam/edp-component-operator/pkg/client"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
+	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
+	jenkinsScriptV1Client "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsscript/client"
+	JenkinsSAV1Client "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsserviceaccount/client"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,13 +30,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 	"regexp"
+	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"strconv"
 )
 
-var log = logf.Log.WithName("platform")
+var log = ctrl.Log.WithName("platform")
 
 // K8SService implements platform.Service interface (k8s platform integration)
 type K8SService struct {
@@ -52,7 +52,7 @@ type K8SService struct {
 }
 
 func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
-	i, err := s.extensionsV1Client.Ingresses(namespace).Get(name, metav1.GetOptions{})
+	i, err := s.extensionsV1Client.Ingresses(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && k8sErrors.IsNotFound(err) {
 		return "", "", errors.New(fmt.Sprintf("Ingress %v in namespace %v not found", name, namespace))
 	} else if err != nil {
@@ -63,7 +63,7 @@ func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string,
 }
 
 func (s *K8SService) IsDeploymentReady(gerrit *v1alpha1.Gerrit) (bool, error) {
-	deployment, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
+	deployment, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -76,7 +76,7 @@ func (s *K8SService) IsDeploymentReady(gerrit *v1alpha1.Gerrit) (bool, error) {
 }
 
 func (s *K8SService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
-	d, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
+	d, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
 
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (s *K8SService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.
 		return err
 	}
 
-	_, err = s.appsV1Client.Deployments(d.Namespace).Patch(d.Name, types.StrategicMergePatchType, jsonDc)
+	_, err = s.appsV1Client.Deployments(d.Namespace).Patch(context.TODO(), d.Name, types.StrategicMergePatchType, jsonDc, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 }
 
 func (service K8SService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
-	d, err := service.appsV1Client.Deployments(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+	d, err := service.appsV1Client.Deployments(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -268,7 +268,7 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 
 // GetSecret return data field of Secret
 func (service K8SService) GetSecretData(namespace string, name string) (map[string][]byte, error) {
-	secret, err := service.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := service.CoreClient.Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && k8serr.IsNotFound(err) {
 		log.Info(fmt.Sprintf("Secret %v in namespace %v not found", name, namespace))
 		return nil, nil
@@ -280,7 +280,7 @@ func (service K8SService) GetSecretData(namespace string, name string) (map[stri
 
 // GetPods returns Pod list according to the filter
 func (s *K8SService) GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error) {
-	PodList, err := s.CoreClient.Pods(namespace).List(filter)
+	PodList, err := s.CoreClient.Pods(namespace).List(context.TODO(), filter)
 	if err != nil {
 		return &coreV1Api.PodList{}, err
 	}
@@ -290,7 +290,7 @@ func (s *K8SService) GetPods(namespace string, filter metav1.ListOptions) (*core
 
 // ExecInPod executes command in pod
 func (s *K8SService) ExecInPod(namespace string, podName string, command []string) (string, string, error) {
-	pod, err := s.CoreClient.Pods(namespace).Get(podName, metav1.GetOptions{})
+	pod, err := s.CoreClient.Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", "", err
 	}
@@ -342,11 +342,11 @@ func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, da
 		return err
 	}
 
-	if _, err := s.CoreClient.Secrets(gerritSecretObject.Namespace).Get(gerritSecretObject.Name, metav1.GetOptions{}); err != nil {
+	if _, err := s.CoreClient.Secrets(gerritSecretObject.Namespace).Get(context.TODO(), gerritSecretObject.Name, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
 			msg := fmt.Sprintf("Creating a new Secret %s/%s for Gerrit", gerritSecretObject.Namespace, gerritSecretObject.Name)
 			log.V(1).Info(msg)
-			if _, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(gerritSecretObject); err != nil {
+			if _, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(context.TODO(), gerritSecretObject, metav1.CreateOptions{}); err != nil {
 				return err
 			}
 			msg = fmt.Sprintf("Secret %s/%s has been created", gerritSecretObject.Namespace, gerritSecretObject.Name)
@@ -360,7 +360,7 @@ func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, da
 
 // GetSecret returns data section of an existing Secret resource of a Gerrit EDP Component
 func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte, error) {
-	secret, err := s.CoreClient.Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := s.CoreClient.Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			log.Info(fmt.Sprintf("Secret %v in namespace %v not found", name, namespace))
@@ -373,7 +373,7 @@ func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte
 
 // GetService returns existing Service resource of a Gerrit EDP Component
 func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Service, error) {
-	service, err := s.CoreClient.Services(namespace).Get(name, metav1.GetOptions{})
+	service, err := s.CoreClient.Services(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			log.Info("Service %v in namespace %v not found", name, namespace)
@@ -390,7 +390,7 @@ func (s *K8SService) UpdateService(svc coreV1Api.Service, nodePort int32) error 
 	updatedPorts, err := updatePort(ports, "ssh", nodePort)
 	svc.Spec.Ports = updatedPorts
 
-	_, err = s.CoreClient.Services(svc.Namespace).Update(&svc)
+	_, err = s.CoreClient.Services(svc.Namespace).Update(context.TODO(), &svc, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -450,10 +450,10 @@ func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName st
 		return errors.Wrapf(err, "Couldn't set reference for Config Map %v object", configMapObject.Name)
 	}
 
-	cm, err := s.CoreClient.ConfigMaps(instance.Namespace).Get(configMapObject.Name, metav1.GetOptions{})
+	cm, err := s.CoreClient.ConfigMaps(instance.Namespace).Get(context.TODO(), configMapObject.Name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			cm, err = s.CoreClient.ConfigMaps(configMapObject.Namespace).Create(configMapObject)
+			cm, err = s.CoreClient.ConfigMaps(configMapObject.Namespace).Create(context.TODO(), configMapObject, metav1.CreateOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "Couldn't create Config Map %v object", cm.Name)
 			}
@@ -477,10 +477,10 @@ func (s K8SService) CreateJenkinsServiceAccount(namespace string, secretName str
 		},
 	}
 
-	_, err := s.JenkinsServiceAccountClient.Get(secretName, namespace, metav1.GetOptions{})
+	_, err := s.JenkinsServiceAccountClient.Get(context.TODO(), secretName, namespace, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			_, err = s.JenkinsServiceAccountClient.Create(jsa, namespace)
+			_, err = s.JenkinsServiceAccountClient.Create(context.TODO(), jsa, namespace)
 			if err != nil {
 				return err
 			}
@@ -503,10 +503,10 @@ func (s K8SService) CreateJenkinsScript(namespace string, configMap string) erro
 		},
 	}
 
-	_, err := s.JenkinsScriptClient.Get(configMap, namespace, metav1.GetOptions{})
+	_, err := s.JenkinsScriptClient.Get(context.TODO(), configMap, namespace, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			_, err = s.JenkinsScriptClient.Create(js, namespace)
+			_, err = s.JenkinsScriptClient.Create(context.TODO(), js, namespace)
 			if err != nil {
 				return err
 			}
