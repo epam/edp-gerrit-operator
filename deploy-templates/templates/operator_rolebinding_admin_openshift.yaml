@@ -4,7 +4,7 @@ kind: RoleBinding
 metadata:
   labels:
     {{- include "gerrit-operator.labels" . | nindent 4 }}
-  name: edp-gerrit-operator-admin-{{ .Values.global.edpName }}
+  name: edp-{{ .Values.name }}-{{ .Values.global.edpName }}-admin
 roleRef:
   name: admin
 subjects:

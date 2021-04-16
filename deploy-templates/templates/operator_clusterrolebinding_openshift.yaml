@@ -4,9 +4,9 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     {{- include "gerrit-operator.labels" . | nindent 4 }}
-  name: edp-gerrit-operator-{{ .Values.global.edpName }}
+  name: edp-{{ .Values.name }}-{{ .Values.global.edpName }}
 roleRef:
-  name: edp-gerrit-operator-role-{{ .Values.global.edpName }}
+  name: edp-{{ .Values.name }}-{{ .Values.global.edpName }}
 subjects:
   - kind: ServiceAccount
     name: edp-gerrit-operator
