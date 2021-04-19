@@ -1,12 +1,12 @@
 {{- if eq .Values.global.platform "openshift" -}}
 apiVersion: authorization.openshift.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   labels:
     {{- include "gerrit-operator.labels" . | nindent 4 }}
-  name: edp-{{ .Values.name }}-{{ .Values.global.edpName }}-admin
+  name: edp-{{ .Values.name }}-{{ .Values.global.edpName }}
 roleRef:
-  name: admin
+  name: edp-{{ .Values.name }}-{{ .Values.global.edpName }}
 subjects:
   - kind: ServiceAccount
     name: edp-gerrit-operator
