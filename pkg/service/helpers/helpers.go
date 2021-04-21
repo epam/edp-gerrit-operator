@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"golang.org/x/crypto/ssh"
 	"log"
 )
@@ -20,8 +20,6 @@ func LogErrorAndReturn(err error) error {
 	log.Printf("[ERROR] %v", err)
 	return err
 }
-
-
 
 // GeneratePrivateKey generates private key
 func generatePrivateKey() (*rsa.PrivateKey, error) {

@@ -3,10 +3,8 @@ package helper
 import (
 	"bytes"
 	"fmt"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
-	gerritHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	"text/template"
@@ -60,12 +58,12 @@ func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
 	}
 
 	templatesDirectoryPath := LocalTemplatesRelativePath
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		templatesDirectoryPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, LocalConfigsRelativePath, DefaultTemplatesDirectory)
 	}
 
 	templateAbsolutePath := fmt.Sprintf("%v/%v", templatesDirectoryPath, JenkinsPluginConfigFileName)
-	if !gerritHelper.FileExists(templateAbsolutePath) {
+	if !helper.FileExists(templateAbsolutePath) {
 		errMsg := fmt.Sprintf("Template file not found in path specificed! Path: %s", templateAbsolutePath)
 		return bytes.Buffer{}, errors.New(errMsg)
 	}

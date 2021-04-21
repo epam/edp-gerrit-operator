@@ -1,13 +1,14 @@
 package openshift
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
-	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/k8s"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
 	securityV1Api "github.com/openshift/api/security/v1"
 	appsV1client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	authV1Client "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
@@ -85,7 +86,7 @@ func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) err
 }
 
 func (service OpenshiftService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
-	route, err := service.routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
+	route, err := service.routeClient.Routes(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && k8serrors.IsNotFound(err) {
 		log.Printf("Route %v in namespace %v not found", name, namespace)
 		return "", "", err
@@ -101,7 +102,7 @@ func (service OpenshiftService) GetExternalEndpoint(namespace string, name strin
 }
 
 func (service OpenshiftService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
-	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -120,7 +121,7 @@ func (service OpenshiftService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) 
 }
 
 func (service OpenshiftService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error) {
-	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(instance.Name, metav1.GetOptions{})
+	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -189,7 +190,7 @@ func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.
 
 func (s *OpenshiftService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
 
-	dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(gerrit.Name, metav1.GetOptions{})
+	dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -212,7 +213,7 @@ func (s *OpenshiftService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []core
 		return err
 	}
 
-	_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(dc.Name, types.StrategicMergePatchType, jsonDc)
+	_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(context.TODO(), dc.Name, types.StrategicMergePatchType, jsonDc, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}

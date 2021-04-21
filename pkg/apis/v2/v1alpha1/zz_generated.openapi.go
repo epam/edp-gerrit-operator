@@ -13,11 +13,11 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.Gerrit":                        schema_pkg_apis_v2_v1alpha1_Gerrit(ref),
-		"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfig":       schema_pkg_apis_v2_v1alpha1_GerritReplicationConfig(ref),
-		"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigSpec":   schema_pkg_apis_v2_v1alpha1_GerritReplicationConfigSpec(ref),
-		"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigStatus": schema_pkg_apis_v2_v1alpha1_GerritReplicationConfigStatus(ref),
-		"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritStatus":                  schema_pkg_apis_v2_v1alpha1_GerritStatus(ref),
+		"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.Gerrit":                        schema_pkg_apis_v2_v1alpha1_Gerrit(ref),
+		"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfig":       schema_pkg_apis_v2_v1alpha1_GerritReplicationConfig(ref),
+		"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigSpec":   schema_pkg_apis_v2_v1alpha1_GerritReplicationConfigSpec(ref),
+		"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigStatus": schema_pkg_apis_v2_v1alpha1_GerritReplicationConfigStatus(ref),
+		"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritStatus":                  schema_pkg_apis_v2_v1alpha1_GerritStatus(ref),
 	}
 }
 
@@ -48,19 +48,19 @@ func schema_pkg_apis_v2_v1alpha1_Gerrit(ref common.ReferenceCallback) common.Ope
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritSpec"),
+							Ref: ref("github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritStatus"),
+							Ref: ref("github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritSpec", "github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritSpec", "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -91,19 +91,19 @@ func schema_pkg_apis_v2_v1alpha1_GerritReplicationConfig(ref common.ReferenceCal
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigSpec"),
+							Ref: ref("github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigStatus"),
+							Ref: ref("github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigSpec", "github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigSpec", "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1.GerritReplicationConfigStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
