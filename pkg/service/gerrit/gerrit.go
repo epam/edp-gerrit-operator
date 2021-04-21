@@ -6,18 +6,17 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/dchest/uniuri"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/helpers"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
-	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
-	jenkinsHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
-	jenPlatformHelper "github.com/epmd-edp/jenkins-operator/v2/pkg/service/platform/helper"
-	keycloakApi "github.com/epmd-edp/keycloak-operator/pkg/apis/v1/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
+	jenkinsHelper "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
+	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	coreV1Api "k8s.io/api/core/v1"
@@ -28,11 +27,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
-var log = logf.Log.WithName("service_gerrit")
+var log = ctrl.Log.WithName("service_gerrit")
 
 const (
 	imgFolder  = "img"
@@ -68,14 +67,14 @@ func IsErrUserNotFound(err error) bool {
 type ComponentService struct {
 	// Providing Gerrit EDP component implementation through the interface (platform abstract)
 	PlatformService platform.PlatformService
-	k8sClient       client.Client
+	client          client.Client
 	k8sScheme       *runtime.Scheme
 	gerritClient    gerrit.Client
 }
 
 // NewComponentService returns a new instance of a gerrit.Service type
 func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runtime.Scheme) Interface {
-	return ComponentService{PlatformService: ps, k8sClient: kc, k8sScheme: ks}
+	return ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 }
 
 // IsDeploymentReady check if DC for Gerrit is ready
@@ -95,7 +94,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	GerritScriptsPath := platformHelper.LocalScriptsRelativePath
-	if _, err = k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
@@ -245,6 +244,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	var userErr error
 	for _, user := range instance.Spec.Users {
+		log.Info("add user to groups", "user", user, "group(s)", user.Groups)
 		userStatus, err := s.gerritClient.GetUser(user.Username)
 		if err != nil {
 			return instance, false, errors.Wrapf(err, "Getting %v user failed", user.Username)
@@ -255,8 +255,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			log.Info(msg)
 			userErr = ErrUserNotFound(msg)
 		} else {
-			err := s.gerritClient.AddUserToGroups(user.Username, user.Groups)
-			if err != nil {
+			if err := s.gerritClient.AddUserToGroups(user.Username, user.Groups); err != nil {
 				return instance, false, errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
 			}
 		}
@@ -267,6 +266,8 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
 func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	vLog := log.WithValues("gerrit", instance.Name)
+	vLog.Info("start exposing configuration")
 	if err := s.initRestClient(instance); err != nil {
 		return instance, errors.Wrapf(err, "Failed to init Gerrit REST client")
 	}
@@ -365,7 +366,9 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	}
 
-	_ = s.k8sClient.Update(context.TODO(), instance)
+	if err := s.client.Update(context.TODO(), instance); err != nil {
+		return nil, errors.Wrap(err, "couldn't update project")
+	}
 
 	if instance.Spec.KeycloakSpec.Enabled {
 		secret, err := uuid.NewUUID()
@@ -386,15 +389,20 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
 		s.setAnnotation(instance, annotationKey, fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
-		_ = s.k8sClient.Update(context.TODO(), instance)
+		if err := s.client.Update(context.TODO(), instance); err != nil {
+			return nil, errors.Wrap(err, "couldn't update annotations")
+		}
 	}
-
-	err = s.createEDPComponent(*instance)
+	if err := s.createEDPComponent(*instance); err != nil {
+		return nil, errors.Wrap(err, "unable to create EDP component")
+	}
 
 	return instance, err
 }
 
 func (s ComponentService) createEDPComponent(gerrit v1alpha1.Gerrit) error {
+	vLog := log.WithValues("name", gerrit.Name)
+	vLog.Info("creating EDP component")
 	url, err := s.getUrl(gerrit)
 	if err != nil {
 		return err
@@ -478,7 +486,7 @@ func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 func (s ComponentService) getKeycloakClient(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakClient, error) {
 	client := &keycloakApi.KeycloakClient{}
-	err := s.k8sClient.Get(context.TODO(), types.NamespacedName{
+	err := s.client.Get(context.TODO(), types.NamespacedName{
 		Name:      instance.Name,
 		Namespace: instance.Namespace,
 	}, client)
@@ -519,10 +527,12 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 		},
 	}
 
-	return s.k8sClient.Create(context.TODO(), client)
+	return s.client.Create(context.TODO(), client)
 }
 
 func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
+	vLog := log.WithValues("gerrit", instance.Name)
+	vLog.Info("init rest client")
 	gerritAdminPassword, err := s.getGerritAdminPassword(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %v/%v", instance.Namespace, instance.Name)
@@ -537,11 +547,13 @@ func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 	}
-
+	vLog.Info("rest client has been initialized.")
 	return nil
 }
 
 func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
+	vLog := log.WithValues("gerrit", instance.Name)
+	vLog.Info("init ssh client")
 	gerritUrl, err := s.GetGerritSSHUrl(instance)
 	if err != nil {
 		return err
@@ -561,13 +573,13 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to init Gerrit SSH client %v/%v", instance.Namespace, instance.Name)
 	}
-
+	vLog.Info("ssh client has been initialized.")
 	return nil
 }
 
 func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
@@ -579,7 +591,7 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 
 func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if !helper.RunningInCluster() {
 		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)

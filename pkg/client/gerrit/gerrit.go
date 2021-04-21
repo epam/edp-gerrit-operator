@@ -3,10 +3,10 @@ package gerrit
 import (
 	"bytes"
 	"fmt"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/client/ssh"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 	"github.com/pkg/errors"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
@@ -14,11 +14,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 )
 
-var log = logf.Log.WithName("client_gerrit")
+var log = ctrl.Log.WithName("client_gerrit")
 
 type Client struct {
 	instance  *v1alpha1.Gerrit
@@ -47,12 +47,15 @@ func (gc Client) CheckCredentials() (int, error) {
 
 // CheckGroup checks gerrit group
 func (gc Client) CheckGroup(groupName string) (*int, error) {
+	vLog := log.WithValues("group name", groupName)
+	vLog.Info("checking group...")
 	statusNotFound := http.StatusNotFound
 	uuid, err := gc.getGroupUuid(groupName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit group uuid")
 	}
 	if uuid == "" {
+		vLog.Info("group wasn't found")
 		return &statusNotFound, nil
 	}
 
@@ -158,6 +161,7 @@ func (gc *Client) ReloadPlugin(plugin string) error {
 }
 
 func (gc *Client) CreateUser(username string, password string, fullname string, publicKey string) error {
+	log.Info("creating user", "name", username)
 	userStatus, err := gc.GetUser(username)
 	if err != nil {
 		return errors.Wrapf(err, "Getting %v user failed", username)

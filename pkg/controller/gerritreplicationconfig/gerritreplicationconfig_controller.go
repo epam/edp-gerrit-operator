@@ -5,68 +5,57 @@ import (
 	"context"
 	coreerrors "errors"
 	"fmt"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epmd-edp/gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller/gerrit"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/controller/helper"
-	serviceHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/helper"
-	gerritService "github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform"
-	platformHelper "github.com/epmd-edp/gerrit-operator/v2/pkg/service/platform/helper"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"path/filepath"
 	"regexp"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
 	"text/template"
 	"time"
 )
 
-var log = logf.Log.WithName("controller_gerritreplicationconfig")
-
-// Add creates a new GerritReplicationConfig Controller and adds it to the Manager. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
-}
-
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	pt := helper.GetPlatformTypeEnv()
-	platformService, _ := platform.NewService(pt, mgr.GetScheme())
-	client := mgr.GetClient()
-	scheme := mgr.GetScheme()
-	componentService := gerritService.NewComponentService(platformService, client, scheme)
+func NewReconcileGerritReplicationConfig(client client.Client, scheme *runtime.Scheme, log logr.Logger) (*ReconcileGerritReplicationConfig, error) {
+	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create platform service")
+	}
 
 	return &ReconcileGerritReplicationConfig{
 		client:           client,
 		scheme:           scheme,
-		platform:         platformService,
-		componentService: componentService,
-	}
+		platform:         ps,
+		componentService: gerritService.NewComponentService(ps, client, scheme),
+		log:              log.WithName("gerrit-replication-config"),
+	}, nil
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	// Create a new controller
-	c, err := controller.New("gerritreplicationconfig-controller", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
-	}
+type ReconcileGerritReplicationConfig struct {
+	client           client.Client
+	scheme           *runtime.Scheme
+	platform         platform.PlatformService
+	componentService gerritService.Interface
+	log              logr.Logger
+}
 
+func (r *ReconcileGerritReplicationConfig) SetupWithManager(mgr ctrl.Manager) error {
 	p := predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			oldObject := e.ObjectOld.(*v1alpha1.GerritReplicationConfig)
@@ -77,42 +66,19 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			return true
 		},
 	}
-
-	// Watch for changes to primary resource GerritReplicationConfig
-	err = c.Watch(&source.Kind{Type: &v1alpha1.GerritReplicationConfig{}}, &handler.EnqueueRequestForObject{}, p)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.GerritReplicationConfig{}, builder.WithPredicates(p)).
+		Complete(r)
 }
 
-// blank assignment to verify that ReconcileGerritReplicationConfig implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileGerritReplicationConfig{}
+func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	log.Info("Reconciling GerritReplicationConfig")
 
-// ReconcileGerritReplicationConfig reconciles a GerritReplicationConfig object
-type ReconcileGerritReplicationConfig struct {
-	// This client, initialized using mgr.Client() above, is a split client
-	// that reads objects from the cache and writes to the apiserver
-	client           client.Client
-	scheme           *runtime.Scheme
-	platform         platform.PlatformService
-	componentService gerritService.Interface
-}
-
-// Reconcile reads that state of the cluster for a GerritReplicationConfig object and makes changes based on the state read
-// and what is in the GerritReplicationConfig.Spec
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling GerritReplicationConfig")
-
-	// Fetch the GerritReplicationConfig instance
 	instance := &v1alpha1.GerritReplicationConfig{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8sErrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
@@ -121,22 +87,22 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) 
 	if !r.isInstanceOwnerSet(instance) {
 		ownerReference := findCROwnerName(*instance)
 
-		gerritInstance, err := r.getGerritInstance(ownerReference, instance.Namespace)
+		gerritInstance, err := r.getGerritInstance(ctx, ownerReference, instance.Namespace)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 
 		instance := r.setOwnerReference(gerritInstance, instance)
 
-		err = r.client.Update(context.TODO(), &instance)
+		err = r.client.Update(ctx, &instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	gerritInstance, err := r.getInstanceOwner(instance)
+	gerritInstance, err := r.getInstanceOwner(ctx, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8sErrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 
@@ -144,10 +110,10 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) 
 	}
 
 	if gerritInstance.Status.Status == gerrit.StatusReady && (instance.Status.Status == "" || instance.Status.Status == spec.StatusFailed) {
-		reqLogger.Info(fmt.Sprintf("Replication configuration of %v/%v object with name has been started",
+		log.Info(fmt.Sprintf("Replication configuration of %v/%v object with name has been started",
 			gerritInstance.Namespace, gerritInstance.Name))
-		reqLogger.Info(fmt.Sprintf("Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name))
-		err := r.updateStatus(instance, spec.StatusConfiguring)
+		log.Info(fmt.Sprintf("Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name))
+		err := r.updateStatus(ctx, instance, spec.StatusConfiguring)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
@@ -160,39 +126,39 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(request reconcile.Request) 
 
 	if instance.Status.Status == spec.StatusConfiguring {
 		log.Info(fmt.Sprintf("Configuration of %v/%v object has been finished", instance.Namespace, instance.Name))
-		err = r.updateStatus(instance, spec.StatusConfigured)
+		err = r.updateStatus(ctx, instance, spec.StatusConfigured)
 		if err != nil {
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
-	err = r.updateAvailableStatus(instance, true)
+	err = r.updateAvailableStatus(ctx, instance, true)
 	if err != nil {
 		log.Info("Failed update avalability status for Gerrit Replication Config object with name %s", instance.Name)
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	reqLogger.Info(fmt.Sprintf("Reconciling Gerrit Replication Config component %v/%v has been finished", request.Namespace, request.Name))
+	log.Info(fmt.Sprintf("Reconciling Gerrit Replication Config component %v/%v has been finished", request.Namespace, request.Name))
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileGerritReplicationConfig) updateStatus(instance *v1alpha1.GerritReplicationConfig, status string) error {
+func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, instance *v1alpha1.GerritReplicationConfig, status string) error {
 	instance.Status.Status = status
 	instance.Status.LastTimeUpdated = time.Now()
-	err := r.client.Status().Update(context.TODO(), instance)
+	err := r.client.Status().Update(ctx, instance)
 	if err != nil {
-		err := r.client.Update(context.TODO(), instance)
+		err := r.client.Update(ctx, instance)
 		if err != nil {
 			return err
 		}
 	}
 
-	log.V(1).Info(fmt.Sprintf("Status for Gerrit Replication Config %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
+	r.log.V(1).Info(fmt.Sprintf("Status for Gerrit Replication Config %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
 	return nil
 }
 
 func (r *ReconcileGerritReplicationConfig) isInstanceOwnerSet(config *v1alpha1.GerritReplicationConfig) bool {
-	log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
+	r.log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
 	ows := config.GetOwnerReferences()
 	if len(ows) == 0 {
 		return false
@@ -201,8 +167,8 @@ func (r *ReconcileGerritReplicationConfig) isInstanceOwnerSet(config *v1alpha1.G
 	return true
 }
 
-func (r *ReconcileGerritReplicationConfig) getInstanceOwner(config *v1alpha1.GerritReplicationConfig) (*v1alpha1.Gerrit, error) {
-	log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
+func (r *ReconcileGerritReplicationConfig) getInstanceOwner(ctx context.Context, config *v1alpha1.GerritReplicationConfig) (*v1alpha1.Gerrit, error) {
+	r.log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
 	ows := config.GetOwnerReferences()
 	gerritOwner := getGerritOwner(ows)
 	if gerritOwner == nil {
@@ -215,7 +181,7 @@ func (r *ReconcileGerritReplicationConfig) getInstanceOwner(config *v1alpha1.Ger
 	}
 
 	ownerCr := &v1alpha1.Gerrit{}
-	err := r.client.Get(context.TODO(), nsn, ownerCr)
+	err := r.client.Get(ctx, nsn, ownerCr)
 	return ownerCr, err
 }
 
@@ -236,14 +202,14 @@ func findCROwnerName(instance v1alpha1.GerritReplicationConfig) *string {
 	return &own
 }
 
-func (r *ReconcileGerritReplicationConfig) getGerritInstance(ownerName *string, namespace string) (*v1alpha1.Gerrit, error) {
+func (r *ReconcileGerritReplicationConfig) getGerritInstance(ctx context.Context, ownerName *string, namespace string) (*v1alpha1.Gerrit, error) {
 	var gerritInstance v1alpha1.Gerrit
 	options := client.ListOptions{Namespace: namespace}
 	list := &v1alpha1.GerritList{}
 	if ownerName == nil {
-		err := r.client.List(context.TODO(), &options, list)
+		err := r.client.List(ctx, list, &options)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if k8sErrors.IsNotFound(err) {
 				return nil, nil
 			}
 			return nil, err
@@ -251,12 +217,12 @@ func (r *ReconcileGerritReplicationConfig) getGerritInstance(ownerName *string, 
 		gerritInstance = list.Items[0]
 	} else {
 		gerritInstance = v1alpha1.Gerrit{}
-		err := r.client.Get(context.TODO(), client.ObjectKey{
+		err := r.client.Get(ctx, client.ObjectKey{
 			Namespace: namespace,
 			Name:      *ownerName,
 		}, &gerritInstance)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if k8sErrors.IsNotFound(err) {
 				return nil, nil
 			}
 			return nil, err
@@ -288,12 +254,12 @@ func (r *ReconcileGerritReplicationConfig) setOwnerReference(gerritInstance *v1a
 
 func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1.GerritReplicationConfig, gerrit *v1alpha1.Gerrit) error {
 	GerritTemplatesPath := platformHelper.LocalTemplatesRelativePath
-	executableFilePath, err := serviceHelper.GetExecutableFilePath()
+	executableFilePath, err := helper.GetExecutableFilePath()
 	if err != nil {
 		return err
 	}
 
-	if _, err := k8sutil.GetOperatorNamespace(); err != nil && err == k8sutil.ErrNoNamespace {
+	if helper.RunningInCluster() {
 		GerritTemplatesPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
 	}
 
@@ -473,13 +439,13 @@ func resolveSshTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName
 	return &config, nil
 }
 
-func (r ReconcileGerritReplicationConfig) updateAvailableStatus(instance *v1alpha1.GerritReplicationConfig, value bool) error {
+func (r ReconcileGerritReplicationConfig) updateAvailableStatus(ctx context.Context, instance *v1alpha1.GerritReplicationConfig, value bool) error {
 	if instance.Status.Available != value {
 		instance.Status.Available = value
 		instance.Status.LastTimeUpdated = time.Now()
-		err := r.client.Status().Update(context.TODO(), instance)
+		err := r.client.Status().Update(ctx, instance)
 		if err != nil {
-			err := r.client.Update(context.TODO(), instance)
+			err := r.client.Update(ctx, instance)
 			if err != nil {
 				return err
 			}
