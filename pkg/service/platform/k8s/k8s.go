@@ -6,14 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
-	edpCompClient "github.com/epam/edp-component-operator/pkg/client"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
-	jenkinsScriptV1Client "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsscript/client"
-	JenkinsSAV1Client "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsserviceaccount/client"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
@@ -40,15 +36,11 @@ var log = ctrl.Log.WithName("platform")
 
 // K8SService implements platform.Service interface (k8s platform integration)
 type K8SService struct {
-	Scheme                      *runtime.Scheme
-	CoreClient                  *coreV1Client.CoreV1Client
-	appsV1Client                *appsV1Client.AppsV1Client
-	EdpClient                   *client.EdpV1Client
-	JenkinsServiceAccountClient *JenkinsSAV1Client.EdpV1Client
-	JenkinsScriptClient         *jenkinsScriptV1Client.EdpV1Client
-	extensionsV1Client          extensionsV1Client.ExtensionsV1beta1Client
-	k8sClient                   k8sclient.Client
-	edpCompClient               edpCompClient.EDPComponentV1Client
+	Scheme             *runtime.Scheme
+	CoreClient         *coreV1Client.CoreV1Client
+	appsV1Client       *appsV1Client.AppsV1Client
+	extensionsV1Client extensionsV1Client.ExtensionsV1beta1Client
+	client             k8sclient.Client
 }
 
 func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
@@ -129,34 +121,10 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	}
 	s.extensionsV1Client = *extensionsClient
 
-	edpClient, err := client.NewForConfig(config)
-	if err != nil {
-		return errors.Wrap(err, "EDP Client initialization failed!")
-	}
-	s.EdpClient = edpClient
-
-	jenkinsSAClient, err := JenkinsSAV1Client.NewForConfig(config)
-	if err != nil {
-		return errors.Wrapf(err, "Jenkins Service Account client initialization failed!")
-	}
-	s.JenkinsServiceAccountClient = jenkinsSAClient
-
-	jenkinsScriptClient, err := jenkinsScriptV1Client.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-	s.JenkinsScriptClient = jenkinsScriptClient
-
 	cl, err := k8sclient.New(config, k8sclient.Options{
 		Scheme: s.Scheme,
 	})
-	s.k8sClient = cl
-
-	compCl, err := edpCompClient.NewForConfig(config)
-	if err != nil {
-		return errors.Wrap(err, "failed to init edp component client")
-	}
-	s.edpCompClient = *compCl
+	s.client = cl
 
 	return nil
 }
@@ -235,7 +203,7 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]cor
 
 func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakRealm, error) {
 	realm := &keycloakApi.KeycloakRealm{}
-	err := s.k8sClient.Get(context.TODO(), types.NamespacedName{
+	err := s.client.Get(context.TODO(), types.NamespacedName{
 		Name:      "main",
 		Namespace: instance.Namespace,
 	}, realm)
@@ -253,7 +221,7 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 	}
 
 	keycloak := &keycloakApi.Keycloak{}
-	err = s.k8sClient.Get(context.TODO(), types.NamespacedName{
+	err = s.client.Get(context.TODO(), types.NamespacedName{
 		Name:      realm.OwnerReferences[0].Name,
 		Namespace: instance.Namespace,
 	}, keycloak)
@@ -465,70 +433,91 @@ func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName st
 }
 
 func (s K8SService) CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error {
-	jsa := &jenkinsV1Api.JenkinsServiceAccount{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-		Spec: jenkinsV1Api.JenkinsServiceAccountSpec{
-			Type:        serviceAccountType,
-			Credentials: secretName,
-		},
-	}
-
-	_, err := s.JenkinsServiceAccountClient.Get(context.TODO(), secretName, namespace, metav1.GetOptions{})
-	if err != nil {
+	if _, err := s.getJenkinsServiceAccount(secretName, namespace); err != nil {
 		if k8serr.IsNotFound(err) {
-			_, err = s.JenkinsServiceAccountClient.Create(context.TODO(), jsa, namespace)
-			if err != nil {
-				return err
+			jsa := &jenkinsV1Api.JenkinsServiceAccount{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secretName,
+					Namespace: namespace,
+				},
+				Spec: jenkinsV1Api.JenkinsServiceAccountSpec{
+					Type:        serviceAccountType,
+					Credentials: secretName,
+				},
 			}
+			return s.client.Create(context.TODO(), jsa)
 		}
 		return err
 	}
-
 	return nil
+}
+
+func (s K8SService) getJenkinsServiceAccount(name, namespace string) (*jenkinsV1Api.JenkinsServiceAccount, error) {
+	jsa := &jenkinsV1Api.JenkinsServiceAccount{}
+	err := s.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}, jsa)
+	if err != nil {
+		return nil, err
+	}
+	return jsa, nil
 }
 
 func (s K8SService) CreateJenkinsScript(namespace string, configMap string) error {
-	js := &jenkinsV1Api.JenkinsScript{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      configMap,
-			Namespace: namespace,
-		},
-		Spec: jenkinsV1Api.JenkinsScriptSpec{
-			SourceCmName: configMap,
-		},
-	}
-
-	_, err := s.JenkinsScriptClient.Get(context.TODO(), configMap, namespace, metav1.GetOptions{})
-	if err != nil {
+	if _, err := s.getJenkinsScript(configMap, namespace); err != nil {
 		if k8serr.IsNotFound(err) {
-			_, err = s.JenkinsScriptClient.Create(context.TODO(), js, namespace)
-			if err != nil {
-				return err
+			js := &jenkinsV1Api.JenkinsScript{
+				TypeMeta: metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMap,
+					Namespace: namespace,
+				},
+				Spec: jenkinsV1Api.JenkinsScriptSpec{
+					SourceCmName: configMap,
+				},
 			}
+			return s.client.Create(context.TODO(), js)
 		}
 		return err
 	}
 	return nil
+}
 
+func (s K8SService) getJenkinsScript(name, namespace string) (*jenkinsV1Api.JenkinsScript, error) {
+	js := &jenkinsV1Api.JenkinsScript{}
+	err := s.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}, js)
+	if err != nil {
+		return nil, err
+	}
+	return js, nil
 }
 
 func (s K8SService) CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error {
-	comp, err := s.edpCompClient.
-		EDPComponents(gerrit.Namespace).
-		Get(gerrit.Name, metav1.GetOptions{})
-	if err == nil {
-		log.Info("edp component already exists", "name", comp.Name)
-		return nil
+	if _, err := s.getEDPComponent(gerrit.Name, gerrit.Namespace); err != nil {
+		if k8serr.IsNotFound(err) {
+			return s.createEDPComponent(gerrit, url, icon)
+		}
+		return errors.Wrapf(err, "failed to get edp component: %v", gerrit.Name)
 	}
-	if k8serr.IsNotFound(err) {
-		return s.createEDPComponent(gerrit, url, icon)
+	log.Info("edp component already exists", "name", gerrit.Name)
+	return nil
+}
+
+func (s K8SService) getEDPComponent(name, namespace string) (*edpCompApi.EDPComponent, error) {
+	c := &edpCompApi.EDPComponent{}
+	err := s.client.Get(context.TODO(), types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}, c)
+	if err != nil {
+		return nil, err
 	}
-	return errors.Wrapf(err, "failed to get edp component: %v", gerrit.Name)
+	return c, nil
 }
 
 func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon string) error {
@@ -546,8 +535,6 @@ func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon 
 	if err := controllerutil.SetControllerReference(&gerrit, obj, s.Scheme); err != nil {
 		return err
 	}
-	_, err := s.edpCompClient.
-		EDPComponents(gerrit.Namespace).
-		Create(obj)
-	return err
+
+	return s.client.Create(context.TODO(), obj)
 }
