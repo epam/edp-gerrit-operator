@@ -123,7 +123,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	instance, dPatched, err := r.service.Configure(instance)
 	var finalRequeueAfterTimeout time.Duration
 	if err != nil {
-		log.Info(fmt.Sprintf("%v/%v Gerrit configuration has failed", instance.Namespace, instance.Name))
+		log.Error(err, "Gerrit configuration has been failed.")
 		if gerrit.IsErrUserNotFound(err) {
 			finalRequeueAfterTimeout = 60 * time.Second
 		} else {

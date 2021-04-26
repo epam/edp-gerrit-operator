@@ -47,12 +47,15 @@ func (gc Client) CheckCredentials() (int, error) {
 
 // CheckGroup checks gerrit group
 func (gc Client) CheckGroup(groupName string) (*int, error) {
+	vLog := log.WithValues("group name", groupName)
+	vLog.Info("checking group...")
 	statusNotFound := http.StatusNotFound
 	uuid, err := gc.getGroupUuid(groupName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit group uuid")
 	}
 	if uuid == "" {
+		vLog.Info("group wasn't found")
 		return &statusNotFound, nil
 	}
 
