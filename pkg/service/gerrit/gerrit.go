@@ -256,13 +256,11 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			userErr = ErrUserNotFound(msg)
 		} else {
 			if err := s.gerritClient.AddUserToGroups(user.Username, user.Groups); err != nil {
-				log.Error(err, "couldn't add user to group", "name", user.Username, "groups", user.Groups)
 				return instance, false, errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
 			}
 		}
 	}
 
-	log.Info("success flow", "userErr", userErr)
 	return instance, false, userErr
 }
 
@@ -390,15 +388,11 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		}
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
-		log.Info("annotation", "name", annotationKey)
 		s.setAnnotation(instance, annotationKey, fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
-		log.Info("annotations", "names", instance.ObjectMeta.Annotations)
 		if err := s.client.Update(context.TODO(), instance); err != nil {
-			log.Error(err, "see here")
 			return nil, errors.Wrap(err, "couldn't update annotations")
 		}
 	}
-	log.Info("success. try to create edp component")
 	if err := s.createEDPComponent(*instance); err != nil {
 		return nil, errors.Wrap(err, "unable to create EDP component")
 	}

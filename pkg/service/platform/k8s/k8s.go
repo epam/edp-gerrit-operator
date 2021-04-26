@@ -507,13 +507,15 @@ func (s K8SService) getJenkinsScript(name, namespace string) (*jenkinsV1Api.Jenk
 }
 
 func (s K8SService) CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error {
+	vLog := log.WithValues("name", gerrit.Name)
+	vLog.Info("creating EDP component")
 	if _, err := s.getEDPComponent(gerrit.Name, gerrit.Namespace); err != nil {
 		if k8serr.IsNotFound(err) {
 			return s.createEDPComponent(gerrit, url, icon)
 		}
 		return errors.Wrapf(err, "failed to get edp component: %v", gerrit.Name)
 	}
-	log.Info("edp component already exists", "name", gerrit.Name)
+	vLog.Info("edp component already exists")
 	return nil
 }
 
@@ -532,7 +534,8 @@ func (s K8SService) getEDPComponent(name, namespace string) (*edpCompApi.EDPComp
 func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon string) error {
 	obj := &edpCompApi.EDPComponent{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: gerrit.Name,
+			Name:      gerrit.Name,
+			Namespace: gerrit.Namespace,
 		},
 		Spec: edpCompApi.EDPComponentSpec{
 			Type:    "gerrit",
@@ -545,5 +548,9 @@ func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon 
 		return err
 	}
 
-	return s.client.Create(context.TODO(), obj)
+	if err := s.client.Create(context.TODO(), obj); err != nil {
+		return err
+	}
+	log.Info("edp component has been created.", "name", gerrit.Name)
+	return nil
 }
