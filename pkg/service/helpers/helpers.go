@@ -85,6 +85,5 @@ func IsStringInSlice(str string, list []string) bool {
 }
 
 func GenerateAnnotationKey(entitySuffix string) string {
-	key := fmt.Sprintf("%v/%v", spec.EdpAnnotationsPrefix, entitySuffix)
-	return key
+	return fmt.Sprintf("%v/%v", spec.EdpAnnotationsPrefix, entitySuffix)
 }

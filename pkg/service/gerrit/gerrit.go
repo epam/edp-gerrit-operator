@@ -67,14 +67,14 @@ func IsErrUserNotFound(err error) bool {
 type ComponentService struct {
 	// Providing Gerrit EDP component implementation through the interface (platform abstract)
 	PlatformService platform.PlatformService
-	k8sClient       client.Client
+	client          client.Client
 	k8sScheme       *runtime.Scheme
 	gerritClient    gerrit.Client
 }
 
 // NewComponentService returns a new instance of a gerrit.Service type
 func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runtime.Scheme) Interface {
-	return ComponentService{PlatformService: ps, k8sClient: kc, k8sScheme: ks}
+	return ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 }
 
 // IsDeploymentReady check if DC for Gerrit is ready
@@ -368,7 +368,9 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	}
 
-	_ = s.k8sClient.Update(context.TODO(), instance)
+	if err := s.client.Update(context.TODO(), instance); err != nil {
+		return nil, errors.Wrap(err, "couldn't update project")
+	}
 
 	if instance.Spec.KeycloakSpec.Enabled {
 		secret, err := uuid.NewUUID()
@@ -388,16 +390,25 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		}
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
+		log.Info("annotation", "name", annotationKey)
 		s.setAnnotation(instance, annotationKey, fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
-		_ = s.k8sClient.Update(context.TODO(), instance)
+		log.Info("annotations", "names", instance.ObjectMeta.Annotations)
+		if err := s.client.Update(context.TODO(), instance); err != nil {
+			log.Error(err, "see here")
+			return nil, errors.Wrap(err, "couldn't update annotations")
+		}
 	}
-
-	err = s.createEDPComponent(*instance)
+	log.Info("success. try to create edp component")
+	if err := s.createEDPComponent(*instance); err != nil {
+		return nil, errors.Wrap(err, "unable to create EDP component")
+	}
 
 	return instance, err
 }
 
 func (s ComponentService) createEDPComponent(gerrit v1alpha1.Gerrit) error {
+	vLog := log.WithValues("name", gerrit.Name)
+	vLog.Info("creating EDP component")
 	url, err := s.getUrl(gerrit)
 	if err != nil {
 		return err
@@ -481,7 +492,7 @@ func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 func (s ComponentService) getKeycloakClient(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakClient, error) {
 	client := &keycloakApi.KeycloakClient{}
-	err := s.k8sClient.Get(context.TODO(), types.NamespacedName{
+	err := s.client.Get(context.TODO(), types.NamespacedName{
 		Name:      instance.Name,
 		Namespace: instance.Namespace,
 	}, client)
@@ -522,7 +533,7 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 		},
 	}
 
-	return s.k8sClient.Create(context.TODO(), client)
+	return s.client.Create(context.TODO(), client)
 }
 
 func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
