@@ -244,6 +244,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	var userErr error
 	for _, user := range instance.Spec.Users {
+		log.Info("add user to groups", "user", user, "group(s)", user.Groups)
 		userStatus, err := s.gerritClient.GetUser(user.Username)
 		if err != nil {
 			return instance, false, errors.Wrapf(err, "Getting %v user failed", user.Username)
@@ -254,13 +255,14 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			log.Info(msg)
 			userErr = ErrUserNotFound(msg)
 		} else {
-			err := s.gerritClient.AddUserToGroups(user.Username, user.Groups)
-			if err != nil {
+			if err := s.gerritClient.AddUserToGroups(user.Username, user.Groups); err != nil {
+				log.Error(err, "couldn't add user to group", "name", user.Username, "groups", user.Groups)
 				return instance, false, errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
 			}
 		}
 	}
 
+	log.Info("success flow", "userErr", userErr)
 	return instance, false, userErr
 }
 
