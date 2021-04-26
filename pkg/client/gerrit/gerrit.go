@@ -161,6 +161,7 @@ func (gc *Client) ReloadPlugin(plugin string) error {
 }
 
 func (gc *Client) CreateUser(username string, password string, fullname string, publicKey string) error {
+	log.Info("creating user", "name", username)
 	userStatus, err := gc.GetUser(username)
 	if err != nil {
 		return errors.Wrapf(err, "Getting %v user failed", username)

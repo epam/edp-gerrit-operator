@@ -236,6 +236,7 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 
 // GetSecret return data field of Secret
 func (service K8SService) GetSecretData(namespace string, name string) (map[string][]byte, error) {
+	log.Info("getting secret data", "name", name)
 	secret, err := service.CoreClient.Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && k8serr.IsNotFound(err) {
 		log.Info(fmt.Sprintf("Secret %v in namespace %v not found", name, namespace))
@@ -304,24 +305,25 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 
 // CreateSecret creates a new Secret Resource for a Gerrit EDP Component
 func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, data map[string][]byte) error {
-	gerritSecretObject := newGerritSecret(secretName, gerrit.Name, gerrit.Namespace, data)
+	vLog := log.WithValues("name", secretName)
+	vLog.Info("creating secret")
 
-	if err := controllerutil.SetControllerReference(gerrit, gerritSecretObject, s.Scheme); err != nil {
-		return err
-	}
-
-	if _, err := s.CoreClient.Secrets(gerritSecretObject.Namespace).Get(context.TODO(), gerritSecretObject.Name, metav1.GetOptions{}); err != nil {
+	if _, err := s.CoreClient.Secrets(gerrit.Namespace).Get(context.TODO(), secretName, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			msg := fmt.Sprintf("Creating a new Secret %s/%s for Gerrit", gerritSecretObject.Namespace, gerritSecretObject.Name)
-			log.V(1).Info(msg)
+			log.Info("Creating a new Secret for Gerrit", "name", secretName)
+
+			gerritSecretObject := newGerritSecret(secretName, gerrit.Name, gerrit.Namespace, data)
+
+			if err := controllerutil.SetControllerReference(gerrit, gerritSecretObject, s.Scheme); err != nil {
+				return err
+			}
+
 			if _, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(context.TODO(), gerritSecretObject, metav1.CreateOptions{}); err != nil {
 				return err
 			}
-			msg = fmt.Sprintf("Secret %s/%s has been created", gerritSecretObject.Namespace, gerritSecretObject.Name)
-			log.Info(msg)
-		} else {
-			return err
+			log.Info("Secret has been created", "name", gerritSecretObject.Name)
 		}
+		return err
 	}
 	return nil
 }
@@ -432,11 +434,12 @@ func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName st
 	return nil
 }
 
-func (s K8SService) CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error {
+func (s K8SService) CreateJenkinsServiceAccount(namespace, secretName, serviceAccountType string) error {
+	vLog := log.WithValues("name", secretName, "service account type", serviceAccountType)
+	vLog.Info("creating jenkins service account")
 	if _, err := s.getJenkinsServiceAccount(secretName, namespace); err != nil {
 		if k8serr.IsNotFound(err) {
 			jsa := &jenkinsV1Api.JenkinsServiceAccount{
-				TypeMeta: metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secretName,
 					Namespace: namespace,
@@ -446,10 +449,16 @@ func (s K8SService) CreateJenkinsServiceAccount(namespace string, secretName str
 					Credentials: secretName,
 				},
 			}
-			return s.client.Create(context.TODO(), jsa)
+
+			if err := s.client.Create(context.TODO(), jsa); err != nil {
+				return err
+			}
+			vLog.Info("jenkins service account has been created.")
+			return nil
 		}
 		return err
 	}
+	vLog.Info("jenkins service account already exists.")
 	return nil
 }
 

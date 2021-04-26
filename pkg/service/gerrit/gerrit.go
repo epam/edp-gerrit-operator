@@ -268,6 +268,8 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
 func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error) {
+	vLog := log.WithValues("gerrit", instance.Name)
+	vLog.Info("start exposing configuration")
 	if err := s.initRestClient(instance); err != nil {
 		return instance, errors.Wrapf(err, "Failed to init Gerrit REST client")
 	}
@@ -524,6 +526,8 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 }
 
 func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
+	vLog := log.WithValues("gerrit", instance.Name)
+	vLog.Info("init rest client")
 	gerritAdminPassword, err := s.getGerritAdminPassword(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %v/%v", instance.Namespace, instance.Name)
@@ -538,11 +542,13 @@ func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 	}
-
+	vLog.Info("rest client has been initialized.")
 	return nil
 }
 
 func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
+	vLog := log.WithValues("gerrit", instance.Name)
+	vLog.Info("init ssh client")
 	gerritUrl, err := s.GetGerritSSHUrl(instance)
 	if err != nil {
 		return err
@@ -562,7 +568,7 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to init Gerrit SSH client %v/%v", instance.Namespace, instance.Name)
 	}
-
+	vLog.Info("ssh client has been initialized.")
 	return nil
 }
 
