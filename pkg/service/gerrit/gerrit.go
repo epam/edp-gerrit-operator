@@ -13,7 +13,6 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
-	jenkinsHelper "github.com/epam/edp-jenkins-operator/v2/pkg/controller/jenkinsscript/helper"
 	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
@@ -34,8 +33,9 @@ import (
 var log = ctrl.Log.WithName("service_gerrit")
 
 const (
-	imgFolder  = "img"
-	gerritIcon = "gerrit.svg"
+	imgFolder                        = "img"
+	gerritIcon                       = "gerrit.svg"
+	jenkinsDefaultScriptConfigMapKey = "context"
 )
 
 // Interface expresses behaviour of the Gerrit EDP Component
@@ -728,7 +728,7 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerr
 
 	jenkinsPluginConfigurationName := fmt.Sprintf("%v-%v", instance.Name, spec.JenkinsPluginConfigPostfix)
 	configMapData := map[string]string{
-		jenkinsHelper.JenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
+		jenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
 	}
 	err = s.PlatformService.CreateConfigMap(instance, jenkinsPluginConfigurationName, configMapData)
 	if err != nil {
