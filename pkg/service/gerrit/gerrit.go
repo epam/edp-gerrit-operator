@@ -5,6 +5,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"reflect"
+
 	"github.com/dchest/uniuri"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
@@ -17,15 +22,11 @@ import (
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
-	"path/filepath"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -242,12 +243,21 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 	}
 
+	return instance, false, s.processUsers(instance)
+}
+
+func (s ComponentService) processUsers(instance *v1alpha1.Gerrit) error {
+	processedUsers := make(map[string]struct{})
+	for _, pu := range instance.Status.ProcessedUsers {
+		processedUsers[pu] = struct{}{}
+	}
+
 	var userErr error
 	for _, user := range instance.Spec.Users {
 		log.Info("add user to groups", "user", user, "group(s)", user.Groups)
 		userStatus, err := s.gerritClient.GetUser(user.Username)
 		if err != nil {
-			return instance, false, errors.Wrapf(err, "Getting %v user failed", user.Username)
+			return errors.Wrapf(err, "Getting %v user failed", user.Username)
 		}
 
 		if *userStatus == 404 {
@@ -256,12 +266,21 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			userErr = ErrUserNotFound(msg)
 		} else {
 			if err := s.gerritClient.AddUserToGroups(user.Username, user.Groups); err != nil {
-				return instance, false, errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
+				return errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
+			}
+
+			if _, ok := processedUsers[user.Username]; !ok {
+				instance.Status.ProcessedUsers = append(instance.Status.ProcessedUsers, user.Username)
+				instance.Status.Status = spec.StatusConfiguring
 			}
 		}
 	}
 
-	return instance, false, userErr
+	if err := s.gerritClient.RemoveUsersFromGroup(instance.Spec.Users, processedUsers); err != nil {
+		return errors.Wrap(err, "unable to remove users from groups")
+	}
+
+	return userErr
 }
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
