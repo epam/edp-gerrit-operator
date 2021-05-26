@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"log"
+	"os"
 	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
@@ -39,6 +40,11 @@ type OpenshiftService struct {
 	appClient      *appsV1client.AppsV1Client
 	routeClient    *routeV1Client.RouteV1Client
 }
+
+const (
+	deploymentTypeEnvName           = "DEPLOYMENT_TYPE"
+	deploymentConfigsDeploymentType = "deploymentConfigs"
+)
 
 // Init process with OpenshiftService instance initialization actions
 func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) error {
@@ -102,31 +108,37 @@ func (service OpenshiftService) GetExternalEndpoint(namespace string, name strin
 }
 
 func (service OpenshiftService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
-	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
-	if err != nil {
-		return 0, err
-	}
-
-	for _, env := range dc.Spec.Template.Spec.Containers[0].Env {
-		if env.Name == spec.SSHListnerEnvName {
-			p, err := getPort(env.Value)
-			if err != nil {
-				return 0, err
-			}
-			return p, nil
+	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
+		dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
+		if err != nil {
+			return 0, err
 		}
-	}
 
-	return 0, nil
+		for _, env := range dc.Spec.Template.Spec.Containers[0].Env {
+			if env.Name == spec.SSHListnerEnvName {
+				p, err := getPort(env.Value)
+				if err != nil {
+					return 0, err
+				}
+				return p, nil
+			}
+		}
+
+		return 0, nil
+	}
+	return service.K8SService.GetDeploymentSSHPort(instance)
 }
 
 func (service OpenshiftService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error) {
-	dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
+	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
+		dc, err := service.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
 
-	return dc.Status.UpdatedReplicas == 1 && dc.Status.AvailableReplicas == 1, nil
+		return dc.Status.UpdatedReplicas == 1 && dc.Status.AvailableReplicas == 1, nil
+	}
+	return service.K8SService.IsDeploymentReady(instance)
 }
 
 // newGerritSCC returns a new instance of securityV1Api.SecurityContextConstraints type
@@ -189,35 +201,37 @@ func (s *OpenshiftService) newGerritSecurityContextConstraints(gerrit *v1alpha1.
 }
 
 func (s *OpenshiftService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
+	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
+		dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 
-	dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+		if len(env) == 0 {
+			return nil
+		}
 
-	if len(env) == 0 {
+		container, err := platformHelper.SelectContainer(dc.Spec.Template.Spec.Containers, gerrit.Name)
+		if err != nil {
+			return err
+		}
+
+		container.Env = platformHelper.UpdateEnv(container.Env, env)
+
+		dc.Spec.Template.Spec.Containers = append(dc.Spec.Template.Spec.Containers, container)
+
+		jsonDc, err := json.Marshal(dc)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(context.TODO(), dc.Name, types.StrategicMergePatchType, jsonDc, metav1.PatchOptions{})
+		if err != nil {
+			return err
+		}
 		return nil
 	}
-
-	container, err := platformHelper.SelectContainer(dc.Spec.Template.Spec.Containers, gerrit.Name)
-	if err != nil {
-		return err
-	}
-
-	container.Env = platformHelper.UpdateEnv(container.Env, env)
-
-	dc.Spec.Template.Spec.Containers = append(dc.Spec.Template.Spec.Containers, container)
-
-	jsonDc, err := json.Marshal(dc)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(context.TODO(), dc.Name, types.StrategicMergePatchType, jsonDc, metav1.PatchOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.K8SService.PatchDeploymentEnv(gerrit, env)
 }
 
 func getPort(value string) (int32, error) {

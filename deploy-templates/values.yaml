@@ -4,6 +4,8 @@ global:
   dnsWildCard: "eks-delivery.aws.main.edp.projects.epam.com"
   admins:
     - "stub_user_one@example.com"
+  openshift:
+    deploymentType: "deploymentConfigs"
 
 name: gerrit-operator
 annotations: {}
