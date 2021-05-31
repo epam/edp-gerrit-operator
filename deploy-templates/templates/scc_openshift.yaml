@@ -23,7 +23,8 @@ priority: 1
 readOnlyRootFilesystem: false
 requiredDropCapabilities: []
 runAsUser:
-  type: RunAsAny
+  type: MustRunAs
+  uid: 0
 seLinuxContext:
   type: MustRunAs
 supplementalGroups:
