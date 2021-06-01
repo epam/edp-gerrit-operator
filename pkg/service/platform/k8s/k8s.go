@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
+
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
@@ -25,11 +28,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"regexp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
 )
 
 var log = ctrl.Log.WithName("platform")
@@ -202,6 +203,32 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]cor
 }
 
 func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakRealm, error) {
+	if instance.Spec.KeycloakSpec.Realm != "" {
+		var realmList keycloakApi.KeycloakRealmList
+		listOpts := k8sclient.MatchingLabels(map[string]string{"targetRealm": instance.Spec.KeycloakSpec.Realm})
+		listOpts.ApplyToList(&k8sclient.ListOptions{
+			Namespace: instance.Namespace,
+		})
+
+		if err := s.client.List(context.Background(), &realmList, listOpts); err != nil {
+			return nil, errors.Wrap(err, "unable to get reams by label")
+		}
+
+		if len(realmList.Items) > 0 {
+			return &realmList.Items[0], nil
+		}
+
+		if err := s.client.List(context.Background(), &realmList,
+			&k8sclient.ListOptions{Namespace: instance.Namespace}); err != nil {
+			return nil, errors.Wrap(err, "unable to get all reams")
+		}
+		for _, r := range realmList.Items {
+			if r.Spec.RealmName == instance.Spec.KeycloakSpec.Realm {
+				return &r, nil
+			}
+		}
+	}
+
 	realm := &keycloakApi.KeycloakRealm{}
 	err := s.client.Get(context.TODO(), types.NamespacedName{
 		Name:      "main",

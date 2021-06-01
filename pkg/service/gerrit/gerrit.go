@@ -546,6 +546,10 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 		},
 	}
 
+	if instance.Spec.KeycloakSpec.Realm != "" {
+		client.Spec.TargetRealm = instance.Spec.KeycloakSpec.Realm
+	}
+
 	return s.client.Create(context.TODO(), client)
 }
 
