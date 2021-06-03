@@ -205,12 +205,11 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]cor
 func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakRealm, error) {
 	if instance.Spec.KeycloakSpec.Realm != "" {
 		var realmList keycloakApi.KeycloakRealmList
-		listOpts := k8sclient.MatchingLabels(map[string]string{"targetRealm": instance.Spec.KeycloakSpec.Realm})
-		listOpts.ApplyToList(&k8sclient.ListOptions{
-			Namespace: instance.Namespace,
-		})
+		listOpts := k8sclient.ListOptions{Namespace: instance.Namespace}
+		k8sclient.MatchingLabels(map[string]string{
+			"targetRealm": instance.Spec.KeycloakSpec.Realm}).ApplyToList(&listOpts)
 
-		if err := s.client.List(context.Background(), &realmList, listOpts); err != nil {
+		if err := s.client.List(context.Background(), &realmList, &listOpts); err != nil {
 			return nil, errors.Wrap(err, "unable to get reams by label")
 		}
 
