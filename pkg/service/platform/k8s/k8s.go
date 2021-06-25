@@ -193,7 +193,7 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]cor
 					LocalObjectReference: coreV1Api.LocalObjectReference{
 						Name: identityServiceSecretName,
 					},
-					Key: "client_secret",
+					Key: "clientSecret",
 				},
 			},
 		},
