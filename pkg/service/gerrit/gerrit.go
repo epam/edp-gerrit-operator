@@ -396,8 +396,8 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 		}
 
 		identityServiceClientCredentials := map[string][]byte{
-			"client_id":     []byte(instance.Name),
-			"client_secret": []byte(secret.String()),
+			"client_id":    []byte(instance.Name),
+			"clientSecret": []byte(secret.String()),
 		}
 
 		identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
