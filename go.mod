@@ -10,9 +10,9 @@ replace (
 )
 
 require (
-	github.com/epam/edp-component-operator v0.1.1-0.20210427065236-c7dce7f4ea2b
-	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20210611080440-fd54e8b0eda3
-	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20210427070516-9b6232f72684
+	github.com/epam/edp-component-operator v0.1.1-0.20210712140516-09b8bb3a4cff
+	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20210719100914-5207ab4d883c
+	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20210719103751-659797a2dead
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
 	github.com/Azure/go-autorest/autorest v0.11.12 // indirect
