@@ -1,8 +1,9 @@
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -15,7 +16,7 @@ type GerritReplicationConfigSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	SSHUrl    string `json:"ssh_url"`
-	OwnerName string `json:"owner_name, omitempty"`
+	OwnerName string `json:"owner_name,omitempty"`
 }
 
 // GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig

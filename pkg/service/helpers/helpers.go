@@ -6,9 +6,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"log"
+
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"golang.org/x/crypto/ssh"
-	"log"
 )
 
 const (

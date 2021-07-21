@@ -2,16 +2,19 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroup"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritreplicationconfig"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/rest"
-	"os"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -22,6 +25,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	//+kubebuilder:scaffold:imports
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
@@ -116,6 +120,17 @@ func main() {
 
 	if err := grcCtrl.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "gerrit-replication-config")
+		os.Exit(1)
+	}
+
+	grGroupCtrl, err := gerritgroup.NewReconcile(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group")
+		os.Exit(1)
+	}
+
+	if err := grGroupCtrl.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group")
 		os.Exit(1)
 	}
 

@@ -5,6 +5,12 @@ import (
 	"context"
 	coreerrors "errors"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"text/template"
+	"time"
+
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
@@ -19,17 +25,12 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"path/filepath"
-	"regexp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
-	"text/template"
-	"time"
 )
 
 func NewReconcileGerritReplicationConfig(client client.Client, scheme *runtime.Scheme, log logr.Logger) (*ReconcileGerritReplicationConfig, error) {
@@ -81,32 +82,31 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 		if k8sErrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "unable to get instance")
 	}
 
-	if !r.isInstanceOwnerSet(instance) {
-		ownerReference := findCROwnerName(*instance)
+	if !helper.IsInstanceOwnerSet(instance) {
+		ownerReference := helper.FindCROwnerName(instance.Spec.OwnerName)
 
-		gerritInstance, err := r.getGerritInstance(ctx, ownerReference, instance.Namespace)
+		gerritInstance, err := helper.GetGerritInstance(ctx, r.client, ownerReference, instance.Namespace)
 		if err != nil {
-			return reconcile.Result{}, err
+			return reconcile.Result{}, errors.Wrap(err, "unable to get gerrit instance")
 		}
 
-		instance := r.setOwnerReference(gerritInstance, instance)
+		helper.SetOwnerReference(instance, gerritInstance.TypeMeta, gerritInstance.ObjectMeta)
 
-		err = r.client.Update(ctx, &instance)
-		if err != nil {
-			return reconcile.Result{}, err
+		if err := r.client.Update(ctx, instance); err != nil {
+			return reconcile.Result{}, errors.Wrap(err, "unable to update instance owner refs")
 		}
 	}
 
-	gerritInstance, err := r.getInstanceOwner(ctx, instance)
+	gerritInstance, err := helper.GetInstanceOwner(ctx, r.client, instance)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "unable to get instance owner")
 	}
 
 	if gerritInstance.Status.Status == gerrit.StatusReady && (instance.Status.Status == "" || instance.Status.Status == spec.StatusFailed) {

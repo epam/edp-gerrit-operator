@@ -47,6 +47,7 @@ type Interface interface {
 	Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
 	GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error)
 	GetServicePort(instance *v1alpha1.Gerrit) (int32, error)
+	GetRestClient(gerritInstance *v1alpha1.Gerrit) (*gerrit.Client, error)
 }
 
 type ErrUserNotFound string
@@ -226,12 +227,14 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			return instance, false, err
 		}
 
-		err = s.gerritClient.CreateGroup(spec.GerritCIToolsGroupName, spec.GerritCIToolsGroupDescription)
+		_, err = s.gerritClient.CreateGroup(spec.GerritCIToolsGroupName, spec.GerritCIToolsGroupDescription,
+			true)
 		if err != nil {
 			return instance, false, err
 		}
 
-		err = s.gerritClient.CreateGroup(spec.GerritProjectBootstrappersGroupName, spec.GerritProjectBootstrappersGroupDescription)
+		_, err = s.gerritClient.CreateGroup(spec.GerritProjectBootstrappersGroupName,
+			spec.GerritProjectBootstrappersGroupDescription, true)
 		if err != nil {
 			return instance, false, err
 		}
@@ -551,6 +554,18 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 	}
 
 	return s.client.Create(context.TODO(), client)
+}
+
+func (s ComponentService) GetRestClient(gerritInstance *v1alpha1.Gerrit) (*gerrit.Client, error) {
+	if s.gerritClient.GetResty() != nil {
+		return &s.gerritClient, nil
+	}
+
+	if err := s.initRestClient(gerritInstance); err != nil {
+		return nil, errors.Wrap(err, "unable to init gerrit rest client")
+	}
+
+	return &s.gerritClient, nil
 }
 
 func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
