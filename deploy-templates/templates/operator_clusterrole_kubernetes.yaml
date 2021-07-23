@@ -22,6 +22,8 @@ rules:
     - gerrits/status
     - gerritreplicationconfigs
     - gerritreplicationconfigs/status
+    - gerritgroups
+    - gerritgroups/status
   verbs:
     - '*'
 - apiGroups:
@@ -32,6 +34,8 @@ rules:
     - gerrits/status
     - gerritreplicationconfigs
     - gerritreplicationconfigs/status
+    - gerritgroups
+    - gerritgroups/status
     - keycloaks
     - keycloaks/status
     - keycloakclients
