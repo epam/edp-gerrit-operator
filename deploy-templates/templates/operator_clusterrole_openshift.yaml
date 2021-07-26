@@ -45,6 +45,8 @@ rules:
     - jenkinsserviceaccounts
     - jenkinsscripts
     - edpcomponents
+    - gerritgroups
+    - gerritgroups/status
   verbs:
     - '*'
 - apiGroups:
