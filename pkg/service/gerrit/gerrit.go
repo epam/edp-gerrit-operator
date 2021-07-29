@@ -47,7 +47,7 @@ type Interface interface {
 	Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit, error)
 	GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error)
 	GetServicePort(instance *v1alpha1.Gerrit) (int32, error)
-	GetRestClient(gerritInstance *v1alpha1.Gerrit) (*gerrit.Client, error)
+	GetRestClient(gerritInstance *v1alpha1.Gerrit) (gerrit.ClientInterface, error)
 }
 
 type ErrUserNotFound string
@@ -556,7 +556,7 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 	return s.client.Create(context.TODO(), client)
 }
 
-func (s ComponentService) GetRestClient(gerritInstance *v1alpha1.Gerrit) (*gerrit.Client, error) {
+func (s ComponentService) GetRestClient(gerritInstance *v1alpha1.Gerrit) (gerrit.ClientInterface, error) {
 	if s.gerritClient.GetResty() != nil {
 		return &s.gerritClient, nil
 	}

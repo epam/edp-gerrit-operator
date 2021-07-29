@@ -9,10 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/pkg/errors"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,6 +23,7 @@ const (
 	debugModeEnvVar        = "DEBUG_MODE"
 	inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 	StatusOK               = "OK"
+	DefaultRequeueTime     = 30
 )
 
 // GetWatchNamespace returns the namespace the operator should be watching for changes
@@ -162,6 +162,10 @@ func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *
 			}
 			return nil, err
 		}
+		if len(list.Items) == 0 {
+			return nil, errors.New("no root gerrits found")
+		}
+
 		gerritInstance = list.Items[0]
 	} else {
 		gerritInstance = v1alpha1.Gerrit{}
