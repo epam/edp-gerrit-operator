@@ -3,11 +3,13 @@ package helper
 import (
 	"bytes"
 	"fmt"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"os"
+	"path/filepath"
+	"text/template"
+
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
-	"text/template"
 )
 
 const (
@@ -36,6 +38,8 @@ const (
 
 	//RouteHTTPScheme
 	RouteHTTPScheme = "http"
+
+	inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 )
 
 type JenkinsPluginData struct {
@@ -52,18 +56,18 @@ func InitNewJenkinsPluginInfo() JenkinsPluginData {
 
 func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
 	var ScriptContext bytes.Buffer
-	executableFilePath, err := helper.GetExecutableFilePath()
+	executableFilePath, err := GetExecutableFilePath()
 	if err != nil {
 		return bytes.Buffer{}, errors.Wrapf(err, "Unable to get executable file path")
 	}
 
 	templatesDirectoryPath := LocalTemplatesRelativePath
-	if !helper.RunningInCluster() {
+	if !RunningInCluster() {
 		templatesDirectoryPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, LocalConfigsRelativePath, DefaultTemplatesDirectory)
 	}
 
 	templateAbsolutePath := fmt.Sprintf("%v/%v", templatesDirectoryPath, JenkinsPluginConfigFileName)
-	if !helper.FileExists(templateAbsolutePath) {
+	if !fileExists(templateAbsolutePath) {
 		errMsg := fmt.Sprintf("Template file not found in path specificed! Path: %s", templateAbsolutePath)
 		return bytes.Buffer{}, errors.New(errMsg)
 	}
@@ -74,6 +78,30 @@ func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
 	}
 
 	return ScriptContext, nil
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func GetExecutableFilePath() (string, error) {
+	executableFilePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Dir(executableFilePath), nil
+}
+
+func RunningInCluster() bool {
+	_, err := os.Stat(inClusterNamespacePath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 // GenerateLabels returns initialized map using name parameter

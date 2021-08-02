@@ -131,6 +131,11 @@ func (gc *Client) DeleteUserFromGroup(groupName, username string) error {
 	return nil
 }
 
+func (gc *Client) AddUserToGroup(groupName, username string) error {
+	resp, err := gc.resty.R().Put(fmt.Sprintf("groups/%s/members/%s", groupName, username))
+	return parseRestyResponse(resp, err)
+}
+
 func (gc *Client) UpdateGroup(groupID, description string, visibleToAll bool) error {
 	resp, err := gc.resty.R().
 		SetHeader("accept", "application/json").

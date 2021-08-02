@@ -13,7 +13,6 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -90,13 +89,13 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Unable to get Gerrit SSH URL")
 	}
-	executableFilePath, err := helper.GetExecutableFilePath()
+	executableFilePath, err := platformHelper.GetExecutableFilePath()
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Unable to get executable file path")
 	}
 
 	GerritScriptsPath := platformHelper.LocalScriptsRelativePath
-	if !helper.RunningInCluster() {
+	if !platformHelper.RunningInCluster() {
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
@@ -617,7 +616,7 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 
 func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
-	if !helper.RunningInCluster() {
+	if !platformHelper.RunningInCluster() {
 		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
@@ -629,7 +628,7 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 
 func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
-	if !helper.RunningInCluster() {
+	if !platformHelper.RunningInCluster() {
 		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)

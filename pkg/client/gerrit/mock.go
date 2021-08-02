@@ -7,10 +7,11 @@ import (
 
 type Mock struct {
 	mock.Mock
+	restyClient *resty.Client
 }
 
 func (m *Mock) GetResty() *resty.Client {
-	panic("not implemented")
+	return m.restyClient
 }
 
 func (m *Mock) SetProjectParent(projectName, parentName string) error {
@@ -29,9 +30,22 @@ func (m *Mock) AddAccessRights(projectName string, permissions []AccessInfo) err
 }
 
 func (m *Mock) CreateGroup(name, description string, visibleToAll bool) (*Group, error) {
-	panic("not implemented")
+	called := m.Called(name, description, visibleToAll)
+	if err := called.Error(1); err != nil {
+		return nil, err
+	}
+
+	return called.Get(0).(*Group), nil
 }
 
 func (m *Mock) UpdateGroup(groupID, description string, visibleToAll bool) error {
-	panic("not implemented")
+	return m.Called(groupID, description, visibleToAll).Error(0)
+}
+
+func (m *Mock) AddUserToGroup(groupName, username string) error {
+	return m.Called(groupName, username).Error(0)
+}
+
+func (m *Mock) DeleteUserFromGroup(groupName, username string) error {
+	return m.Called(groupName, username).Error(0)
 }

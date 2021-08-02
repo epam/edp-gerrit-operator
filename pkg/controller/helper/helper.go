@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -201,4 +203,66 @@ func RemoveString(slice []string, s string) (result []string) {
 		result = append(result, item)
 	}
 	return
+}
+
+func GetGerritClient(ctx context.Context, cl client.Client, instance client.Object, ownerName string,
+	service gerritService.Interface) (gerritClient.ClientInterface, error) {
+	if !IsInstanceOwnerSet(instance) {
+		ownerReference := FindCROwnerName(ownerName)
+
+		gerritInstance, err := GetGerritInstance(ctx, cl, ownerReference, instance.GetNamespace())
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to get gerrit instance")
+		}
+
+		SetOwnerReference(instance, gerritInstance.TypeMeta, gerritInstance.ObjectMeta)
+
+		if err := cl.Update(ctx, instance); err != nil {
+			return nil, errors.Wrap(err, "unable to update instance owner refs")
+		}
+	}
+
+	gerritInstance, err := GetInstanceOwner(ctx, cl, instance)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get instance owner")
+	}
+
+	gerritCl, err := service.GetRestClient(gerritInstance)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get rest client")
+	}
+
+	return gerritCl, nil
+}
+
+func TryToDelete(ctx context.Context, k8sClient client.Client, instance client.Object, finalizerName string,
+	deleteFunc func() error) error {
+
+	if instance.GetDeletionTimestamp().IsZero() {
+		finalizers := instance.GetFinalizers()
+		if !ContainsString(finalizers, finalizerName) {
+			finalizers = append(finalizers, finalizerName)
+			instance.SetFinalizers(finalizers)
+
+			if err := k8sClient.Update(ctx, instance); err != nil {
+				return errors.Wrap(err, "unable to update instance finalizer")
+			}
+		}
+
+		return nil
+	}
+
+	if err := deleteFunc(); err != nil {
+		return errors.Wrap(err, "unable to perform delete function")
+	}
+
+	finalizers := instance.GetFinalizers()
+	finalizers = RemoveString(finalizers, finalizerName)
+	instance.SetFinalizers(finalizers)
+
+	if err := k8sClient.Update(ctx, instance); err != nil {
+		return errors.Wrap(err, "unable to remove finalizer from instance")
+	}
+
+	return nil
 }

@@ -2,6 +2,7 @@ package gerrit
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -80,6 +81,30 @@ func TestClient_DeleteAccessRights(t *testing.T) {
 	}
 }
 
+func TestClient_DeleteAccessRightsFailure(t *testing.T) {
+	restyClient := resty.New()
+	httpmock.ActivateNonDefault(restyClient.GetClient())
+
+	cl := Client{
+		resty: restyClient,
+	}
+
+	httpmock.RegisterResponder("POST", "/projects/test/access", httpmock.NewStringResponder(500, ""))
+
+	if err := cl.DeleteAccessRights("test", []AccessInfo{
+		{
+			RefPattern:     "refs/heads/*",
+			PermissionName: "label-Code-Review",
+			GroupName:      "important-group",
+			Min:            -2,
+			Max:            2,
+			Force:          false,
+			Action:         "ALLOW",
+		}}); err == nil {
+		t.Fatal("no error returned")
+	}
+}
+
 func TestClient_SetProjectParent(t *testing.T) {
 	restyClient := resty.New()
 	httpmock.ActivateNonDefault(restyClient.GetClient())
@@ -133,4 +158,10 @@ func TestGenerateSetAccessRequest(t *testing.T) {
 	}
 
 	t.Log(string(bts))
+}
+
+func TestParseRestyResponse(t *testing.T) {
+	if err := parseRestyResponse(nil, errors.New("fatal")); err == nil {
+		t.Fatal("no error")
+	}
 }

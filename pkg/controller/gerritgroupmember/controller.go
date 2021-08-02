@@ -1,4 +1,4 @@
-package gerritprojectaccess
+package gerritgroupmember
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const finalizerName = "gerritprojectaccess.gerrit.finalizer.name"
+const finalizerName = "gerritgroupmember.gerrit.finalizer.name"
 
 type Reconcile struct {
 	client  client.Client
@@ -49,13 +49,13 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritProjectAccess{}, builder.WithPredicates(pred)).
+		For(&v1alpha1.GerritGroupMember{}, builder.WithPredicates(pred)).
 		Complete(r)
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*v1alpha1.GerritProjectAccess)
-	no := e.ObjectNew.(*v1alpha1.GerritProjectAccess)
+	oo := e.ObjectOld.(*v1alpha1.GerritGroupMember)
+	no := e.ObjectNew.(*v1alpha1.GerritGroupMember)
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -63,15 +63,15 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 
 func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (result reconcile.Result, resError error) {
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.V(2).Info("Reconciling GerritProjectAccess has been started")
+	reqLogger.V(2).Info("Reconciling GerritGroupMember has been started")
 
-	var instance v1alpha1.GerritProjectAccess
+	var instance v1alpha1.GerritGroupMember
 	if err := r.client.Get(context.TODO(), request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			return
 		}
 
-		return reconcile.Result{}, errors.Wrap(err, "unable to get GerritProjectAccess instance")
+		return reconcile.Result{}, errors.Wrap(err, "unable to get GerritGroupMember instance")
 	}
 
 	defer func() {
@@ -81,70 +81,37 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	}()
 
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
-		reqLogger.Error(err, "unable to reconcile GerritProjectAccess")
+		reqLogger.Error(err, "unable to reconcile GerritGroupMember")
 		instance.Status.Value = err.Error()
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	instance.Status.Value = helper.StatusOK
-	instance.Status.Created = true
 
 	return
 }
 
-func prepareAccessInfo(references []v1alpha1.Reference) []gerritClient.AccessInfo {
-	ai := make([]gerritClient.AccessInfo, 0, len(references))
-	for _, ref := range references {
-		ai = append(ai, gerritClient.AccessInfo{
-			Action:          ref.Action,
-			Force:           ref.Force,
-			GroupName:       ref.GroupName,
-			Max:             ref.Max,
-			Min:             ref.Min,
-			RefPattern:      ref.Pattern,
-			PermissionLabel: ref.PermissionLabel,
-			PermissionName:  ref.PermissionName,
-		})
-	}
-
-	return ai
-}
-
-func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritProjectAccess) error {
+func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritGroupMember) error {
 	cl, err := helper.GetGerritClient(ctx, r.client, instance, instance.Spec.OwnerName, r.service)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")
 	}
 
-	if len(instance.Spec.References) > 0 && !instance.Status.Created {
-		if err := cl.AddAccessRights(instance.Spec.ProjectName, prepareAccessInfo(instance.Spec.References)); err != nil {
-			return errors.Wrap(err, "unable to add access rights")
-		}
-	} else if len(instance.Spec.References) > 0 {
-		if err := cl.UpdateAccessRights(instance.Spec.ProjectName, prepareAccessInfo(instance.Spec.References)); err != nil {
-			return errors.Wrap(err, "unable to update access rights")
-		}
+	if err := cl.AddUserToGroup(instance.Spec.GroupID, instance.Spec.AccountID); err != nil {
+		return errors.Wrap(err, "unable to add user to group")
 	}
 
-	if instance.Spec.ProjectName != "" {
-		if err := cl.SetProjectParent(instance.Spec.ProjectName, instance.Spec.Parent); err != nil {
-			return errors.Wrap(err, "unable to set project parent")
-		}
-	}
-
-	if err := helper.TryToDelete(ctx, r.client, instance, finalizerName,
-		r.makeDeletionFunc(cl, instance.Spec.ProjectName, instance.Spec.References)); err != nil {
-		return errors.Wrap(err, "error during TryToDelete")
+	if err := helper.TryToDelete(ctx, r.client, instance, finalizerName, r.makeDeletionFunc(cl, instance)); err != nil {
+		return errors.Wrap(err, "unable to delete CR")
 	}
 
 	return nil
 }
 
-func (r *Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string,
-	refs []v1alpha1.Reference) func() error {
+func (r *Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *v1alpha1.GerritGroupMember) func() error {
 	return func() error {
-		if err := gc.DeleteAccessRights(projectName, prepareAccessInfo(refs)); err != nil {
-			return errors.Wrap(err, "unable to delete access rights")
+		if err := cl.DeleteUserFromGroup(instance.Spec.GroupID, instance.Spec.AccountID); err != nil {
+			return errors.Wrap(err, "unable to delete user from group")
 		}
 
 		return nil

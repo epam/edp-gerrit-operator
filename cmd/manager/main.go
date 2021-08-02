@@ -4,6 +4,8 @@ import (
 	"flag"
 	"os"
 
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroupmember"
+
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritprojectaccess"
 
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
@@ -144,6 +146,16 @@ func main() {
 
 	if err := grProjectAccessCtrl.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "gerrit-project-access")
+		os.Exit(1)
+	}
+
+	grGroupMemberCtrl, err := gerritgroupmember.NewReconcile(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group-member")
+		os.Exit(1)
+	}
+	if err := grGroupMemberCtrl.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group-member")
 		os.Exit(1)
 	}
 

@@ -10,4 +10,6 @@ type ClientInterface interface {
 	AddAccessRights(projectName string, permissions []AccessInfo) error
 	CreateGroup(name, description string, visibleToAll bool) (*Group, error)
 	UpdateGroup(groupID, description string, visibleToAll bool) error
+	AddUserToGroup(groupName, username string) error
+	DeleteUserFromGroup(groupName, username string) error
 }
