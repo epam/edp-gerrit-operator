@@ -60,7 +60,7 @@ func IsErrUserNotFound(err error) bool {
 		return false
 	}
 
-	_, ok := err.(ErrUserNotFound)
+	_, ok := errors.Cause(err).(ErrUserNotFound)
 	return ok
 }
 

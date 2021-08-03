@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,5 +92,102 @@ func TestGetGerritClient(t *testing.T) {
 	gSVC.On("GetRestClient", &g).Return(&gCl, nil)
 	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1.AddToScheme(scheme))
+
+	instance := v1alpha1.GerritGroupMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "t1",
+			Namespace: "t2",
+			OwnerReferences: []metav1.OwnerReference{
+				{},
+			},
+		},
+	}
+
+	g := v1alpha1.Gerrit{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: instance.Namespace, Name: "ger1"},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v2.edp.epam.com/v1alpha1",
+			Kind:       "Gerrit",
+		}}
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+	gSVC := gerritService.Mock{}
+
+	_, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC)
+	if err == nil {
+		t.Fatal("error is not returned")
+	}
+
+	if !strings.Contains(err.Error(), "unable to get instance owner") {
+		t.Log(err)
+		t.Fatal("wrong error returned")
+	}
+}
+
+func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1.AddToScheme(scheme))
+
+	instance := v1alpha1.GerritGroupMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "t1",
+			Namespace: "t2",
+		},
+	}
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance).Build()
+	gSVC := gerritService.Mock{}
+
+	_, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC)
+	if err == nil {
+		t.Fatal("error is not returned")
+	}
+
+	if !strings.Contains(err.Error(), "no root gerrits found") {
+		t.Fatal("wrong error returned")
+	}
+}
+
+func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1.AddToScheme(scheme))
+
+	instance := v1alpha1.GerritGroupMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "t1",
+			Namespace: "t2",
+		},
+	}
+
+	g := v1alpha1.Gerrit{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: instance.Namespace, Name: "ger1"},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v2.edp.epam.com/v1alpha1",
+			Kind:       "Gerrit",
+		}}
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+
+	gSVC := gerritService.Mock{}
+
+	gSVC.On("GetRestClient", &g).Return(nil, errors.New("mock error"))
+	_, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC)
+	if err == nil {
+		t.Fatal("no error returned")
+	}
+
+	if !strings.Contains(err.Error(), "mock error") {
+		t.Fatal("wrong error returned")
 	}
 }
