@@ -47,9 +47,9 @@ rules:
     - gerritgroupmembers
     - gerritgroupmembers/status
     - gerritgroupmembers/finalizers
-    - gerritprojectaccess
-    - gerritprojectaccess/status
-    - gerritprojectaccess/finalizers
+    - gerritprojectaccesses
+    - gerritprojectaccesses/status
+    - gerritprojectaccesses/finalizers
   verbs:
     - '*'
 - apiGroups:
