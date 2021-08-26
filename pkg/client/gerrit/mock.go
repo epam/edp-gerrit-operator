@@ -49,3 +49,33 @@ func (m *Mock) AddUserToGroup(groupName, username string) error {
 func (m *Mock) DeleteUserFromGroup(groupName, username string) error {
 	return m.Called(groupName, username).Error(0)
 }
+
+func (m *Mock) CreateProject(prj *Project) error {
+	return m.Called(prj).Error(0)
+}
+
+func (m *Mock) GetProject(name string) (*Project, error) {
+	called := m.Called(name)
+	if err := called.Error(1); err != nil {
+		return nil, err
+	}
+
+	return called.Get(0).(*Project), nil
+}
+
+func (m *Mock) UpdateProject(prj *Project) error {
+	return m.Called(prj).Error(0)
+}
+
+func (m *Mock) DeleteProject(name string) error {
+	return m.Called(name).Error(0)
+}
+
+func (m *Mock) ListProjects(_type string) ([]Project, error) {
+	called := m.Called(_type)
+	if err := called.Error(1); err != nil {
+		return nil, err
+	}
+
+	return called.Get(0).([]Project), nil
+}

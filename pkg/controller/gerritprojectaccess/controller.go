@@ -30,7 +30,7 @@ type Reconcile struct {
 	log     logr.Logger
 }
 
-func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger) (*Reconcile, error) {
+func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create platform service")

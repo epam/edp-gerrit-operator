@@ -12,4 +12,9 @@ type ClientInterface interface {
 	UpdateGroup(groupID, description string, visibleToAll bool) error
 	AddUserToGroup(groupName, username string) error
 	DeleteUserFromGroup(groupName, username string) error
+	CreateProject(prj *Project) error
+	GetProject(name string) (*Project, error)
+	UpdateProject(prj *Project) error
+	DeleteProject(name string) error
+	ListProjects(_type string) ([]Project, error)
 }

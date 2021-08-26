@@ -1,0 +1,7 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: GerritProjectAccess
+metadata:
+  name: test-access2
+spec:
+  projectName: test_parent
+  parent: test123

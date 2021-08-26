@@ -24,6 +24,17 @@ func IsErrAlreadyExists(err error) bool {
 	return false
 }
 
+type ErrDoesNotExist string
+
+func (e ErrDoesNotExist) Error() string {
+	return string(e)
+}
+
+func IsErrDoesNotExist(err error) bool {
+	_, ok := errors.Cause(err).(ErrDoesNotExist)
+	return ok
+}
+
 type Group struct {
 	ID      string        `json:"id"`
 	GroupID int           `json:"group_id"`

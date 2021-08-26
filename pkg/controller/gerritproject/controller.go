@@ -1,4 +1,4 @@
-package gerritgroupmember
+package gerritproject
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const finalizerName = "gerritgroupmember.gerrit.finalizer.name"
+const finalizerName = "gerritproject.gerrit.finalizer.name"
 
 type Reconcile struct {
 	client  client.Client
@@ -39,7 +39,7 @@ func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger)
 	return &Reconcile{
 		client:  client,
 		service: gerrit.NewComponentService(ps, client, scheme),
-		log:     log.WithName("gerrit"),
+		log:     log.WithName("gerrit-project"),
 	}, nil
 }
 
@@ -48,14 +48,16 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 		UpdateFunc: isSpecUpdated,
 	}
 
+	go r.syncBackendProjects(time.Second * 30)
+
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritGroupMember{}, builder.WithPredicates(pred)).
+		For(&v1alpha1.GerritProject{}, builder.WithPredicates(pred)).
 		Complete(r)
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*v1alpha1.GerritGroupMember)
-	no := e.ObjectNew.(*v1alpha1.GerritGroupMember)
+	oo := e.ObjectOld.(*v1alpha1.GerritProject)
+	no := e.ObjectNew.(*v1alpha1.GerritProject)
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -63,15 +65,16 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 
 func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (result reconcile.Result, resError error) {
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.V(2).Info("Reconciling GerritGroupMember has been started")
+	reqLogger.V(2).Info("Reconciling GerritProject has been started")
 
-	var instance v1alpha1.GerritGroupMember
+	var instance v1alpha1.GerritProject
 	if err := r.client.Get(context.TODO(), request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
+			reqLogger.Info("instance not found")
 			return
 		}
 
-		return reconcile.Result{}, errors.Wrap(err, "unable to get GerritGroupMember instance")
+		return reconcile.Result{}, errors.Wrap(err, "unable to get GerritProject instance")
 	}
 
 	defer func() {
@@ -81,7 +84,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	}()
 
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
-		reqLogger.Error(err, "unable to reconcile GerritGroupMember")
+		reqLogger.Error(err, "unable to reconcile GerritProject")
 		instance.Status.Value = err.Error()
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
@@ -91,27 +94,51 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	return
 }
 
-func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritGroupMember) error {
+func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritProject) error {
 	cl, err := helper.GetGerritClient(ctx, r.client, instance, instance.Spec.OwnerName, r.service)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")
 	}
 
-	if err := cl.AddUserToGroup(instance.Spec.GroupID, instance.Spec.AccountID); err != nil {
-		return errors.Wrap(err, "unable to add user to group")
+	_, err = cl.GetProject(instance.Spec.Name)
+	if err != nil && !gerritClient.IsErrDoesNotExist(err) {
+		return errors.Wrap(err, "unable to get project")
 	}
 
-	if err := helper.TryToDelete(ctx, r.client, instance, finalizerName, r.makeDeletionFunc(cl, instance)); err != nil {
-		return errors.Wrap(err, "unable to delete CR")
+	prj := gerritClient.Project{
+		Name:              instance.Spec.Name,
+		Description:       instance.Spec.Description,
+		Parent:            instance.Spec.Parent,
+		Branches:          instance.Spec.Branches,
+		CreateEmptyCommit: instance.Spec.CreateEmptyCommit,
+		Owners:            instance.Spec.Owners,
+		PermissionsOnly:   instance.Spec.PermissionsOnly,
+		RejectEmptyCommit: instance.Spec.RejectEmptyCommit,
+		SubmitType:        instance.Spec.SubmitType,
+	}
+
+	if gerritClient.IsErrDoesNotExist(err) {
+		if err := cl.CreateProject(&prj); err != nil {
+			return errors.Wrap(err, "unable to create gerrit project")
+		}
+	} else {
+		if err := cl.UpdateProject(&prj); err != nil {
+			return errors.Wrap(err, "unable to update project")
+		}
+	}
+
+	if err := helper.TryToDelete(ctx, r.client, instance, finalizerName,
+		r.makeDeletionFunc(cl, instance.Spec.Name)); err != nil {
+		return errors.Wrap(err, "error during TryToDelete")
 	}
 
 	return nil
 }
 
-func (r *Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *v1alpha1.GerritGroupMember) func() error {
+func (r *Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string) func() error {
 	return func() error {
-		if err := cl.DeleteUserFromGroup(instance.Spec.GroupID, instance.Spec.AccountID); err != nil {
-			return errors.Wrap(err, "unable to delete user from group")
+		if err := gc.DeleteProject(projectName); err != nil {
+			return errors.Wrap(err, "unable to delete project")
 		}
 
 		return nil

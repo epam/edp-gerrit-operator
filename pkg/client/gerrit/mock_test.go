@@ -56,4 +56,39 @@ func TestMock_All(t *testing.T) {
 	if err := m.DeleteUserFromGroup("foo", "bar"); err != nil {
 		t.Fatal(err)
 	}
+
+	m.On("CreateProject", &Project{}).Return(nil)
+	if err := m.CreateProject(&Project{}); err != nil {
+		t.Fatal(err)
+	}
+
+	m.On("GetProject", "test").Return(&Project{}, nil).Once()
+	if _, err := m.GetProject("test"); err != nil {
+		t.Fatal(err)
+	}
+
+	m.On("GetProject", "test").Return(nil, errors.New("fatal")).Once()
+	if _, err := m.GetProject("test"); err == nil {
+		t.Fatal("no error returned")
+	}
+
+	m.On("UpdateProject", &Project{}).Return(nil)
+	if err := m.UpdateProject(&Project{}); err != nil {
+		t.Fatal(err)
+	}
+
+	m.On("DeleteProject", "test").Return(nil)
+	if err := m.DeleteProject("test"); err != nil {
+		t.Fatal(err)
+	}
+
+	m.On("ListProjects", "test").Return([]Project{}, nil).Once()
+	if _, err := m.ListProjects("test"); err != nil {
+		t.Fatal(err)
+	}
+
+	m.On("ListProjects", "test").Return(nil, errors.New("fatal")).Once()
+	if _, err := m.ListProjects("test"); err == nil {
+		t.Fatal("no error returned")
+	}
 }

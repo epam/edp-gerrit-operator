@@ -248,7 +248,7 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 
 	keycloak := &keycloakApi.Keycloak{}
 	err = s.client.Get(context.TODO(), types.NamespacedName{
-		Name:      realm.OwnerReferences[0].Name,
+		Name:      realm.OwnerReferences[0].Name, //TODO: check if owner references is not empty before access
 		Namespace: instance.Namespace,
 	}, keycloak)
 	if err != nil {

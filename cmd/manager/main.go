@@ -4,14 +4,13 @@ import (
 	"flag"
 	"os"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroupmember"
-
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritprojectaccess"
-
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroup"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroupmember"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritproject"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritprojectaccess"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritreplicationconfig"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
@@ -43,13 +42,9 @@ const gerritOperatorLock = "edp-gerrit-operator-lock"
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
 	utilruntime.Must(gerritApi.AddToScheme(scheme))
-
 	utilruntime.Must(edpCompApi.AddToScheme(scheme))
-
 	utilruntime.Must(jenkinsApi.AddToScheme(scheme))
-
 	utilruntime.Must(keycloakApi.AddToScheme(scheme))
 }
 
@@ -105,58 +100,45 @@ func main() {
 	}
 
 	ctrlLog := ctrl.Log.WithName("controllers")
-	gerritCtrl, err := gerritContr.NewReconcileGerrit(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
-	if err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit")
-		os.Exit(1)
+
+	controllersInitFuncs := []helper.InitFunc{
+		{
+			Func:           gerritContr.NewReconcileGerrit,
+			ControllerName: "gerrit",
+		},
+		{
+			Func:           gerritreplicationconfig.NewReconcileGerritReplicationConfig,
+			ControllerName: "gerrit-replication-config",
+		},
+		{
+			Func:           gerritgroup.NewReconcile,
+			ControllerName: "gerrit-group",
+		},
+		{
+			Func:           gerritprojectaccess.NewReconcile,
+			ControllerName: "gerrit-project-access",
+		},
+		{
+			Func:           gerritgroupmember.NewReconcile,
+			ControllerName: "gerrit-group-member",
+		},
+		{
+			Func:           gerritproject.NewReconcile,
+			ControllerName: "gerrit-project",
+		},
 	}
 
-	if err := gerritCtrl.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit")
-		os.Exit(1)
-	}
+	for _, cf := range controllersInitFuncs {
+		gCtrl, err := cf.Func(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
+		if err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", cf.ControllerName)
+			os.Exit(1)
+		}
 
-	grcCtrl, err := gerritreplicationconfig.NewReconcileGerritReplicationConfig(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
-	if err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-replication-config")
-		os.Exit(1)
-	}
-
-	if err := grcCtrl.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-replication-config")
-		os.Exit(1)
-	}
-
-	grGroupCtrl, err := gerritgroup.NewReconcile(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
-	if err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group")
-		os.Exit(1)
-	}
-
-	if err := grGroupCtrl.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group")
-		os.Exit(1)
-	}
-
-	grProjectAccessCtrl, err := gerritprojectaccess.NewReconcile(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
-	if err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-project-access")
-		os.Exit(1)
-	}
-
-	if err := grProjectAccessCtrl.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-project-access")
-		os.Exit(1)
-	}
-
-	grGroupMemberCtrl, err := gerritgroupmember.NewReconcile(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
-	if err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group-member")
-		os.Exit(1)
-	}
-	if err := grGroupMemberCtrl.SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "gerrit-group-member")
-		os.Exit(1)
+		if err := gCtrl.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", cf.ControllerName)
+			os.Exit(1)
+		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

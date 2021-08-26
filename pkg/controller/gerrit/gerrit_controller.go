@@ -3,17 +3,17 @@ package gerrit
 import (
 	"context"
 	"fmt"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -47,7 +47,7 @@ const (
 	StatusReady = "ready"
 )
 
-func NewReconcileGerrit(client client.Client, scheme *runtime.Scheme, log logr.Logger) (*ReconcileGerrit, error) {
+func NewReconcileGerrit(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create platform service")

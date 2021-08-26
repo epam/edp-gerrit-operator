@@ -1,0 +1,7 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: GerritGroupMember
+metadata:
+  name: test-access1
+spec:
+  groupId: test321
+  accountId: user1@example.com

@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewReconcileGerritReplicationConfig(client client.Client, scheme *runtime.Scheme, log logr.Logger) (*ReconcileGerritReplicationConfig, error) {
+func NewReconcileGerritReplicationConfig(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create platform service")
