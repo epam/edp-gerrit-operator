@@ -59,9 +59,68 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 			Name: "alphabet",
 		},
 	}, nil)
+	clientMock.On("ListProjectBranches", "alphabet").Return([]gerritClient.Branch{
+		{
+			Ref: "test",
+		},
+	}, nil)
 
 	if err := rcn.syncBackendProjectsTick(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1.AddToScheme(scheme))
+
+	g := v1alpha1.Gerrit{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns", Name: "ger1"},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v2.edp.epam.com/v1alpha1",
+			Kind:       "Gerrit",
+		}}
+
+	prj := v1alpha1.GerritProject{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind: g.Kind,
+					UID:  g.UID,
+				},
+			}},
+		Spec: v1alpha1.GerritProjectSpec{Name: "sprj1"},
+	}
+
+	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
+	serviceMock := gerritService.Mock{}
+	clientMock := gerritClient.Mock{}
+	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
+
+	logger := helper.Logger{}
+
+	rcn := Reconcile{
+		client:  cl,
+		log:     &logger,
+		service: &serviceMock,
+	}
+
+	clientMock.On("ListProjects", "CODE").Return([]gerritClient.Project{
+		{
+			Name: "alphabet",
+		},
+	}, nil)
+	clientMock.On("ListProjectBranches", "alphabet").Return(nil, errors.New("list branches fatal"))
+
+	err := rcn.syncBackendProjectsTick()
+	if err == nil {
+		t.Fatal("no error returned")
+	}
+
+	if !strings.Contains(err.Error(), "list branches fatal") {
+		t.Fatalf("wrong error returned: %s", err.Error())
 	}
 }
 

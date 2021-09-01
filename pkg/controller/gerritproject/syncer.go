@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,18 +27,19 @@ func (r *Reconcile) syncBackendProjectsTick() error {
 	var (
 		gerritList        v1alpha1.GerritList
 		gerritProjectList v1alpha1.GerritProjectList
+		ctx               = context.Background()
 	)
 
-	if err := r.client.List(context.Background(), &gerritList); err != nil {
+	if err := r.client.List(ctx, &gerritList); err != nil {
 		return errors.Wrap(err, "unable to list gerrits")
 	}
 
-	if err := r.client.List(context.Background(), &gerritProjectList); err != nil {
+	if err := r.client.List(ctx, &gerritProjectList); err != nil {
 		return errors.Wrap(err, "unable to list gerrit projects")
 	}
 
 	for _, gr := range gerritList.Items {
-		if err := r.syncGerritInstance(&gr, gerritProjectList.Items); err != nil {
+		if err := r.syncGerritInstance(ctx, &gr, gerritProjectList.Items); err != nil {
 			return errors.Wrapf(err, "unable to sync gerrit instance: %s", gr.Name)
 		}
 	}
@@ -45,7 +47,8 @@ func (r *Reconcile) syncBackendProjectsTick() error {
 	return nil
 }
 
-func (r *Reconcile) syncGerritInstance(gr *v1alpha1.Gerrit, allK8sGerritProjects []v1alpha1.GerritProject) error {
+func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *v1alpha1.Gerrit,
+	allK8sGerritProjects []v1alpha1.GerritProject) error {
 	cl, err := r.service.GetRestClient(gr)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")
@@ -59,18 +62,44 @@ func (r *Reconcile) syncGerritInstance(gr *v1alpha1.Gerrit, allK8sGerritProjects
 	k8sProjects := filterGerritProjectsByGerrit(gr, allK8sGerritProjects)
 
 	for _, backendProject := range backendProjects {
-		if _, ok := k8sProjects[backendProject.Name]; !ok {
-			if err := r.createGerritProject(gr, &backendProject); err != nil {
+		k8sProject, ok := k8sProjects[backendProject.Name]
+		if !ok {
+			k8sProject, err = r.createGerritProject(ctx, gr, &backendProject)
+			if err != nil {
 				return errors.Wrap(err, "unable to create gerrit project")
 			}
+		}
+
+		if err := r.syncProjectBranches(ctx, cl, k8sProject); err != nil {
+			return errors.Wrap(err, "unable to sync gerrit project branches")
 		}
 	}
 
 	return nil
 }
 
-func (r *Reconcile) createGerritProject(gr *v1alpha1.Gerrit, backendProject *gerritClient.Project) error {
-	if err := r.client.Create(context.Background(), &v1alpha1.GerritProject{
+func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInterface,
+	k8sProject *v1alpha1.GerritProject) error {
+	branches, err := cl.ListProjectBranches(k8sProject.Spec.Name)
+	if err != nil {
+		return errors.Wrap(err, "unable to list project branches")
+	}
+
+	k8sProject.Status.Branches = make([]string, 0, len(branches))
+	for _, br := range branches {
+		k8sProject.Status.Branches = append(k8sProject.Status.Branches, br.Ref)
+	}
+
+	if err := r.client.Status().Update(ctx, k8sProject); err != nil {
+		return errors.Wrap(err, "unable to update gerrit project")
+	}
+
+	return nil
+}
+
+func (r *Reconcile) createGerritProject(ctx context.Context, gr *v1alpha1.Gerrit,
+	backendProject *gerritClient.Project) (*v1alpha1.GerritProject, error) {
+	prj := v1alpha1.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      strings.ToLower(fmt.Sprintf("%s-%s", gr.Name, backendProject.Name)),
 			Namespace: gr.Namespace,
@@ -87,20 +116,22 @@ func (r *Reconcile) createGerritProject(gr *v1alpha1.Gerrit, backendProject *ger
 			Branches:          backendProject.Branches,
 			OwnerName:         gr.Name,
 		},
-	}); err != nil {
-		return errors.Wrap(err, "unable to create gerrit project")
 	}
 
-	return nil
+	if err := r.client.Create(ctx, &prj); err != nil {
+		return nil, errors.Wrap(err, "unable to create gerrit project")
+	}
+
+	return &prj, nil
 }
 
-func filterGerritProjectsByGerrit(g *v1alpha1.Gerrit, projects []v1alpha1.GerritProject) map[string]v1alpha1.GerritProject {
-	result := make(map[string]v1alpha1.GerritProject)
+func filterGerritProjectsByGerrit(g *v1alpha1.Gerrit, projects []v1alpha1.GerritProject) map[string]*v1alpha1.GerritProject {
+	result := make(map[string]*v1alpha1.GerritProject)
 
-	for _, p := range projects {
+	for k, p := range projects {
 		for _, owner := range p.OwnerReferences {
 			if owner.UID == g.UID && owner.Kind == g.Kind {
-				result[p.Spec.Name] = p
+				result[p.Spec.Name] = &projects[k]
 			}
 		}
 	}

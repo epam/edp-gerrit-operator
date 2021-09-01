@@ -20,6 +20,20 @@ type Project struct {
 	RejectEmptyCommit string `json:"reject_empty_commit,omitempty"`
 }
 
+type Branch struct {
+	Ref       string    `json:"ref"`
+	Revision  string    `json:"revision"`
+	CanDelete bool      `json:"can_delete"`
+	WebLinks  []WebLink `json:"web_link"`
+}
+
+type WebLink struct {
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	ImageURL string `json:"image_url"`
+	Target   string `json:"target"`
+}
+
 func (gc Client) CreateProject(prj *Project) error {
 	rsp, err := gc.resty.R().SetBody(prj).SetHeader("Content-Type", "application/json").
 		Put(fmt.Sprintf("/projects/%s", prj.Name))
@@ -108,4 +122,25 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 	}
 
 	return projects, nil
+}
+
+func (gc Client) ListProjectBranches(projectName string) ([]Branch, error) {
+	rsp, err := gc.resty.R().SetHeader("accept", "application/json").
+		Get(fmt.Sprintf("/projects/%s/branches/", projectName))
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to get Gerrit project branches")
+	}
+
+	if rsp.IsError() {
+		return nil, errors.Errorf("wrong response code: %d, body: %s", rsp.StatusCode(), rsp.String())
+	}
+
+	var branches []Branch
+	body := rsp.String()[5:]
+	if err := json.Unmarshal([]byte(body), &branches); err != nil {
+		return nil, errors.Wrapf(err, "unable to unmarshal project response, body: %s", rsp.String())
+	}
+
+	return branches, nil
 }

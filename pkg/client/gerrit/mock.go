@@ -79,3 +79,12 @@ func (m *Mock) ListProjects(_type string) ([]Project, error) {
 
 	return called.Get(0).([]Project), nil
 }
+
+func (m *Mock) ListProjectBranches(projectName string) ([]Branch, error) {
+	called := m.Called(projectName)
+	if err := called.Error(1); err != nil {
+		return nil, err
+	}
+
+	return called.Get(0).([]Branch), nil
+}

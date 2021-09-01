@@ -3,7 +3,8 @@ package v1alpha1
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 type GerritProjectStatus struct {
-	Value string `json:"value"`
+	Value    string   `json:"value"`
+	Branches []string `json:"branches"`
 }
 
 type GerritProjectSpec struct {

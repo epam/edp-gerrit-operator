@@ -1,6 +1,7 @@
 package gerrit
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -194,6 +195,69 @@ func TestClient_ListProjects_Failure(t *testing.T) {
 		httpmock.NewStringResponder(200, `}}}}}zazazaza`))
 
 	_, err = cl.ListProjects("CODE")
+	if err == nil {
+		t.Fatal("no error returned")
+	}
+
+	if !strings.Contains(err.Error(), "unmarshal project response") {
+		t.Fatalf("wrong error returned: %s", err.Error())
+	}
+}
+
+func TestClient_ListProjectBranches(t *testing.T) {
+	httpmock.Reset()
+	restyClient := resty.New()
+	httpmock.ActivateNonDefault(restyClient.GetClient())
+
+	cl := Client{
+		resty: restyClient,
+	}
+
+	httpmock.RegisterResponder("GET", fmt.Sprintf("/projects/%s/branches/", "prh1"),
+		httpmock.NewStringResponder(200, `}}}}}[{"ref": "test"}]`))
+
+	_, err := cl.ListProjectBranches("prh1")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestClient_ListProjectBranches_Failure(t *testing.T) {
+	httpmock.Reset()
+	restyClient := resty.New()
+	httpmock.ActivateNonDefault(restyClient.GetClient())
+
+	cl := Client{
+		resty: restyClient,
+	}
+
+	_, err := cl.ListProjectBranches("prh1")
+	if err == nil {
+		t.Fatal("no error returned")
+	}
+
+	if !strings.Contains(err.Error(), "Unable to get Gerrit project branches") {
+		t.Fatalf("wrong error returned: %s", err.Error())
+	}
+
+	httpmock.Reset()
+	httpmock.RegisterResponder("GET", "/projects/prh1/branches/",
+		httpmock.NewStringResponder(500, "500 fatal"))
+
+	_, err = cl.ListProjectBranches("prh1")
+	if err == nil {
+		t.Fatal("no error returned")
+	}
+
+	if !strings.Contains(err.Error(), "500 fatal") {
+		t.Fatalf("wrong error returned: %s", err.Error())
+	}
+
+	httpmock.Reset()
+	httpmock.RegisterResponder("GET", "/projects/prh1/branches/",
+		httpmock.NewStringResponder(200, `}}}}}zazazaza`))
+
+	_, err = cl.ListProjectBranches("prh1")
 	if err == nil {
 		t.Fatal("no error returned")
 	}

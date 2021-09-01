@@ -17,4 +17,5 @@ type ClientInterface interface {
 	UpdateProject(prj *Project) error
 	DeleteProject(name string) error
 	ListProjects(_type string) ([]Project, error)
+	ListProjectBranches(projectName string) ([]Branch, error)
 }

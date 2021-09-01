@@ -91,4 +91,14 @@ func TestMock_All(t *testing.T) {
 	if _, err := m.ListProjects("test"); err == nil {
 		t.Fatal("no error returned")
 	}
+
+	m.On("ListProjectBranches", "test").Return([]Branch{}, nil).Once()
+	if _, err := m.ListProjectBranches("test"); err != nil {
+		t.Fatal(err)
+	}
+
+	m.On("ListProjectBranches", "test").Return(nil, errors.New("fatal")).Once()
+	if _, err := m.ListProjectBranches("test"); err == nil {
+		t.Fatal("no error returned")
+	}
 }
