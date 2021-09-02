@@ -99,9 +99,10 @@ func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInt
 
 func (r *Reconcile) createGerritProject(ctx context.Context, gr *v1alpha1.Gerrit,
 	backendProject *gerritClient.Project) (*v1alpha1.GerritProject, error) {
+
 	prj := v1alpha1.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.ToLower(fmt.Sprintf("%s-%s", gr.Name, backendProject.Name)),
+			Name:      strings.ToLower(fmt.Sprintf("%s-%s", gr.Name, backendProject.SlugifyName())),
 			Namespace: gr.Namespace,
 		},
 		Spec: v1alpha1.GerritProjectSpec{

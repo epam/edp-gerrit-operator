@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 )
 
@@ -18,6 +19,10 @@ type Project struct {
 	Branches          string `json:"branches,omitempty"`
 	Owners            string `json:"owners,omitempty"`
 	RejectEmptyCommit string `json:"reject_empty_commit,omitempty"`
+}
+
+func (p Project) SlugifyName() string {
+	return slug.Make(p.Name)
 }
 
 type Branch struct {
@@ -114,6 +119,10 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 	if err := json.Unmarshal([]byte(body), &preProjects); err != nil {
 		return nil, errors.Wrapf(err, "unable to unmarshal project response, body: %s", rsp.String())
 	}
+
+	delete(preProjects, "All-Projects")
+	delete(preProjects, "All-Projects")
+	delete(preProjects, "All-Users")
 
 	projects := make([]Project, 0, len(preProjects))
 	for k, v := range preProjects {

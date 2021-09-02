@@ -1,9 +1,12 @@
 package gerritproject
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
@@ -56,10 +59,10 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	clientMock.On("ListProjects", "CODE").Return([]gerritClient.Project{
 		{
-			Name: "alphabet",
+			Name: "alphabet/google",
 		},
 	}, nil)
-	clientMock.On("ListProjectBranches", "alphabet").Return([]gerritClient.Branch{
+	clientMock.On("ListProjectBranches", "alphabet/google").Return([]gerritClient.Branch{
 		{
 			Ref: "test",
 		},
@@ -67,6 +70,16 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	if err := rcn.syncBackendProjectsTick(); err != nil {
 		t.Fatal(err)
+	}
+
+	var k8sGerritProject v1alpha1.GerritProject
+	if err := cl.Get(context.Background(), types.NamespacedName{Name: "ger1-alphabet-google", Namespace: g.Namespace},
+		&k8sGerritProject); err != nil {
+		t.Fatal(err)
+	}
+
+	if k8sGerritProject.Spec.Name != "alphabet/google" {
+		t.Fatalf("wrong gerrit project name: %s", k8sGerritProject.Spec.Name)
 	}
 }
 

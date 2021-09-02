@@ -19,6 +19,7 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/google/uuid v1.1.2
+	github.com/gosimple/slug v1.10.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible

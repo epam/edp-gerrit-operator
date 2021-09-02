@@ -50,6 +50,9 @@ rules:
     - gerritprojectaccesses
     - gerritprojectaccesses/status
     - gerritprojectaccesses/finalizers
+    - gerritprojects
+    - gerritprojects/status
+    - gerritprojects/finalizers
   verbs:
     - '*'
 - apiGroups:
