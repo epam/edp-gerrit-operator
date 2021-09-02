@@ -2,10 +2,11 @@ package ssh
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"io"
-	"log"
 	"net"
+
+	"github.com/go-logr/logr"
+	"golang.org/x/crypto/ssh"
 )
 
 type SSHCommand struct {
@@ -61,7 +62,7 @@ func (client *SSHClient) newSession() (*ssh.Session, *ssh.Client, error) {
 	return session, connection, nil
 }
 
-func SshInit(userName string, privateKey []byte, host string, port int32) (SSHClient, error) {
+func SshInit(userName string, privateKey []byte, host string, port int32, log logr.Logger) (SSHClient, error) {
 	signer, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {
 		return SSHClient{}, err
@@ -80,7 +81,9 @@ func SshInit(userName string, privateKey []byte, host string, port int32) (SSHCl
 		Host:   host,
 		Port:   port,
 	}
-	log.Printf("SSH Client has been initialized: Username: %v Host: %v Port: %v", userName, host, port)
+
+	log.Info("SSH Client has been initialized",
+		"Username", userName, "host", host, "port", port)
 
 	return *newClient, nil
 }

@@ -33,14 +33,14 @@ func (gc *Client) GetResty() *resty.Client {
 
 // InitNewRestClient performs initialization of Gerrit connection
 func (gc *Client) InitNewRestClient(instance *v1alpha1.Gerrit, url string, user string, password string) error {
-	gc.resty = resty.SetHostURL(url).SetBasicAuth(user, password)
+	gc.resty = resty.SetHostURL(url).SetBasicAuth(user, password).SetDisableWarn(true)
 	gc.instance = instance
 	return nil
 }
 
 func (gc *Client) InitNewSshClient(userName string, privateKey []byte, host string, port int32) error {
 	var err error
-	gc.sshClient, err = ssh.SshInit(userName, privateKey, host, port)
+	gc.sshClient, err = ssh.SshInit(userName, privateKey, host, port, log)
 	return err
 }
 

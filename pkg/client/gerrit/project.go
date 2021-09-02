@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 )
 
 type Project struct {
-	Name              string `json:"-"`
+	Name              string `json:"name"`
 	Parent            string `json:"parent,omitempty"`
 	Description       string `json:"description,omitempty"`
 	PermissionsOnly   bool   `json:"permissions_only"`
@@ -41,7 +42,7 @@ type WebLink struct {
 
 func (gc Client) CreateProject(prj *Project) error {
 	rsp, err := gc.resty.R().SetBody(prj).SetHeader("Content-Type", "application/json").
-		Put(fmt.Sprintf("/projects/%s", prj.Name))
+		Put(fmt.Sprintf("/projects/%s", url.QueryEscape(prj.Name)))
 
 	return parseRestyResponse(rsp, err)
 }
@@ -49,7 +50,7 @@ func (gc Client) CreateProject(prj *Project) error {
 func (gc Client) GetProject(name string) (*Project, error) {
 	rsp, err := gc.resty.R().
 		SetHeader("accept", "application/json").
-		Get(fmt.Sprintf("/projects/%s", name))
+		Get(fmt.Sprintf("/projects/%s", url.QueryEscape(name)))
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit project")
@@ -77,7 +78,7 @@ func (gc Client) UpdateProject(prj *Project) error {
 		SetBody(map[string]string{
 			"description":    prj.Description,
 			"commit_message": "Update the project description",
-		}).Put(fmt.Sprintf("/projects/%s/description", prj.Name))
+		}).Put(fmt.Sprintf("/projects/%s/description", url.QueryEscape(prj.Name)))
 
 	if err := parseRestyResponse(rsp, err); err != nil {
 		return errors.Wrap(err, "unable to update project description")
@@ -87,7 +88,7 @@ func (gc Client) UpdateProject(prj *Project) error {
 		SetBody(map[string]string{
 			"parent":         prj.Parent,
 			"commit_message": "Update the project parent",
-		}).Put(fmt.Sprintf("/projects/%s/parent", prj.Name))
+		}).Put(fmt.Sprintf("/projects/%s/parent", url.QueryEscape(prj.Name)))
 
 	return parseRestyResponse(rsp, err)
 }
@@ -97,7 +98,7 @@ func (gc Client) DeleteProject(name string) error {
 		SetBody(map[string]bool{
 			"force":    false,
 			"preserve": false,
-		}).Post(fmt.Sprintf("/projects/%s/delete-project~delete", name))
+		}).Post(fmt.Sprintf("/projects/%s/delete-project~delete", url.QueryEscape(name)))
 
 	return parseRestyResponse(rsp, err)
 }
@@ -135,7 +136,7 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 
 func (gc Client) ListProjectBranches(projectName string) ([]Branch, error) {
 	rsp, err := gc.resty.R().SetHeader("accept", "application/json").
-		Get(fmt.Sprintf("/projects/%s/branches/", projectName))
+		Get(fmt.Sprintf("/projects/%s/branches/", url.QueryEscape(projectName)))
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit project branches")
