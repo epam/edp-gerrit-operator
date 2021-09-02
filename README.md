@@ -1,10 +1,9 @@
 # Gerrit Operator
 
-Get acquainted with the Gerrit Operator and the installation process as well as the local development, 
-and architecture scheme.
+Get acquainted with the Gerrit Operator and the installation process as well as the local development, and architecture scheme.
 ## Overview
 
-Gerrit Operator is an EDP operator that is responsible for installing and configuring Gerrit. 
+Gerrit Operator is an EDP operator that is responsible for installing and configuring Gerrit.
 Operator installation can be applied on OpenShift container orchestration platform.
 
 _**NOTE:** Operator is platform-independent, that is why there is a unified instruction for deploying._
@@ -12,7 +11,7 @@ _**NOTE:** Operator is platform-independent, that is why there is a unified inst
 ## Prerequisites
 1. Linux machine or Windows Subsystem for Linux instance with [Helm 3](https://helm.sh/docs/intro/install/) installed;
 2. Cluster admin access to the cluster;
-3. EDP project/namespace is deployed by following one of the instructions: [edp-install-openshift](https://github.com/epam/edp-install/blob/master/documentation/openshift_install_edp.md#edp-project) or [edp-install-kubernetes](https://github.com/epam/edp-install/blob/master/documentation/kubernetes_install_edp.md#edp-namespace).
+3. EDP project/namespace is deployed by following the [EDP Install](https://epam.github.io/edp-install/operator-guide/install-edp/) instruction.
 
 ## Installation
 In order to install the EDP Gerrit Operator, follow the steps below:
@@ -67,5 +66,4 @@ In order to develop the operator, first set up a local environment. For details,
 
 ### Related Articles
 - [Architecture Scheme of Gerrit Operator](documentation/arch.md)
-- [Replicate Gerrit to GitLab](documentation/replicate_gerrit_to_gitlab.md)
-- [Replication of Gerrit Development to Gerrit Production](https://github.com/epam/edp-install/blob/master/documentation/gerrit_dev_to_prod.md#replication-of-gerrit-development-to-gerrit-production)
+
