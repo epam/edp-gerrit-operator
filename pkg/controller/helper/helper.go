@@ -13,7 +13,6 @@ import (
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -152,35 +151,30 @@ func GetGerritOwner(references []metav1.OwnerReference) *metav1.OwnerReference {
 	return nil
 }
 
-func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *string, namespace string) (*v1alpha1.Gerrit, error) {
-	var gerritInstance v1alpha1.Gerrit
-	options := client.ListOptions{Namespace: namespace}
-	list := &v1alpha1.GerritList{}
+func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *string,
+	namespace string) (*v1alpha1.Gerrit, error) {
+
+	var list v1alpha1.GerritList
+
 	if ownerName == nil {
-		err := k8sClient.List(ctx, list, &options)
+		err := k8sClient.List(ctx, &list, &client.ListOptions{Namespace: namespace})
 		if err != nil {
-			if k8sErrors.IsNotFound(err) {
-				return nil, nil
-			}
-			return nil, err
+			return nil, errors.Wrap(err, "unable to list gerrits")
 		}
+
 		if len(list.Items) == 0 {
 			return nil, errors.New("no root gerrits found")
 		}
 
-		gerritInstance = list.Items[0]
-	} else {
-		gerritInstance = v1alpha1.Gerrit{}
-		err := k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      *ownerName,
-		}, &gerritInstance)
-		if err != nil {
-			if k8sErrors.IsNotFound(err) {
-				return nil, nil
-			}
-			return nil, err
-		}
+		return &list.Items[0], nil
+	}
+
+	var gerritInstance v1alpha1.Gerrit
+	if err := k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      *ownerName,
+	}, &gerritInstance); err != nil {
+		return nil, errors.Wrap(err, "unable to get gerrit instance")
 	}
 
 	return &gerritInstance, nil

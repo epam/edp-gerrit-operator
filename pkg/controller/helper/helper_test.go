@@ -191,3 +191,34 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 		t.Fatal("wrong error returned")
 	}
 }
+
+func TestGetGerritInstance(t *testing.T) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1.AddToScheme(scheme))
+
+	g := v1alpha1.Gerrit{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns", Name: "ger1"},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v2.edp.epam.com/v1alpha1",
+			Kind:       "Gerrit",
+		}}
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
+	ctx := context.Background()
+	wrongGerritName := "ger321"
+
+	_, err := GetGerritInstance(ctx, client, &wrongGerritName, g.Namespace)
+	if err == nil {
+		t.Fatal("no error returned")
+	}
+
+	if !strings.Contains(err.Error(), `gerrits.v2.edp.epam.com "ger321" not found`) {
+		t.Fatalf("wrong error returned: %s", err.Error())
+	}
+
+	if _, err := GetGerritInstance(ctx, client, &g.Name, g.Namespace); err != nil {
+		t.Fatal(err)
+	}
+}
