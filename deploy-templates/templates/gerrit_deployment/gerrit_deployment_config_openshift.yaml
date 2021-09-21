@@ -42,7 +42,7 @@ spec:
               value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
                         --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication'
           image: {{.Values.gerrit.image}}:{{.Values.gerrit.version}}
-          imagePullPolicy: Always
+          imagePullPolicy: "{{ .Values.gerrit.imagePullPolicy }}"
           name: {{ .Values.gerrit.name }}
           ports:
             - containerPort: {{ .Values.gerrit.port }}
