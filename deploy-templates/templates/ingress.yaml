@@ -1,6 +1,10 @@
 {{ if eq .Values.global.platform "kubernetes" }}
+{{- $ingressApiIsStable := eq (include "gerrit.ingress.isStable" .) "true" -}}
+{{- $ingressSupportsIngressClassName := eq (include "gerrit.ingress.supportsIngressClassName" .) "true" -}}
+{{- $ingressSupportsPathType := eq (include "gerrit.ingress.supportsPathType" .) "true" -}}
+{{- $ingressPathType := .Values.gerrit.ingress.pathType -}}
 kind: Ingress
-apiVersion: extensions/v1beta1
+apiVersion: {{ include "gerrit.ingress.apiVersion" . }}
 metadata:
   name: {{ .Values.gerrit.name }}
   labels:
@@ -11,12 +15,25 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- if and $ingressSupportsIngressClassName .Values.gerrit.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.gerrit.ingress.ingressClassName }}
+  {{- end }}
   rules:
     - host: {{if .Values.gerrit.basePath}}{{ .Values.global.dnsWildCard }}{{else}}gerrit-{{ .Values.global.edpName }}.{{ .Values.global.dnsWildCard }}{{end}}
       http:
         paths:
           - path: {{if .Values.gerrit.basePath}}/{{.Values.gerrit.basePath}}(/|$)(.*){{else}}/{{end}}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
             backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                name: {{ .Values.gerrit.name }}
+                port: 
+                  number: 8080
+              {{- else }}
               serviceName: {{ .Values.gerrit.name }}
               servicePort: 8080
+              {{- end }}
 {{ end }}
