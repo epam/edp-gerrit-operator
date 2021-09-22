@@ -1,11 +1,12 @@
 {{if eq .Values.global.platform "kubernetes"}}
 {{if .Values.gerrit.deploy}}
-kind: ClusterRole
+kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
+  namespace: {{ .Values.global.edpName }}
   labels:
     {{- include "gerrit-operator.labels" . | nindent 4 }}
-  name: edp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}-psp
+  name: edp-{{.Values.gerrit.name}}-psp
 rules:
 - apiGroups:
   - extensions

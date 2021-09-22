@@ -1,14 +1,14 @@
 {{if eq .Values.global.platform "kubernetes"}}
 {{if .Values.gerrit.deploy}}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   labels:
     {{- include "gerrit-operator.labels" . | nindent 4 }}
   name: edp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}-psp
 roleRef:
-  kind: ClusterRole
-  name: edp-{{.Values.gerrit.name}}-{{.Values.global.edpName}}-psp
+  kind: Role
+  name: edp-{{.Values.gerrit.name}}-psp
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
