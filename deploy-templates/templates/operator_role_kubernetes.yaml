@@ -58,6 +58,7 @@ rules:
     - gerritprojects
     - gerritprojects/status
     - gerritprojects/finalizers
+    - events
   verbs:
     - '*'
 - apiGroups:
