@@ -13,6 +13,7 @@ replace (
 
 require (
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
+	github.com/epam/edp-common v0.0.0-20211124100535-e54dcdf42879
 	github.com/epam/edp-component-operator v0.1.1-0.20210712140516-09b8bb3a4cff
 	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20210719110425-d2d190f7bff9
 	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20210719103751-659797a2dead
@@ -24,7 +25,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	gopkg.in/resty.v1 v1.12.0
 	k8s.io/api v0.21.0-rc.0

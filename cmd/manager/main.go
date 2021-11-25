@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 
+	buildInfo "github.com/epam/edp-common/pkg/config"
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
@@ -73,7 +74,19 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
+	v := buildInfo.Get()
+
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	setupLog.Info("Starting the Gerrit Operator",
+		"version", v.Version,
+		"git-commit", v.GitCommit,
+		"git-tag", v.GitTag,
+		"build-date", v.BuildDate,
+		"go-version", v.Go,
+		"go-client", v.KubectlVersion,
+		"platform", v.Platform,
+	)
 
 	ns, err := helper.GetWatchNamespace()
 	if err != nil {
