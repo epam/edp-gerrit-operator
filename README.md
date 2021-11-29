@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/epam/edp-gerrit-operator/branch/master/graph/badge.svg?token=8JOEVZL3VL)](https://codecov.io/gh/epam/edp-gerrit-operator)
+
 # Gerrit Operator
 
 | :heavy_exclamation_mark: Please refer to [EDP documentation](https://epam.github.io/edp-install/) to get the notion of the main concepts and guidelines. |
