@@ -32,9 +32,3 @@ func TestGetExecutableFilePath(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func TestRunningInCluster(t *testing.T) {
-	if !RunningInCluster() {
-		t.Fatal("must running in cluster")
-	}
-}
