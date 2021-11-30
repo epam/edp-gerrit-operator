@@ -13,10 +13,10 @@ replace (
 
 require (
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
-	github.com/epam/edp-common v0.0.0-20211124100535-e54dcdf42879
-	github.com/epam/edp-component-operator v0.1.1-0.20210712140516-09b8bb3a4cff
-	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20210719110425-d2d190f7bff9
-	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20210719103751-659797a2dead
+	github.com/epam/edp-common v0.0.0-20211130150314-81d7cc13140c
+	github.com/epam/edp-component-operator v0.1.1-0.20211129100139-b5b7659f98f6
+	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20211130130836-077d03455c24
+	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20211130125231-d444d239995b
 	github.com/go-logr/logr v0.4.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/google/uuid v1.1.2
@@ -26,7 +26,7 @@ require (
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	gopkg.in/resty.v1 v1.12.0
 	k8s.io/api v0.21.0-rc.0
 	k8s.io/apimachinery v0.21.0-rc.0
@@ -48,6 +48,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/emicklei/go-restful v2.12.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
@@ -71,6 +72,8 @@ require (
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/onsi/ginkgo v1.15.0 // indirect
+	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -81,18 +84,18 @@ require (
 	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.15.0 // indirect
-	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7 // indirect
+	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/sys v0.0.0-20210225134936-a50acf3fe073 // indirect
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
-	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/apiextensions-apiserver v0.20.2 // indirect
 	k8s.io/component-base v0.20.2 // indirect
 	k8s.io/klog/v2 v2.8.0 // indirect
