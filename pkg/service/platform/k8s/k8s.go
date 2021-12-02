@@ -125,6 +125,9 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	cl, err := k8sclient.New(config, k8sclient.Options{
 		Scheme: s.Scheme,
 	})
+	if err != nil {
+		return errors.Wrap(err, "Failed to create k8s client")
+	}
 	s.client = cl
 
 	return nil
@@ -384,6 +387,9 @@ func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Servi
 func (s *K8SService) UpdateService(svc coreV1Api.Service, nodePort int32) error {
 	ports := svc.Spec.Ports
 	updatedPorts, err := updatePort(ports, "ssh", nodePort)
+	if err != nil {
+		return err
+	}
 	svc.Spec.Ports = updatedPorts
 
 	_, err = s.CoreClient.Services(svc.Namespace).Update(context.TODO(), &svc, metav1.UpdateOptions{})
@@ -446,10 +452,10 @@ func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName st
 		return errors.Wrapf(err, "Couldn't set reference for Config Map %v object", configMapObject.Name)
 	}
 
-	cm, err := s.CoreClient.ConfigMaps(instance.Namespace).Get(context.TODO(), configMapObject.Name, metav1.GetOptions{})
+	_, err := s.CoreClient.ConfigMaps(instance.Namespace).Get(context.TODO(), configMapObject.Name, metav1.GetOptions{})
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			cm, err = s.CoreClient.ConfigMaps(configMapObject.Namespace).Create(context.TODO(), configMapObject, metav1.CreateOptions{})
+			cm, err := s.CoreClient.ConfigMaps(configMapObject.Namespace).Create(context.TODO(), configMapObject, metav1.CreateOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "Couldn't create Config Map %v object", cm.Name)
 			}

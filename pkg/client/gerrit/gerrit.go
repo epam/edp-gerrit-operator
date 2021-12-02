@@ -211,7 +211,7 @@ func (gc *Client) AddUserToGroups(userName string, groupNames []string) error {
 func (gc *Client) getGroupUuid(groupName string) (string, error) {
 	var re = regexp.MustCompile(fmt.Sprintf(`%v\t[A-Za-z0-9_]{40}`, groupName))
 	cmd := &ssh.SSHCommand{
-		Path:   fmt.Sprint("gerrit ls-groups -v"),
+		Path:   "gerrit ls-groups -v",
 		Env:    []string{},
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,

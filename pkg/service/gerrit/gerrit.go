@@ -394,7 +394,7 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	if instance.Spec.KeycloakSpec.Enabled {
 		secret, err := uuid.NewUUID()
 		if err != nil {
-			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to generate secret for Gerrit in Keycloack"))
+			return instance, errors.Wrap(err, "Failed to generate secret for Gerrit in Keycloack")
 		}
 
 		identityServiceClientCredentials := map[string][]byte{
@@ -491,7 +491,7 @@ func (s ComponentService) Integrate(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 
 		if err = s.PlatformService.PatchDeploymentEnv(*instance, *keycloakEnvironmentValue); err != nil {
-			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to add identity service information"))
+			return instance, errors.Wrap(err, "Failed to add identity service information")
 		}
 	} else {
 		log.V(1).Info("Keycloak integration not enabled.")
@@ -773,6 +773,9 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerr
 	}
 
 	err = s.PlatformService.CreateJenkinsScript(instance.Namespace, jenkinsPluginConfigurationName)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

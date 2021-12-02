@@ -98,7 +98,10 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 
 	if instance.Status.Status == StatusInstall {
 		log.Info(fmt.Sprintf("%v/%v Gerrit has been installed", instance.Namespace, instance.Name))
-		r.updateStatus(ctx, instance, StatusCreated)
+		err = r.updateStatus(ctx, instance, StatusCreated)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
@@ -219,13 +222,6 @@ func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *v1alpha1.G
 	}
 	r.log.Info(fmt.Sprintf("Status for Gerrit %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
 	return nil
-}
-
-func (r *ReconcileGerrit) resourceActionFailed(ctx context.Context, instance *v1alpha1.Gerrit, err error) error {
-	if r.updateStatus(ctx, instance, StatusFailed) != nil {
-		return err
-	}
-	return err
 }
 
 func (r ReconcileGerrit) updateAvailableStatus(ctx context.Context, instance *v1alpha1.Gerrit, value bool) error {

@@ -2,6 +2,7 @@ package gerrit
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
@@ -10,7 +11,9 @@ import (
 
 func TestMock_IsDeploymentReady(t *testing.T) {
 	defer func() {
-		recover()
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
 	}()
 
 	m := Mock{}
@@ -21,7 +24,9 @@ func TestMock_IsDeploymentReady(t *testing.T) {
 
 func TestMock_Configure(t *testing.T) {
 	defer func() {
-		recover()
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
 	}()
 
 	m := Mock{}
@@ -32,7 +37,9 @@ func TestMock_Configure(t *testing.T) {
 
 func TestMock_ExposeConfiguration(t *testing.T) {
 	defer func() {
-		recover()
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
 	}()
 
 	m := Mock{}
@@ -43,7 +50,9 @@ func TestMock_ExposeConfiguration(t *testing.T) {
 
 func TestMock_GetGerritSSHUrl(t *testing.T) {
 	defer func() {
-		recover()
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
 	}()
 
 	m := Mock{}

@@ -42,16 +42,14 @@ func NewService(platformType string, scheme *runtime.Scheme) (PlatformService, e
 
 	restConfig, err := config.ClientConfig()
 	if err != nil {
-		helpers.LogErrorAndReturn(err)
-		return nil, errors.Wrap(err, "Failed to get rest configs for platform")
+		return nil, errors.Wrap(helpers.LogErrorAndReturn(err), "Failed to get rest configs for platform")
 	}
 
 	switch strings.ToLower(platformType) {
 	case "openshift":
 		platform := &openshift.OpenshiftService{}
 		if err = platform.Init(restConfig, scheme); err != nil {
-			helpers.LogErrorAndReturn(err)
-			return nil, errors.Wrap(err, "Failed to init for Openshift platform")
+			return nil, errors.Wrap(helpers.LogErrorAndReturn(err), "Failed to init for Openshift platform")
 		}
 		return platform, nil
 	case "kubernetes":

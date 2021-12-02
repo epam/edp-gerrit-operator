@@ -70,15 +70,15 @@ func generateSetAccessRequest(permissions []AccessInfo, added bool, modified boo
 	refs := make(map[string]reference)
 
 	for _, perm := range permissions {
-		ref, ok := refs[perm.RefPattern]
+		_, ok := refs[perm.RefPattern]
 		if !ok {
-			ref = reference{Permissions: make(map[string]permission)}
+			ref := reference{Permissions: make(map[string]permission)}
 			refs[perm.RefPattern] = ref
 		}
 
-		permName, ok := refs[perm.RefPattern].Permissions[perm.PermissionName]
+		_, ok = refs[perm.RefPattern].Permissions[perm.PermissionName]
 		if !ok {
-			permName = permission{Rules: make(map[string]groupPermissions), Label: perm.PermissionLabel}
+			permName := permission{Rules: make(map[string]groupPermissions), Label: perm.PermissionLabel}
 			refs[perm.RefPattern].Permissions[perm.PermissionName] = permName
 		}
 

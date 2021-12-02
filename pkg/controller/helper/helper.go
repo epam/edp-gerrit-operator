@@ -53,10 +53,7 @@ func GetDebugMode() (bool, error) {
 // Check whether the operator is running in cluster or locally
 func RunningInCluster() bool {
 	_, err := os.Stat(inClusterNamespacePath)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return !os.IsNotExist(err)
 }
 
 func NewTrue() *bool {
@@ -107,11 +104,7 @@ func SetOwnerReference(child metav1.Object, parentType metav1.TypeMeta, parentOb
 
 func IsInstanceOwnerSet(config metav1.Object) bool {
 	ows := config.GetOwnerReferences()
-	if len(ows) == 0 {
-		return false
-	}
-
-	return true
+	return len(ows) != 0
 }
 
 func FindCROwnerName(ownerName string) *string {

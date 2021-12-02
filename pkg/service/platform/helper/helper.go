@@ -98,10 +98,7 @@ func GetExecutableFilePath() (string, error) {
 
 func RunningInCluster() bool {
 	_, err := os.Stat(inClusterNamespacePath)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return !os.IsNotExist(err)
 }
 
 // GenerateLabels returns initialized map using name parameter

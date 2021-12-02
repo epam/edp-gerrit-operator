@@ -3,11 +3,9 @@ package gerritreplicationconfig
 import (
 	"bytes"
 	"context"
-	coreerrors "errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"text/template"
 	"time"
 
@@ -24,7 +22,6 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,10 +58,7 @@ func (r *ReconcileGerritReplicationConfig) SetupWithManager(mgr ctrl.Manager) er
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			oldObject := e.ObjectOld.(*v1alpha1.GerritReplicationConfig)
 			newObject := e.ObjectNew.(*v1alpha1.GerritReplicationConfig)
-			if oldObject.Status != newObject.Status {
-				return false
-			}
-			return true
+			return oldObject.Status == newObject.Status
 		},
 	}
 	return ctrl.NewControllerManagedBy(mgr).
@@ -157,101 +151,6 @@ func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, ins
 	return nil
 }
 
-func (r *ReconcileGerritReplicationConfig) isInstanceOwnerSet(config *v1alpha1.GerritReplicationConfig) bool {
-	r.log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
-	ows := config.GetOwnerReferences()
-	if len(ows) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (r *ReconcileGerritReplicationConfig) getInstanceOwner(ctx context.Context, config *v1alpha1.GerritReplicationConfig) (*v1alpha1.Gerrit, error) {
-	r.log.V(1).Info(fmt.Sprintf("Start getting %v/%v owner", config.Kind, config.Name))
-	ows := config.GetOwnerReferences()
-	gerritOwner := getGerritOwner(ows)
-	if gerritOwner == nil {
-		return nil, coreerrors.New("gerrit replication config cr does not have gerrit cr owner references")
-	}
-
-	nsn := types.NamespacedName{
-		Namespace: config.Namespace,
-		Name:      gerritOwner.Name,
-	}
-
-	ownerCr := &v1alpha1.Gerrit{}
-	err := r.client.Get(ctx, nsn, ownerCr)
-	return ownerCr, err
-}
-
-func getGerritOwner(references []v1.OwnerReference) *v1.OwnerReference {
-	for _, el := range references {
-		if el.Kind == "Gerrit" {
-			return &el
-		}
-	}
-	return nil
-}
-
-func findCROwnerName(instance v1alpha1.GerritReplicationConfig) *string {
-	if len(instance.Spec.OwnerName) == 0 {
-		return nil
-	}
-	own := strings.ToLower(instance.Spec.OwnerName)
-	return &own
-}
-
-func (r *ReconcileGerritReplicationConfig) getGerritInstance(ctx context.Context, ownerName *string, namespace string) (*v1alpha1.Gerrit, error) {
-	var gerritInstance v1alpha1.Gerrit
-	options := client.ListOptions{Namespace: namespace}
-	list := &v1alpha1.GerritList{}
-	if ownerName == nil {
-		err := r.client.List(ctx, list, &options)
-		if err != nil {
-			if k8sErrors.IsNotFound(err) {
-				return nil, nil
-			}
-			return nil, err
-		}
-		gerritInstance = list.Items[0]
-	} else {
-		gerritInstance = v1alpha1.Gerrit{}
-		err := r.client.Get(ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      *ownerName,
-		}, &gerritInstance)
-		if err != nil {
-			if k8sErrors.IsNotFound(err) {
-				return nil, nil
-			}
-			return nil, err
-		}
-	}
-
-	return &gerritInstance, nil
-}
-
-func (r *ReconcileGerritReplicationConfig) setOwnerReference(gerritInstance *v1alpha1.Gerrit,
-	instance *v1alpha1.GerritReplicationConfig) v1alpha1.GerritReplicationConfig {
-	var listOwnReference []v1.OwnerReference
-
-	ownRef := v1.OwnerReference{
-		APIVersion:         gerritInstance.APIVersion,
-		Kind:               gerritInstance.Kind,
-		Name:               gerritInstance.Name,
-		UID:                gerritInstance.UID,
-		BlockOwnerDeletion: helper.NewTrue(),
-		Controller:         helper.NewTrue(),
-	}
-
-	listOwnReference = append(listOwnReference, ownRef)
-
-	instance.SetOwnerReferences(listOwnReference)
-
-	return *instance
-}
-
 func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1.GerritReplicationConfig, gerrit *v1alpha1.Gerrit) error {
 	GerritTemplatesPath := platformHelper.LocalTemplatesRelativePath
 	executableFilePath, err := helper.GetExecutableFilePath()
@@ -295,6 +194,9 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1
 
 	client := gerritClient.Client{}
 	err = client.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+	if err != nil {
+		return err
+	}
 
 	err = r.createReplicationConfig(gerrit.Namespace, podList.Items[0].Name)
 	if err != nil {
