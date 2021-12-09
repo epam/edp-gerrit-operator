@@ -18,4 +18,5 @@ type ClientInterface interface {
 	DeleteProject(name string) error
 	ListProjects(_type string) ([]Project, error)
 	ListProjectBranches(projectName string) ([]Branch, error)
+	ReloadPlugin(plugin string) error
 }

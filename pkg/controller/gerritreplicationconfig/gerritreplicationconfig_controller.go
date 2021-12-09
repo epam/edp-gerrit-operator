@@ -74,6 +74,7 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 	err := r.client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
+			log.Info("instance not found")
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, errors.Wrap(err, "unable to get instance")
@@ -109,6 +110,7 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 		log.Info(fmt.Sprintf("Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name))
 		err := r.updateStatus(ctx, instance, spec.StatusConfiguring)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 
@@ -122,13 +124,14 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 		log.Info(fmt.Sprintf("Configuration of %v/%v object has been finished", instance.Namespace, instance.Name))
 		err = r.updateStatus(ctx, instance, spec.StatusConfigured)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
 	err = r.updateAvailableStatus(ctx, instance, true)
 	if err != nil {
-		log.Info("Failed update avalability status for Gerrit Replication Config object with name %s", instance.Name)
+		log.Info("Failed update availability status for Gerrit Replication Config object with name %s", instance.Name)
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
@@ -214,7 +217,7 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1
 		return err
 	}
 
-	err = r.reloadReplicationPlugin(client)
+	err = r.reloadReplicationPlugin(&client)
 	if err != nil {
 		return err
 	}
@@ -293,7 +296,7 @@ func (r *ReconcileGerritReplicationConfig) updateSshConfig(namespace, podName st
 	return nil
 }
 
-func (r *ReconcileGerritReplicationConfig) reloadReplicationPlugin(client gerritClient.Client) error {
+func (r *ReconcileGerritReplicationConfig) reloadReplicationPlugin(client gerritClient.ClientInterface) error {
 	err := client.ReloadPlugin("replication")
 	if err != nil {
 		return err

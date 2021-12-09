@@ -2,6 +2,7 @@ package gerritproject
 
 import (
 	"context"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"strings"
 	"testing"
 	"time"
@@ -46,7 +47,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gerritService.Mock{}
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	logger := helper.Logger{}
@@ -109,7 +110,7 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gerritService.Mock{}
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	logger := helper.Logger{}
@@ -168,7 +169,7 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
 
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	clientMock.On("ListProjects", "CODE").

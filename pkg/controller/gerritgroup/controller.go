@@ -60,16 +60,19 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
 }
 
-func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (res reconcile.Result, err error) {
+func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	log.Info("Reconciling GerritGroup")
 
 	var instance v1alpha1.GerritGroup
-	if err = r.client.Get(ctx, request.NamespacedName, &instance); err != nil {
+	if err := r.client.Get(ctx, request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
-			return
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			log.Info("instance not found")
+			return reconcile.Result{}, nil
 		}
-
 		return reconcile.Result{}, errors.Wrap(err, "unable to get gerrit group")
 	}
 
@@ -87,7 +90,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 
 	instance.Status.Value = helper.StatusOK
 
-	return
+	return reconcile.Result{}, nil
 }
 
 func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritGroup) error {

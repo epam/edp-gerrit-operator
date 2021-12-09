@@ -3,12 +3,17 @@ package gerritgroupmember
 import (
 	"context"
 	"errors"
+	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	corev1 "k8s.io/api/core/v1"
@@ -20,6 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+const name = "name"
+const namespace = "namespace"
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -48,7 +56,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gerritService.Mock{}
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(nil)
@@ -151,7 +159,7 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gerritService.Mock{}
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))
@@ -203,4 +211,62 @@ func TestReconcile_IsSpecUpdated(t *testing.T) {
 	if changed {
 		t.Fatal("isSpecUpdated is wrong")
 	}
+}
+
+func TestNewReconcile(t *testing.T) {
+	err := os.Setenv("PLATFORM_TYPE", "test")
+	assert.NoError(t, err)
+	s := runtime.NewScheme()
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
+	sch := runtime.Scheme{}
+	_, err = NewReconcile(cl, &sch, logr.Discard())
+	assert.NoError(t, err)
+
+}
+
+func TestReconcile_UpdateErr(t *testing.T) {
+	sw := &mocks.StatusWriter{}
+	mc := mocks.Client{}
+	ctx := context.Background()
+
+	instance := &v1alpha1.GerritGroupMember{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{APIVersion: "test"},
+			},
+		},
+	}
+
+	nsn := types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	errTest := errors.New("test")
+
+	s := runtime.NewScheme()
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroupMember{})
+	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
+
+	mc.On("Get", nsn, &v1alpha1.GerritGroupMember{}).Return(cl)
+
+	sw.On("Update").Return(errTest)
+	mc.On("Status").Return(sw)
+	mc.On("Update").Return(errTest)
+
+	rg := Reconcile{
+		client: &mc,
+		log:    logr.Discard(),
+	}
+	req := reconcile.Request{
+		NamespacedName: nsn,
+	}
+	rs, err := rg.Reconcile(ctx, req)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+
 }

@@ -50,7 +50,7 @@ func GetDebugMode() (bool, error) {
 	return b, nil
 }
 
-// Check whether the operator is running in cluster or locally
+// RunningInCluster check whether the operator is running in cluster or locally
 func RunningInCluster() bool {
 	_, err := os.Stat(inClusterNamespacePath)
 	return !os.IsNotExist(err)

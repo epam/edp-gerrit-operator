@@ -83,6 +83,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+			log.Info("instance not found")
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
@@ -92,6 +93,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info(fmt.Sprintf("%v/%v Gerrit installation started", instance.Namespace, instance.Name))
 		err = r.updateStatus(ctx, instance, StatusInstall)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
@@ -117,8 +119,9 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	if instance.Status.Status == StatusCreated || instance.Status.Status == "" {
 		msg := fmt.Sprintf("Configuration for %v/%v object has started", instance.Namespace, instance.Name)
 		log.Info(msg)
-		err := r.updateStatus(ctx, instance, StatusConfiguring)
+		err = r.updateStatus(ctx, instance, StatusConfiguring)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
@@ -152,6 +155,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info(msg)
 		err = r.updateStatus(ctx, instance, StatusConfigured)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
@@ -160,12 +164,14 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info("Exposing configuration has started")
 		err = r.updateStatus(ctx, instance, StatusExposeStart)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
 	instance, err = r.service.ExposeConfiguration(instance)
 	if err != nil {
+		log.Error(err, "error while exposing configuration", "name", instance.Name)
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
@@ -173,6 +179,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info("Exposing configuration has finished")
 		err = r.updateStatus(ctx, instance, StatusExposeFinish)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", StatusExposeStart)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
@@ -181,6 +188,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info("Integration has started")
 		err = r.updateStatus(ctx, instance, StatusIntegrationStart)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 		}
 	}
@@ -195,6 +203,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info(msg)
 		err = r.updateStatus(ctx, instance, StatusReady)
 		if err != nil {
+			log.Error(err, "error while updating status", "status", instance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}

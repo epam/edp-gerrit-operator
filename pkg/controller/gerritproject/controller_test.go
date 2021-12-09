@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
@@ -40,7 +41,7 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gerritService.Mock{}
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.ErrDoesNotExist("")).Once()
 	clientMock.On("CreateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
@@ -118,7 +119,7 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gerritService.Mock{}
-	clientMock := gerritClient.Mock{}
+	clientMock := gmock.ClientInterface{}
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(&gerritClient.Project{}, nil)
 	clientMock.On("UpdateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()

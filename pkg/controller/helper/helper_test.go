@@ -2,12 +2,14 @@ package helper
 
 import (
 	"context"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/stretchr/testify/assert"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -87,7 +89,7 @@ func TestGetGerritClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gSVC := gerritService.Mock{}
-	gCl := gerritClient.Mock{}
+	gCl := gmock.ClientInterface{}
 
 	gSVC.On("GetRestClient", &g).Return(&gCl, nil)
 	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC); err != nil {
@@ -221,4 +223,60 @@ func TestGetGerritInstance(t *testing.T) {
 	if _, err := GetGerritInstance(ctx, client, &g.Name, g.Namespace); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestGetWatchNamespace(t *testing.T) {
+	ns := "test"
+	err := os.Setenv(watchNamespaceEnvVar, ns)
+	assert.NoError(t, err)
+	namespace, err := GetWatchNamespace()
+	assert.NoError(t, err)
+	assert.Equal(t, ns, namespace)
+	err = os.Unsetenv(watchNamespaceEnvVar)
+	assert.NoError(t, err)
+}
+
+func TestGetWatchNamespaceErr(t *testing.T) {
+	namespace, err := GetWatchNamespace()
+	assert.Error(t, err)
+	assert.Empty(t, namespace)
+}
+
+func TestGetDebugMode(t *testing.T) {
+	debugMode := "true"
+	err := os.Setenv(debugModeEnvVar, debugMode)
+	assert.NoError(t, err)
+	mode, err := GetDebugMode()
+	assert.NoError(t, err)
+	assert.True(t, mode)
+	err = os.Unsetenv(debugModeEnvVar)
+	assert.NoError(t, err)
+}
+
+func TestGetDebugMode_EmptyEnv(t *testing.T) {
+	mode, err := GetDebugMode()
+	assert.NoError(t, err)
+	assert.False(t, mode)
+}
+
+func TestGetDebugMode_NotBool(t *testing.T) {
+	debugMode := "123"
+	err := os.Setenv(debugModeEnvVar, debugMode)
+	assert.NoError(t, err)
+	mode, err := GetDebugMode()
+	assert.Error(t, err)
+	assert.False(t, mode)
+	err = os.Unsetenv(debugModeEnvVar)
+	assert.NoError(t, err)
+}
+
+func TestGetPlatformTypeEnv(t *testing.T) {
+	ns := "test"
+	err := os.Setenv(platformType, ns)
+	assert.NoError(t, err)
+	namespace := GetPlatformTypeEnv()
+	assert.NoError(t, err)
+	assert.Equal(t, ns, namespace)
+	err = os.Unsetenv(platformType)
+	assert.NoError(t, err)
 }

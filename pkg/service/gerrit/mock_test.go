@@ -3,10 +3,10 @@ package gerrit
 import (
 	"errors"
 	"fmt"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"testing"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 )
 
 func TestMock_IsDeploymentReady(t *testing.T) {
@@ -70,7 +70,7 @@ func TestMock_GetRestClient(t *testing.T) {
 		t.Fatal("no error returned")
 	}
 
-	clInt := gerritClient.Mock{}
+	clInt := gmock.ClientInterface{}
 	m.On("GetRestClient", &gi).Return(&clInt, nil)
 	if _, err := m.GetRestClient(&gi); err != nil {
 		t.Fatal(err)
