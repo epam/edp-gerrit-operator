@@ -17,6 +17,11 @@ type SSHCommand struct {
 	Stderr io.Writer
 }
 
+type SSHClientInterface interface {
+	RunCommand(cmd *SSHCommand) ([]byte, error)
+	NewSession() (*ssh.Session, *ssh.Client, error)
+}
+
 type SSHClient struct {
 	Config *ssh.ClientConfig
 	Host   string
@@ -28,7 +33,7 @@ func (client *SSHClient) RunCommand(cmd *SSHCommand) ([]byte, error) {
 	var connection *ssh.Client
 	var err error
 
-	if session, connection, err = client.newSession(); err != nil {
+	if session, connection, err = client.NewSession(); err != nil {
 		return nil, err
 	}
 	defer func() {
@@ -48,7 +53,7 @@ func (client *SSHClient) RunCommand(cmd *SSHCommand) ([]byte, error) {
 	return commandOutput, err
 }
 
-func (client *SSHClient) newSession() (*ssh.Session, *ssh.Client, error) {
+func (client *SSHClient) NewSession() (*ssh.Session, *ssh.Client, error) {
 	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", client.Host, client.Port), client.Config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to dial: %s", err)

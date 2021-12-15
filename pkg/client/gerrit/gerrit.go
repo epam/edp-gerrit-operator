@@ -24,7 +24,7 @@ var log = ctrl.Log.WithName("client_gerrit")
 type Client struct {
 	instance  *v1alpha1.Gerrit
 	resty     *resty.Client
-	sshClient ssh.SSHClient
+	sshClient ssh.SSHClientInterface
 }
 
 func (gc *Client) GetResty() *resty.Client {
@@ -39,9 +39,12 @@ func (gc *Client) InitNewRestClient(instance *v1alpha1.Gerrit, url string, user 
 }
 
 func (gc *Client) InitNewSshClient(userName string, privateKey []byte, host string, port int32) error {
-	var err error
-	gc.sshClient, err = ssh.SshInit(userName, privateKey, host, port, log)
-	return err
+	client, err := ssh.SshInit(userName, privateKey, host, port, log)
+	if err != nil {
+		return errors.Wrap(err, "err while initializing new ssh client")
+	}
+	gc.sshClient = &client
+	return nil
 }
 
 // CheckCredentials checks whether provided creds are correct

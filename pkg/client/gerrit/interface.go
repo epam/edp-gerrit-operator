@@ -1,6 +1,8 @@
 package gerrit
 
-import "gopkg.in/resty.v1"
+import (
+	"gopkg.in/resty.v1"
+)
 
 type ClientInterface interface {
 	GetResty() *resty.Client
