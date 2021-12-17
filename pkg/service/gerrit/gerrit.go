@@ -556,7 +556,7 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 }
 
 func (s ComponentService) GetRestClient(gerritInstance *v1alpha1.Gerrit) (gerrit.ClientInterface, error) {
-	if s.gerritClient.GetResty() != nil {
+	if s.gerritClient.Resty() != nil {
 		return &s.gerritClient, nil
 	}
 
@@ -707,8 +707,7 @@ func (s ComponentService) GetServicePort(instance *v1alpha1.Gerrit) (int32, erro
 			return port.NodePort, nil
 		}
 	}
-
-	return 0, errors.Wrapf(err, "Unable to determine Gerrit ssh port")
+	return 0, errors.New("Unable to determine Gerrit ssh port")
 }
 
 func (s ComponentService) updateDeploymentConfigPort(sshPort, sshPortService int32, instance *v1alpha1.Gerrit) (bool, error) {

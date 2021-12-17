@@ -5,7 +5,7 @@ import (
 )
 
 type ClientInterface interface {
-	GetResty() *resty.Client
+	Resty() *resty.Client
 	SetProjectParent(projectName, parentName string) error
 	DeleteAccessRights(projectName string, permissions []AccessInfo) error
 	UpdateAccessRights(projectName string, permissions []AccessInfo) error

@@ -74,7 +74,7 @@ func (_m *PlatformService) CreateJenkinsServiceAccount(namespace string, secretN
 
 // CreateSecret provides a mock function with given fields: gerrit, name, data
 func (_m *PlatformService) CreateSecret(gerrit *v1alpha1.Gerrit, name string, data map[string][]byte) error {
-	ret := _m.Called(gerrit, name, data)
+	ret := _m.Called(gerrit, name)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(*v1alpha1.Gerrit, string, map[string][]byte) error); ok {

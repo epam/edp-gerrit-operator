@@ -27,7 +27,15 @@ type Client struct {
 	sshClient ssh.SSHClientInterface
 }
 
-func (gc *Client) GetResty() *resty.Client {
+func NewClient(instance *v1alpha1.Gerrit, resty *resty.Client, sshClient ssh.SSHClientInterface) Client {
+	return Client{
+		instance:  instance,
+		resty:     resty,
+		sshClient: sshClient,
+	}
+}
+
+func (gc *Client) Resty() *resty.Client {
 	return gc.resty
 }
 

@@ -145,7 +145,7 @@ func (_m *ClientInterface) GetProject(name string) (*gerrit.Project, error) {
 }
 
 // GetResty provides a mock function with given fields:
-func (_m *ClientInterface) GetResty() *resty.Client {
+func (_m *ClientInterface) Resty() *resty.Client {
 	ret := _m.Called()
 
 	var r0 *resty.Client

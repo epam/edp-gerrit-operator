@@ -28,14 +28,14 @@ func CreateMockResty() *resty.Client {
 	return restyClient
 }
 
-func TestClient_GetResty(t *testing.T) {
+func TestClient_Resty(t *testing.T) {
 	rs := &resty.Client{}
 	cl := Client{
 		instance:  nil,
 		resty:     rs,
 		sshClient: &ssh.SSHClient{},
 	}
-	assert.Equal(t, rs, cl.GetResty())
+	assert.Equal(t, rs, cl.Resty())
 }
 
 func TestClient_InitNewSshClient(t *testing.T) {
