@@ -1,0 +1,12 @@
+{{- if .Values.gerrit.deploy -}}
+{{- range .Values.global.admins }}
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: GerritGroupMember
+metadata:
+  name: {{ regexReplaceAll "@.*" . "" | replace "_" "-" }}-admins
+spec:
+  groupId: Administrators
+  accountId: {{ . }}
+---
+{{end}}
+{{end}}

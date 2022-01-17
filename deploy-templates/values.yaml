@@ -4,6 +4,9 @@ global:
   dnsWildCard: "eks-delivery.aws.main.edp.projects.epam.com"
   admins:
     - "stub_user_one@example.com"
+  developers:
+    - "stub_user_one@example.com"
+    - "stub_user_two@example.com"
   openshift:
     deploymentType: "deploymentConfigs"
 

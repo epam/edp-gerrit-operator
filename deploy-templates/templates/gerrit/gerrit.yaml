@@ -15,12 +15,6 @@ spec:
     enabled: true
   sshPort: {{.Values.gerrit.sshPort}}
   type: Gerrit
-  users:
-  {{- range .Values.global.admins }}
-  - groups:
-      - Administrators
-    username: {{ . }}
-  {{ end }}
   version: {{.Values.gerrit.version}}
   volumes:
     - capacity: {{.Values.gerrit.storage.size}}
