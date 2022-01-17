@@ -3,7 +3,13 @@
 package mock
 
 import (
+	context "context"
+
 	clientgerrit "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+
+	gerrit "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
+
+	git "github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -82,6 +88,29 @@ func (_m *Interface) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*v1alpha1.Gerrit) error); ok {
 		r1 = rf(instance)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetGitClient provides a mock function with given fields: ctx, child, workDir
+func (_m *Interface) GetGitClient(ctx context.Context, child gerrit.Child, workDir string) (*git.Client, error) {
+	ret := _m.Called(ctx, child, workDir)
+
+	var r0 *git.Client
+	if rf, ok := ret.Get(0).(func(context.Context, gerrit.Child, string) *git.Client); ok {
+		r0 = rf(ctx, child, workDir)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*git.Client)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, gerrit.Child, string) error); ok {
+		r1 = rf(ctx, child, workDir)
 	} else {
 		r1 = ret.Error(1)
 	}

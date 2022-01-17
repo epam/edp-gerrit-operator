@@ -32,7 +32,3 @@ type GerritGroupList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GerritGroup `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&GerritGroup{}, &GerritGroupList{})
-}

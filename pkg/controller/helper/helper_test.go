@@ -2,26 +2,26 @@ package helper
 
 import (
 	"context"
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 )
 
 func TestTryToDelete(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	instance := v1alpha1.GerritGroupMember{
@@ -68,7 +68,7 @@ func TestTryToDelete(t *testing.T) {
 
 func TestGetGerritClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	instance := v1alpha1.GerritGroupMember{
@@ -88,18 +88,20 @@ func TestGetGerritClient(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
-	gSVC := gerritService.Mock{}
+	gerritService := gmock.Interface{}
+	gerritService.AssertExpectations(t)
 	gCl := gmock.ClientInterface{}
+	gCl.AssertExpectations(t)
 
-	gSVC.On("GetRestClient", &g).Return(&gCl, nil)
-	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC); err != nil {
+	gerritService.On("GetRestClient", &g).Return(&gCl, nil)
+	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	instance := v1alpha1.GerritGroupMember{
@@ -121,9 +123,10 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 		}}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
-	gSVC := gerritService.Mock{}
+	gerritService := gmock.Interface{}
+	gerritService.AssertExpectations(t)
 
-	_, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC)
+	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
 	if err == nil {
 		t.Fatal("error is not returned")
 	}
@@ -136,7 +139,7 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 
 func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	instance := v1alpha1.GerritGroupMember{
@@ -147,9 +150,10 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 	}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance).Build()
-	gSVC := gerritService.Mock{}
+	gerritService := gmock.Interface{}
+	gerritService.AssertExpectations(t)
 
-	_, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC)
+	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
 	if err == nil {
 		t.Fatal("error is not returned")
 	}
@@ -161,7 +165,7 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 
 func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	instance := v1alpha1.GerritGroupMember{
@@ -181,10 +185,11 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
-	gSVC := gerritService.Mock{}
+	gerritService := gmock.Interface{}
+	gerritService.AssertExpectations(t)
 
-	gSVC.On("GetRestClient", &g).Return(nil, errors.New("mock error"))
-	_, err := GetGerritClient(context.Background(), client, &instance, "", &gSVC)
+	gerritService.On("GetRestClient", &g).Return(nil, errors.New("mock error"))
+	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
 	if err == nil {
 		t.Fatal("no error returned")
 	}
@@ -196,7 +201,7 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 
 func TestGetGerritInstance(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	g := v1alpha1.Gerrit{

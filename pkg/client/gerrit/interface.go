@@ -21,4 +21,6 @@ type ClientInterface interface {
 	ListProjects(_type string) ([]Project, error)
 	ListProjectBranches(projectName string) ([]Branch, error)
 	ReloadPlugin(plugin string) error
+	ChangeAbandon(changeID string) error
+	ChangeGet(changeID string) (*Change, error)
 }

@@ -10,13 +10,9 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
+
 	"github.com/dchest/uniuri"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
-	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/google/uuid"
@@ -28,6 +24,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 )
 
 var log = ctrl.Log.WithName("service_gerrit")
@@ -47,6 +50,7 @@ type Interface interface {
 	GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error)
 	GetServicePort(instance *v1alpha1.Gerrit) (int32, error)
 	GetRestClient(gerritInstance *v1alpha1.Gerrit) (gerrit.ClientInterface, error)
+	GetGitClient(ctx context.Context, child Child, workDir string) (*git.Client, error)
 }
 
 type ErrUserNotFound string

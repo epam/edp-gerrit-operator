@@ -2,6 +2,7 @@ package gerrit
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,13 +11,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
+	"gopkg.in/resty.v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
-	"github.com/pkg/errors"
-	"gopkg.in/resty.v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var log = ctrl.Log.WithName("client_gerrit")
@@ -29,8 +31,10 @@ type Client struct {
 
 func NewClient(instance *v1alpha1.Gerrit, resty *resty.Client, sshClient ssh.SSHClientInterface) Client {
 	return Client{
-		instance:  instance,
-		resty:     resty,
+		instance: instance,
+		resty: resty.SetHeaders(map[string]string{
+			"accept": "application/json",
+		}),
 		sshClient: sshClient,
 	}
 }
@@ -288,6 +292,15 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 			string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid, developersGroupUuid)})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
+	}
+
+	return nil
+}
+
+func decodeGerritResponse(body string, v interface{}) error {
+	//gerrit has prefix )]}' in all responses so we need to truncate it
+	if err := json.Unmarshal([]byte(body[5:]), v); err != nil {
+		return errors.Wrap(err, "unable to decode gerrit response")
 	}
 
 	return nil

@@ -2,28 +2,27 @@ package gerritproject
 
 import (
 	"context"
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"strings"
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 func TestSyncBackendProjectsTick(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	g := v1alpha1.Gerrit{
@@ -46,8 +45,10 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	logger := helper.Logger{}
@@ -86,7 +87,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	g := v1alpha1.Gerrit{
@@ -109,8 +110,10 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	logger := helper.Logger{}
@@ -140,7 +143,7 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	g := v1alpha1.Gerrit{
@@ -152,7 +155,8 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).
 		Return(nil, errors.New("gerrit client fatal")).Once()
 
@@ -170,6 +174,7 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	}
 
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	clientMock.On("ListProjects", "CODE").
@@ -186,7 +191,7 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 
 func TestSyncBackendProjects(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	g := v1alpha1.Gerrit{
@@ -198,7 +203,8 @@ func TestSyncBackendProjects(t *testing.T) {
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).
 		Return(nil, errors.New("gerrit client fatal"))
 

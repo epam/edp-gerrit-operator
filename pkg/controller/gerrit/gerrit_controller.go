@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -16,6 +12,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
 const (

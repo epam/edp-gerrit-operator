@@ -3,8 +3,9 @@
 package mock
 
 import (
-	gerrit "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	mock "github.com/stretchr/testify/mock"
+
+	gerrit "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 
 	resty "gopkg.in/resty.v1"
 )
@@ -40,6 +41,43 @@ func (_m *ClientInterface) AddUserToGroup(groupName string, username string) err
 	}
 
 	return r0
+}
+
+// ChangeAbandon provides a mock function with given fields: changeID
+func (_m *ClientInterface) ChangeAbandon(changeID string) error {
+	ret := _m.Called(changeID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(changeID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ChangeGet provides a mock function with given fields: changeID
+func (_m *ClientInterface) ChangeGet(changeID string) (*gerrit.Change, error) {
+	ret := _m.Called(changeID)
+
+	var r0 *gerrit.Change
+	if rf, ok := ret.Get(0).(func(string) *gerrit.Change); ok {
+		r0 = rf(changeID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*gerrit.Change)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(changeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // CreateGroup provides a mock function with given fields: name, description, visibleToAll
@@ -144,22 +182,6 @@ func (_m *ClientInterface) GetProject(name string) (*gerrit.Project, error) {
 	return r0, r1
 }
 
-// GetResty provides a mock function with given fields:
-func (_m *ClientInterface) Resty() *resty.Client {
-	ret := _m.Called()
-
-	var r0 *resty.Client
-	if rf, ok := ret.Get(0).(func() *resty.Client); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*resty.Client)
-		}
-	}
-
-	return r0
-}
-
 // ListProjectBranches provides a mock function with given fields: projectName
 func (_m *ClientInterface) ListProjectBranches(projectName string) ([]gerrit.Branch, error) {
 	ret := _m.Called(projectName)
@@ -215,6 +237,22 @@ func (_m *ClientInterface) ReloadPlugin(plugin string) error {
 		r0 = rf(plugin)
 	} else {
 		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Resty provides a mock function with given fields:
+func (_m *ClientInterface) Resty() *resty.Client {
+	ret := _m.Called()
+
+	var r0 *resty.Client
+	if rf, ok := ret.Get(0).(func() *resty.Client); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*resty.Client)
+		}
 	}
 
 	return r0

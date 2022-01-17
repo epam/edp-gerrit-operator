@@ -3,19 +3,14 @@ package gerritgroupmember
 import (
 	"context"
 	"errors"
-	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/go-logr/logr"
-	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,6 +19,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 const name = "name"
@@ -31,7 +31,7 @@ const namespace = "namespace"
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	groupMember := v1alpha1.GerritGroupMember{
@@ -55,8 +55,10 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(nil)
@@ -111,7 +113,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 func TestReconcile_ReconcileFailure1(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	client := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -134,7 +136,7 @@ func TestReconcile_ReconcileFailure1(t *testing.T) {
 
 func TestReconcile_ReconcileFailure2(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	groupMember := v1alpha1.GerritGroupMember{
@@ -158,8 +160,10 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))

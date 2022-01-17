@@ -3,18 +3,17 @@ package gerritprojectaccess
 import (
 	"context"
 	"errors"
-	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/go-logr/logr"
-	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
+	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
+
+	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,6 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 const name = "name"
@@ -31,7 +33,7 @@ const namespace = "namespace"
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	projectAccessInstance := v1alpha1.GerritProjectAccess{
@@ -67,8 +69,10 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&projectAccessInstance, &g).Build()
 
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddAccessRights", projectAccessInstance.Spec.ProjectName,
@@ -129,7 +133,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 func TestReconcile_ReconcileFailure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	client := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -241,7 +245,9 @@ func TestNewReconcile(t *testing.T) {
 
 func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 	sw := &mocks.StatusWriter{}
+	sw.AssertExpectations(t)
 	mc := mocks.Client{}
+	mc.AssertExpectations(t)
 	ctx := context.Background()
 
 	instance := &v1alpha1.GerritProjectAccess{

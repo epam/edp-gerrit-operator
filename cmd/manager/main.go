@@ -6,6 +6,21 @@ import (
 
 	buildInfo "github.com/epam/edp-common/pkg/config"
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
+	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroup"
@@ -14,24 +29,7 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritprojectaccess"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritreplicationconfig"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/client-go/rest"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	//+kubebuilder:scaffold:imports
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	mergerequest "github.com/epam/edp-gerrit-operator/v2/pkg/controller/merge_request"
 )
 
 var (
@@ -39,11 +37,15 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
-const gerritOperatorLock = "edp-gerrit-operator-lock"
+const (
+	gerritOperatorLock = "edp-gerrit-operator-lock"
+	gitWorkDirEnv      = "GIT_WORK_DIR"
+	gitWorkDirDefault  = "/tmp/git_tmp"
+)
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
+	gerritApi.RegisterTypes(scheme)
 	utilruntime.Must(edpCompApi.AddToScheme(scheme))
 	utilruntime.Must(jenkinsApi.AddToScheme(scheme))
 	utilruntime.Must(keycloakApi.AddToScheme(scheme))
@@ -74,24 +76,42 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	v := buildInfo.Get()
-
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	setupLog.Info("Starting the Gerrit Operator",
-		"version", v.Version,
-		"git-commit", v.GitCommit,
-		"git-tag", v.GitTag,
-		"build-date", v.BuildDate,
-		"go-version", v.Go,
-		"go-client", v.KubectlVersion,
-		"platform", v.Platform,
-	)
+	printBuildInfo()
 
+	mgr, err := initManager(metricsAddr, probeAddr, enableLeaderElection)
+	if err != nil {
+		setupLog.Error(err, "unable to init manager")
+		os.Exit(1)
+	}
+
+	if err := initControllers(mgr, ctrl.Log.WithName("controllers")); err != nil {
+		setupLog.Error(err, "error during controllers init")
+		os.Exit(1)
+	}
+
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	setupLog.Info("starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func initManager(metricsAddr, probeAddr string, enableLeaderElection bool) (ctrl.Manager, error) {
 	ns, err := helper.GetWatchNamespace()
 	if err != nil {
-		setupLog.Error(err, "unable to get watch namespace")
-		os.Exit(1)
+		return nil, errors.Wrap(err, "unable to get watch namespace")
 	}
 
 	cfg := ctrl.GetConfigOrDie()
@@ -108,13 +128,35 @@ func main() {
 		Namespace: ns,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		return nil, errors.Wrap(err, "unable to start manager")
 	}
 
-	ctrlLog := ctrl.Log.WithName("controllers")
+	return mgr, nil
+}
 
-	controllersInitFuncs := []helper.InitFunc{
+func initControllers(mgr ctrl.Manager, ctrlLog logr.Logger) error {
+	controllersInitFuncs := controllerConstructors()
+
+	for _, cf := range controllersInitFuncs {
+		gCtrl, err := cf.Func(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create controller, controller: %s", cf.ControllerName)
+		}
+
+		if err := gCtrl.SetupWithManager(mgr); err != nil {
+			return errors.Wrapf(err, "unable to create controller, controller: %s", cf.ControllerName)
+		}
+	}
+
+	if err := prepareMergeRequestReconciler(mgr, ctrlLog); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func controllerConstructors() []helper.InitFunc {
+	return []helper.InitFunc{
 		{
 			Func:           gerritContr.NewReconcileGerrit,
 			ControllerName: "gerrit",
@@ -140,33 +182,48 @@ func main() {
 			ControllerName: "gerrit-project",
 		},
 	}
+}
 
-	for _, cf := range controllersInitFuncs {
-		gCtrl, err := cf.Func(mgr.GetClient(), mgr.GetScheme(), ctrlLog)
-		if err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", cf.ControllerName)
-			os.Exit(1)
-		}
+func prepareMergeRequestReconciler(mgr ctrl.Manager, ctrlLog logr.Logger) error {
+	workDirectoryOption, err := mergerequest.PrepareWorkDirectoryOption(getEnvDefault(gitWorkDirEnv, gitWorkDirDefault))
+	if err != nil {
+		return nil
+	}
+	gerritServiceOption, err := mergerequest.PrepareGerritServiceOption(mgr.GetClient(), helper.GetPlatformTypeEnv(),
+		mgr.GetScheme())
+	if err != nil {
+		return err
+	}
+	mergeRequestReconcilerOpts := []mergerequest.OptionFunc{
+		workDirectoryOption,
+		gerritServiceOption,
+	}
+	mergeRequestReconciler := mergerequest.NewReconcile(mgr.GetClient(), ctrlLog, mergeRequestReconcilerOpts...)
+	if err = mergeRequestReconciler.SetupWithManager(mgr); err != nil {
+		return err
+	}
+	return nil
+}
 
-		if err := gCtrl.SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", cf.ControllerName)
-			os.Exit(1)
-		}
+func printBuildInfo() {
+	v := buildInfo.Get()
+
+	setupLog.Info("Starting the Gerrit Operator",
+		"version", v.Version,
+		"git-commit", v.GitCommit,
+		"git-tag", v.GitTag,
+		"build-date", v.BuildDate,
+		"go-version", v.Go,
+		"go-client", v.KubectlVersion,
+		"platform", v.Platform,
+	)
+}
+
+func getEnvDefault(key, _default string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return _default
 	}
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	return val
 }

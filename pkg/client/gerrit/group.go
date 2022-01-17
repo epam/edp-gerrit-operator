@@ -1,12 +1,12 @@
 package gerrit
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/pkg/errors"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 )
 
 type ErrAlreadyExists string
@@ -111,9 +111,8 @@ func (gc *Client) getUserGroups() (map[string][]string, error) {
 		return nil, errors.Errorf("wrong response code: %d, body: %s", resp.StatusCode(), resp.String())
 	}
 
-	body := resp.String()[5:]
 	var groups map[string]Group
-	if err := json.Unmarshal([]byte(body), &groups); err != nil {
+	if err := decodeGerritResponse(resp.String(), &groups); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal group response")
 	}
 
@@ -206,9 +205,8 @@ func (gc *Client) CreateGroup(name, description string, visibleToAll bool) (*Gro
 		return nil, errors.Errorf("status: %s, body: %s", resp.Status(), resp.String())
 	}
 
-	body := resp.String()[5:]
 	var gr Group
-	if err := json.Unmarshal([]byte(body), &gr); err != nil {
+	if err := decodeGerritResponse(resp.String(), &gr); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal group response")
 	}
 

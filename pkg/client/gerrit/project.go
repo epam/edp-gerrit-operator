@@ -1,7 +1,6 @@
 package gerrit
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -65,8 +64,7 @@ func (gc Client) GetProject(name string) (*Project, error) {
 	}
 
 	var prj Project
-	body := rsp.String()[5:]
-	if err := json.Unmarshal([]byte(body), &prj); err != nil {
+	if err := decodeGerritResponse(rsp.String(), &prj); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal project response")
 	}
 
@@ -116,8 +114,7 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 	}
 
 	var preProjects map[string]Project
-	body := rsp.String()[5:]
-	if err := json.Unmarshal([]byte(body), &preProjects); err != nil {
+	if err := decodeGerritResponse(rsp.String(), &preProjects); err != nil {
 		return nil, errors.Wrapf(err, "unable to unmarshal project response, body: %s", rsp.String())
 	}
 
@@ -147,8 +144,7 @@ func (gc Client) ListProjectBranches(projectName string) ([]Branch, error) {
 	}
 
 	var branches []Branch
-	body := rsp.String()[5:]
-	if err := json.Unmarshal([]byte(body), &branches); err != nil {
+	if err := decodeGerritResponse(rsp.String(), &branches); err != nil {
 		return nil, errors.Wrapf(err, "unable to unmarshal project response, body: %s", rsp.String())
 	}
 

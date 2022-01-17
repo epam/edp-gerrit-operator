@@ -1,0 +1,10 @@
+apiVersion: v2.edp.epam.com/v1alpha1
+kind: GerritMergeRequest
+metadata:
+  name: test-merge
+spec:
+  ownerName: gerrit
+  targetBranch: master
+  sourceBranch: rev123
+  projectName: testmerge1
+  commitMessage: kawabunga

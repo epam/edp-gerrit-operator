@@ -51,7 +51,3 @@ type GerritReplicationConfigList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GerritReplicationConfig `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&GerritReplicationConfig{}, &GerritReplicationConfigList{})
-}

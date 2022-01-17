@@ -6,11 +6,6 @@ import (
 	"testing"
 	"time"
 
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
-	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,11 +15,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	prj := v1alpha1.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1"},
@@ -40,8 +40,10 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.ErrDoesNotExist("")).Once()
 	clientMock.On("CreateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
@@ -101,7 +103,7 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	prj := v1alpha1.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
@@ -118,8 +120,10 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
+	clientMock.AssertExpectations(t)
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(&gerritClient.Project{}, nil)
 	clientMock.On("UpdateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
@@ -193,7 +197,7 @@ func TestIsSpecUpdated(t *testing.T) {
 
 func TestReconcile_Reconcile_NotFound(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	prj := v1alpha1.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
@@ -222,7 +226,7 @@ func TestReconcile_Reconcile_NotFound(t *testing.T) {
 
 func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	v1alpha1.RegisterTypes(scheme)
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	prj := v1alpha1.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
@@ -239,7 +243,8 @@ func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
-	serviceMock := gerritService.Mock{}
+	serviceMock := gmock.Interface{}
+	serviceMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).Return(nil, errors.New("no g client"))
 
 	logger := helper.Logger{}

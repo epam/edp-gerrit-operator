@@ -36,7 +36,3 @@ type GerritProjectList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GerritProject `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&GerritProject{}, &GerritProjectList{})
-}

@@ -76,7 +76,3 @@ type GerritList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Gerrit `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Gerrit{}, &GerritList{})
-}
