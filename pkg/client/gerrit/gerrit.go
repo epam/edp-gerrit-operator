@@ -266,6 +266,11 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 		return errors.Wrapf(err, "Failed to get %v group ID", spec.GerritCIToolsGroupName)
 	}
 
+	developersGroupUuid, err := gc.getGroupUuid(spec.GerritProjectDevelopersGroupName)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get %v group ID", spec.GerritCIToolsGroupName)
+	}
+
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
 		[]string{"/bin/sh", "-c", "mkdir -p /tmp/scripts && touch /tmp/scripts/init-all-projects.sh && chmod +x /tmp/scripts/init-all-projects.sh"})
 	if err != nil {
@@ -279,8 +284,8 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\"",
-			string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid)})
+		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\" \"%v\"",
+			string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid, developersGroupUuid)})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
 	}

@@ -238,6 +238,12 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 			return instance, false, err
 		}
 
+		_, err = s.gerritClient.CreateGroup(spec.GerritProjectDevelopersGroupName,
+			spec.GerritProjectDevelopersGroupNameDescription, true)
+		if err != nil {
+			return instance, false, err
+		}
+
 		err = s.gerritClient.InitAllProjects(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
 			string(gerritAdminPublicKey))
 		if err != nil {

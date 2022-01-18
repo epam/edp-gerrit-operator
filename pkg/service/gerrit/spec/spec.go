@@ -61,6 +61,12 @@ const (
 	//GerritCIToolsGroupDescription - default group description for Continuous Integration Tools group
 	GerritCIToolsGroupDescription = "Contains Jenkins and any other CI tools that get +2/-2 access on reviews"
 
+	//GerritProjectDevelopersGroupName - default group description for Developers group
+	GerritProjectDevelopersGroupName = "Developers"
+
+	//GerritProjectDevelopersGroupNameDescription - default group description for Developers group
+	GerritProjectDevelopersGroupNameDescription = "Grant access to all projects in Gerrit"
+
 	//GerritProjectBootstrappersGroupName - default group name for Project Bootstrappers users
 	GerritProjectBootstrappersGroupName = "Project Bootstrappers"
 
