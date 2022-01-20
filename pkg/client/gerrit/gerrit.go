@@ -24,7 +24,7 @@ import (
 var log = ctrl.Log.WithName("client_gerrit")
 
 type Client struct {
-	instance  *v1alpha1.Gerrit
+	instance  *v1alpha1.Gerrit //TODO: remove this
 	resty     *resty.Client
 	sshClient ssh.SSHClientInterface
 }
@@ -298,6 +298,9 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 }
 
 func decodeGerritResponse(body string, v interface{}) error {
+	if len(body) < 5 {
+		return errors.New("wrong gerrit body format")
+	}
 	//gerrit has prefix )]}' in all responses so we need to truncate it
 	if err := json.Unmarshal([]byte(body[5:]), v); err != nil {
 		return errors.Wrap(err, "unable to decode gerrit response")

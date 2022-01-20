@@ -7,16 +7,18 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	mock "github.com/epam/edp-gerrit-operator/v2/mock/ssh"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/resty.v1"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/resty.v1"
+
+	mock "github.com/epam/edp-gerrit-operator/v2/mock/ssh"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
 )
 
 const uuid = "Bxfh1wAg_qyZQNdy5VKc7gNZgoLFm67YHbWhFvvk"
@@ -498,4 +500,14 @@ func TestClient_AddUserToGroups_RunCommandErr(t *testing.T) {
 	err := cl.AddUserToGroups(name, groups)
 
 	assert.Error(t, err)
+}
+
+func TestNewClient(t *testing.T) {
+	cl := NewClient(nil, resty.New(), nil)
+	accept, ok := cl.resty.Header["Accept"]
+	if !ok || len(accept) == 0 {
+		t.Fatal("no accept header set")
+	}
+
+	assert.Equal(t, accept[0], "application/json")
 }
