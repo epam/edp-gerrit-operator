@@ -56,9 +56,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(nil)
@@ -109,6 +107,9 @@ func TestReconcile_Reconcile(t *testing.T) {
 	if updateInstance.Status.Value != helper.StatusOK {
 		t.Fatal(updateInstance.Status.Value)
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestReconcile_ReconcileFailure1(t *testing.T) {
@@ -161,9 +162,7 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))
@@ -193,6 +192,9 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 		t.Log(updateInstance.Status.Value)
 		t.Fatal("wrong instance status")
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestReconcile_IsSpecUpdated(t *testing.T) {

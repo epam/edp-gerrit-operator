@@ -70,9 +70,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&projectAccessInstance, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddAccessRights", projectAccessInstance.Spec.ProjectName,
@@ -129,6 +127,9 @@ func TestReconcile_Reconcile(t *testing.T) {
 	if updateInstance.Status.Value != helper.StatusOK {
 		t.Fatal(updateInstance.Status.Value)
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestReconcile_ReconcileFailure(t *testing.T) {
@@ -245,9 +246,8 @@ func TestNewReconcile(t *testing.T) {
 
 func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 	sw := &mocks.StatusWriter{}
-	sw.AssertExpectations(t)
 	mc := mocks.Client{}
-	mc.AssertExpectations(t)
+
 	ctx := context.Background()
 
 	instance := &v1alpha1.GerritProjectAccess{
@@ -274,11 +274,12 @@ func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 	sw.On("Update").Return(errTest)
 	mc.On("Get", nsn, &v1alpha1.GerritProjectAccess{}).Return(cl)
 	mc.On("Status").Return(sw)
-	mc.On("Update").Return(errTest)
+
+	logger := helper.Logger{}
 
 	rg := Reconcile{
 		client: &mc,
-		log:    logr.Discard(),
+		log:    &logger,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
@@ -287,4 +288,11 @@ func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+
+	err = logger.LastError()
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, errTest)
+
+	sw.AssertExpectations(t)
+	mc.AssertExpectations(t)
 }

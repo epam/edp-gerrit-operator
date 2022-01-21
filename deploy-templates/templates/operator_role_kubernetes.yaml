@@ -58,6 +58,9 @@ rules:
     - gerritprojects
     - gerritprojects/status
     - gerritprojects/finalizers
+    - gerritmergerequests
+    - gerritmergerequests/status
+    - gerritmergerequests/finalizers
     - events
   verbs:
     - '*'

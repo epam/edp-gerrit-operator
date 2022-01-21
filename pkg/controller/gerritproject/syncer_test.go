@@ -46,9 +46,8 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
+
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	logger := helper.Logger{}
@@ -83,6 +82,9 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 	if k8sGerritProject.Spec.Name != "alphabet/google" {
 		t.Fatalf("wrong gerrit project name: %s", k8sGerritProject.Spec.Name)
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
@@ -111,9 +113,8 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
+
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	logger := helper.Logger{}
@@ -139,6 +140,9 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 	if !strings.Contains(err.Error(), "list branches fatal") {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestSyncBackendProjectsTick_Failure(t *testing.T) {
@@ -156,7 +160,7 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
+
 	serviceMock.On("GetRestClient", &g).
 		Return(nil, errors.New("gerrit client fatal")).Once()
 
@@ -174,7 +178,6 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	}
 
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	clientMock.On("ListProjects", "CODE").
@@ -187,6 +190,9 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	if !strings.Contains(err.Error(), "list projects fatal") {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestSyncBackendProjects(t *testing.T) {
@@ -204,7 +210,7 @@ func TestSyncBackendProjects(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
+
 	serviceMock.On("GetRestClient", &g).
 		Return(nil, errors.New("gerrit client fatal"))
 
@@ -227,4 +233,6 @@ func TestSyncBackendProjects(t *testing.T) {
 	if !strings.Contains(err.Error(), "gerrit client fatal") {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
+
+	serviceMock.AssertExpectations(t)
 }

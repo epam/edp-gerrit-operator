@@ -41,9 +41,7 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.ErrDoesNotExist("")).Once()
 	clientMock.On("CreateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
@@ -99,6 +97,9 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 	if !strings.Contains(err.Error(), "unknown get fatal") {
 		t.Fatalf("wrong error returnded: %s", err.Error())
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
@@ -121,9 +122,7 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	clientMock := gmock.ClientInterface{}
-	clientMock.AssertExpectations(t)
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(&gerritClient.Project{}, nil)
 	clientMock.On("UpdateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
@@ -181,6 +180,9 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 	if !strings.Contains(err.Error(), "deletion fatal") {
 		t.Fatalf("wrong error returnded: %s", err.Error())
 	}
+
+	serviceMock.AssertExpectations(t)
+	clientMock.AssertExpectations(t)
 }
 
 func TestIsSpecUpdated(t *testing.T) {
@@ -244,7 +246,6 @@ func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
-	serviceMock.AssertExpectations(t)
 	serviceMock.On("GetRestClient", &g).Return(nil, errors.New("no g client"))
 
 	logger := helper.Logger{}
@@ -269,4 +270,6 @@ func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 	if !strings.Contains(err.Error(), "no g client") {
 		t.Fatalf("wrong error returnded: %s", err.Error())
 	}
+
+	serviceMock.AssertExpectations(t)
 }

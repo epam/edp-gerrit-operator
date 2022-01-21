@@ -2,12 +2,13 @@ package mergerequest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,79 +33,176 @@ var (
 		}}
 )
 
-func TestReconcile_Reconcile(t *testing.T) {
-	sch := runtime.NewScheme()
-	v1alpha1.RegisterTypes(sch)
+type ControllerTestSuite struct {
+	suite.Suite
+	gerritService *gmock.Interface
+	logger        *helper.Logger
+	gitClient     *gmock.GitClient
+	gerritClient  *gmock.ClientInterface
+	scheme        *runtime.Scheme
+}
 
-	fakeClient := fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit, &mergeRequest).Build()
-	gService := gmock.Interface{}
-	gService.AssertExpectations(t)
-	logger := helper.Logger{}
-	gitClient := gmock.GitClient{}
-	gitClient.AssertExpectations(t)
+func (s *ControllerTestSuite) SetupTest() {
+	s.scheme = runtime.NewScheme()
+	v1alpha1.RegisterTypes(s.scheme)
+
+	s.gerritService = &gmock.Interface{}
+	s.logger = &helper.Logger{}
+	s.gitClient = &gmock.GitClient{}
+	s.gerritClient = &gmock.ClientInterface{}
+}
+
+func (s *ControllerTestSuite) TearDownTest() {
+	s.gerritService.AssertExpectations(s.T())
+	s.gitClient.AssertExpectations(s.T())
+	s.gerritClient.AssertExpectations(s.T())
+}
+
+func (s *ControllerTestSuite) TestReconcile() {
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, &mergeRequest).Build()
 	changeID := "change123"
 
-	gitClient.On("Clone", mergeRequest.Spec.ProjectName).Return("path", nil)
-	gitClient.On("GenerateChangeID").Return(changeID, nil)
-	gitClient.On("Merge", mergeRequest.Spec.ProjectName, fmt.Sprintf("origin/%s", mergeRequest.Spec.SourceBranch),
+	s.gitClient.On("Clone", mergeRequest.Spec.ProjectName).Return("path", nil)
+	s.gitClient.On("GenerateChangeID").Return(changeID, nil)
+	s.gitClient.On("Merge", mergeRequest.Spec.ProjectName, fmt.Sprintf("origin/%s", mergeRequest.Spec.SourceBranch),
 		mergeRequest.TargetBranch(), "--no-ff", "-m", fmt.Sprintf("%s\n\nChange-Id: %s", mergeRequest.CommitMessage(), changeID)).
 		Return(nil)
-	gitClient.On("Push", mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
+	s.gitClient.On("Push", mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
 		Return("http://gerrit.com/merge/1", nil)
 
 	rec := Reconcile{
 		k8sClient: fakeClient,
-		service:   &gService,
-		log:       &logger,
+		service:   s.gerritService,
+		log:       s.logger,
 		getGitClient: func(ctx context.Context, child gerrit.Child, workDir string) (GitClient, error) {
-			return &gitClient, nil
+			return s.gitClient, nil
 		},
 	}
 
-	_, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
+	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
 		Name:      mergeRequest.Name,
 		Namespace: mergeRequest.Namespace,
 	}})
-	assert.NoError(t, err)
+	assert.NoError(s.T(), err)
 
-	err = logger.LastError()
-	assert.NoError(t, err)
+	err = s.logger.LastError()
+	assert.NoError(s.T(), err)
+
+	assert.Equal(s.T(), result.RequeueAfter, time.Second*helper.DefaultRequeueTime)
 }
 
-func TestReconcile_Reconcile_Delete(t *testing.T) {
-	sch := runtime.NewScheme()
-	v1alpha1.RegisterTypes(sch)
-
+func (s *ControllerTestSuite) TestReconcileDelete() {
 	deleteMergeRequest := mergeRequest.DeepCopy()
 	deleteMergeRequest.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	deleteMergeRequest.Status.ChangeID = "change321"
 
-	fakeClient := fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit, deleteMergeRequest).Build()
-	gService := gmock.Interface{}
-	gService.AssertExpectations(t)
-	logger := helper.Logger{}
-	gClient := gmock.ClientInterface{}
-	gClient.AssertExpectations(t)
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, deleteMergeRequest).Build()
 
-	gClient.On("ChangeGet", deleteMergeRequest.Status.ChangeID).
-		Return(&gerritClient.Change{Status: "NEW"}, nil)
-	gClient.On("ChangeAbandon", deleteMergeRequest.Status.ChangeID).Return(nil)
+	s.gerritClient.On("ChangeGet", deleteMergeRequest.Status.ChangeID).
+		Return(&gerritClient.Change{Status: StatusNew}, nil)
+	s.gerritClient.On("ChangeAbandon", deleteMergeRequest.Status.ChangeID).Return(nil)
 
 	rec := Reconcile{
 		k8sClient: fakeClient,
-		service:   &gService,
-		log:       &logger,
+		service:   s.gerritService,
+		log:       s.logger,
 		getGerritClient: func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error) {
-			return &gClient, nil
+			return s.gerritClient, nil
 		},
 	}
 
-	_, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
+	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
 		Name:      mergeRequest.Name,
 		Namespace: mergeRequest.Namespace,
 	}})
-	assert.NoError(t, err)
+	assert.NoError(s.T(), err)
 
-	err = logger.LastError()
-	assert.NoError(t, err)
+	err = s.logger.LastError()
+	assert.NoError(s.T(), err)
+
+	assert.Equal(s.T(), result.RequeueAfter, time.Second*helper.DefaultRequeueTime)
+}
+
+func (s *ControllerTestSuite) TestReconcileCheckStatus() {
+	checkStatusRequest := mergeRequest.DeepCopy()
+	checkStatusRequest.Status.ChangeID = "change321"
+	checkStatusRequest.Status.Value = StatusNew
+
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, checkStatusRequest).Build()
+
+	s.gerritClient.On("ChangeGet", checkStatusRequest.Status.ChangeID).
+		Return(&gerritClient.Change{Status: StatusAbandoned}, nil).Once()
+
+	rec := Reconcile{
+		k8sClient: fakeClient,
+		service:   s.gerritService,
+		log:       s.logger,
+		getGerritClient: func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error) {
+			return s.gerritClient, nil
+		},
+	}
+
+	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
+		Name:      mergeRequest.Name,
+		Namespace: mergeRequest.Namespace,
+	}})
+	assert.NoError(s.T(), err)
+
+	err = s.logger.LastError()
+	assert.NoError(s.T(), err)
+
+	assert.Equal(s.T(), result.RequeueAfter, time.Duration(0))
+
+	var updatedMergeRequest v1alpha1.GerritMergeRequest
+	err = rec.k8sClient.Get(context.Background(),
+		types.NamespacedName{Name: checkStatusRequest.Name, Namespace: checkStatusRequest.Namespace},
+		&updatedMergeRequest)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), updatedMergeRequest.Status.Value,
+		StatusAbandoned)
+}
+
+func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
+	checkStatusRequest := mergeRequest.DeepCopy()
+	checkStatusRequest.Status.ChangeID = "change321"
+	checkStatusRequest.Status.Value = StatusNew
+
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, checkStatusRequest).Build()
+
+	rec := Reconcile{
+		k8sClient: fakeClient,
+		service:   s.gerritService,
+		log:       s.logger,
+		getGerritClient: func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error) {
+			return s.gerritClient, nil
+		},
+	}
+
+	s.gerritClient.On("ChangeGet", checkStatusRequest.Status.ChangeID).
+		Return(nil, errors.New("change get fatal")).Once()
+
+	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
+		Name:      mergeRequest.Name,
+		Namespace: mergeRequest.Namespace,
+	}})
+	assert.NoError(s.T(), err)
+
+	err = s.logger.LastError()
+	assert.Error(s.T(), err)
+	assert.EqualError(s.T(), err,
+		"unable to get change status: unable to get change id: change get fatal")
+
+	assert.Equal(s.T(), result.RequeueAfter, time.Second*helper.DefaultRequeueTime)
+
+	var updatedMergeRequest v1alpha1.GerritMergeRequest
+	err = rec.k8sClient.Get(context.Background(),
+		types.NamespacedName{Name: checkStatusRequest.Name, Namespace: checkStatusRequest.Namespace},
+		&updatedMergeRequest)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), updatedMergeRequest.Status.Value,
+		"unable to get change status: unable to get change id: change get fatal")
+}
+
+func TestController(t *testing.T) {
+	suite.Run(t, new(ControllerTestSuite))
 }

@@ -89,14 +89,15 @@ func TestGetGerritClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
-	gerritService.AssertExpectations(t)
 	gCl := gmock.ClientInterface{}
-	gCl.AssertExpectations(t)
 
 	gerritService.On("GetRestClient", &g).Return(&gCl, nil)
 	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService); err != nil {
 		t.Fatal(err)
 	}
+
+	gerritService.AssertExpectations(t)
+	gCl.AssertExpectations(t)
 }
 
 func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
@@ -124,7 +125,6 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 	gerritService := gmock.Interface{}
-	gerritService.AssertExpectations(t)
 
 	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
 	if err == nil {
@@ -135,6 +135,8 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 		t.Log(err)
 		t.Fatal("wrong error returned")
 	}
+
+	gerritService.AssertExpectations(t)
 }
 
 func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
@@ -151,7 +153,6 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance).Build()
 	gerritService := gmock.Interface{}
-	gerritService.AssertExpectations(t)
 
 	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
 	if err == nil {
@@ -161,6 +162,8 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 	if !strings.Contains(err.Error(), "no root gerrits found") {
 		t.Fatal("wrong error returned")
 	}
+
+	gerritService.AssertExpectations(t)
 }
 
 func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
@@ -186,7 +189,6 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
-	gerritService.AssertExpectations(t)
 
 	gerritService.On("GetRestClient", &g).Return(nil, errors.New("mock error"))
 	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
@@ -197,6 +199,8 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 	if !strings.Contains(err.Error(), "mock error") {
 		t.Fatal("wrong error returned")
 	}
+
+	gerritService.AssertExpectations(t)
 }
 
 func TestGetGerritInstance(t *testing.T) {

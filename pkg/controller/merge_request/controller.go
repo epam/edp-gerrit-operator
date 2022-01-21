@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -26,7 +27,10 @@ import (
 )
 
 const (
-	finalizerName = "merge_request.gerrit.finalizer.name"
+	finalizerName   = "merge_request.gerrit.finalizer.name"
+	StatusNew       = "NEW"
+	StatusAbandoned = "ABANDONED"
+	StatusMerged    = "MERGED"
 )
 
 type Reconcile struct {
@@ -125,12 +129,13 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 		return reconcile.Result{}, errors.Wrap(err, "unable to get GerritMergeRequest instance")
 	}
 
-	if err := r.tryReconcile(ctx, &instance); err != nil {
+	if requeue, err := r.tryReconcile(ctx, &instance); err != nil {
 		instance.Status.Value = err.Error()
+		result.RequeueAfter = time.Second * helper.DefaultRequeueTime
 		reqLogger.Error(err, "an error has occurred while handling GerritMergeRequest", "name",
 			request.Name)
-	} else {
-		instance.Status.Value = helper.StatusOK
+	} else if requeue {
+		result.RequeueAfter = time.Second * helper.DefaultRequeueTime
 	}
 
 	if err := r.k8sClient.Status().Update(ctx, &instance); err != nil {
@@ -141,50 +146,88 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	return
 }
 
-func (r *Reconcile) tryReconcile(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (retErr error) {
+func (r *Reconcile) tryReconcile(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (bool, error) {
+	requeue := false
+
 	if instance.Status.ChangeID == "" {
-		gitClient, err := r.getGitClient(ctx, instance, r.gitWorkDir)
+		status, err := r.createChange(ctx, instance)
 		if err != nil {
-			return errors.Wrap(err, "unable to init git client")
+			return false, errors.Wrap(err, "unable to create change")
 		}
 
-		projectPath, err := gitClient.Clone(instance.Spec.ProjectName)
+		instance.Status = *status
+		requeue = true
+	} else {
+		status, err := r.getChangeStatus(ctx, instance)
 		if err != nil {
-			return errors.Wrap(err, "unable to clone repo")
+			return false, errors.Wrap(err, "unable to get change status")
 		}
 
-		defer func() {
-			if err := os.RemoveAll(projectPath); err != nil {
-				retErr = err
-			}
-		}()
-
-		changeID, err := gitClient.GenerateChangeID()
-		if err != nil {
-			return errors.Wrap(err, "unable to generate change id")
-		}
-
-		if err := gitClient.Merge(instance.Spec.ProjectName, fmt.Sprintf("origin/%s", instance.Spec.SourceBranch),
-			instance.TargetBranch(), "--no-ff", "-m",
-			fmt.Sprintf("%s\n\nChange-Id: %s", instance.CommitMessage(), changeID)); err != nil {
-			return errors.Wrap(err, "unable to merge branches")
-		}
-
-		pushMessage, err := gitClient.Push(instance.Spec.ProjectName, "origin", "HEAD:refs/for/master")
-		if err != nil {
-			return errors.Wrap(err, "unable to push repo")
-		}
-
-		instance.Status.ChangeURL = extractMrURL(pushMessage)
-		instance.Status.ChangeID = changeID
+		instance.Status.Value = status
+		requeue = status == StatusNew
 	}
 
 	if err := helper.TryToDelete(ctx, r.k8sClient, instance, finalizerName,
 		r.makeDeletionFunc(ctx, instance)); err != nil {
-		return errors.Wrap(err, "unable to delete resource")
+		return false, errors.Wrap(err, "unable to delete resource")
 	}
 
-	return nil
+	return requeue, nil
+}
+
+func (r *Reconcile) createChange(ctx context.Context,
+	instance *v1alpha1.GerritMergeRequest) (status *v1alpha1.GerritMergeRequestStatus, retErr error) {
+	gitClient, err := r.getGitClient(ctx, instance, r.gitWorkDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to init git client")
+	}
+
+	projectPath, err := gitClient.Clone(instance.Spec.ProjectName)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to clone repo")
+	}
+
+	defer func() {
+		if err := os.RemoveAll(projectPath); err != nil {
+			retErr = err
+		}
+	}()
+
+	changeID, err := gitClient.GenerateChangeID()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to generate change id")
+	}
+
+	if err := gitClient.Merge(instance.Spec.ProjectName, fmt.Sprintf("origin/%s", instance.Spec.SourceBranch),
+		instance.TargetBranch(), "--no-ff", "-m",
+		fmt.Sprintf("%s\n\nChange-Id: %s", instance.CommitMessage(), changeID)); err != nil {
+		return nil, errors.Wrap(err, "unable to merge branches")
+	}
+
+	pushMessage, err := gitClient.Push(instance.Spec.ProjectName, "origin", "HEAD:refs/for/master")
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to push repo")
+	}
+
+	return &v1alpha1.GerritMergeRequestStatus{
+		ChangeID:  changeID,
+		ChangeURL: extractMrURL(pushMessage),
+		Value:     StatusNew,
+	}, nil
+}
+
+func (r *Reconcile) getChangeStatus(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (string, error) {
+	gClient, err := r.getGerritClient(ctx, instance)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get gerrit client")
+	}
+
+	change, err := gClient.ChangeGet(instance.Status.ChangeID)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get change id")
+	}
+
+	return change.Status, nil
 }
 
 func extractMrURL(pushMessage string) string {
@@ -205,7 +248,7 @@ func (r *Reconcile) makeDeletionFunc(ctx context.Context, instance *v1alpha1.Ger
 			return errors.Wrap(err, "unable to get change id")
 		}
 
-		if change.Status == "NEW" {
+		if change.Status == StatusNew {
 			if err := gClient.ChangeAbandon(instance.Status.ChangeID); err != nil {
 				return errors.Wrap(err, "unable to abandon change")
 			}

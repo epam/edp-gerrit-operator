@@ -29,7 +29,6 @@ func (testChild) OwnerName() string {
 func TestComponentService_GetGitClient_Failure(t *testing.T) {
 	sch := runtime.NewScheme()
 	plt := mock.PlatformService{}
-	plt.AssertExpectations(t)
 
 	err := corev1.AddToScheme(sch)
 	assert.NoError(t, err)
@@ -58,12 +57,13 @@ func TestComponentService_GetGitClient_Failure(t *testing.T) {
 	assert.Error(t, err)
 	assert.EqualError(t, err,
 		"Failed to get Gerrit admin password from secret for ns/gerrit: Failed to get Secret gerrit-admin-password for ns/gerrit: secret fatal")
+
+	plt.AssertExpectations(t)
 }
 
 func TestComponentService_GetGitClient(t *testing.T) {
 	sch := runtime.NewScheme()
 	plt := mock.PlatformService{}
-	plt.AssertExpectations(t)
 
 	err := corev1.AddToScheme(sch)
 	assert.NoError(t, err)
@@ -81,9 +81,9 @@ func TestComponentService_GetGitClient(t *testing.T) {
 
 	plt.On("GetSecretData", testCh.GetNamespace(), fmt.Sprintf("%v-admin-password", rootGerrit.Name)).
 		Return(map[string][]byte{"password": []byte("secret")}, nil)
-	plt.On("GetExternalEndpoint", testCh.GetNamespace(), testCh.OwnerName()).
-		Return("", "", nil)
 
 	_, err = s.GetGitClient(context.Background(), testCh, "")
 	assert.NoError(t, err)
+
+	plt.AssertExpectations(t)
 }
