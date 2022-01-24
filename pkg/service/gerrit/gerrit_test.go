@@ -23,7 +23,6 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
-	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 )
 
 const (
@@ -125,11 +124,14 @@ func TestComponentService_GetGerritSSHUrlErr(t *testing.T) {
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", errTest)
 
 	_, err := CS.GetGerritSSHUrl(instance)
-	if platformHelper.RunningInCluster() {
-		assert.NoError(t, err)
-	} else {
-		assert.Error(t, err)
-	}
+	assert.NoError(t, err)
+
+	CS = ComponentService{PlatformService: ps, runningInClusterFunc: func() bool {
+		return false
+	}}
+
+	_, err = CS.GetGerritSSHUrl(instance)
+	assert.Error(t, err)
 }
 
 func Test_setAnnotation_EmptyInstance(t *testing.T) {
