@@ -1,6 +1,29 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Features
+
+- Implement Developers group creation in go code [EPMDEDP-7502](https://jiraeu.epam.com/browse/EPMDEDP-7502)
+- Manage Gerrit access [EPMDEDP-7502](https://jiraeu.epam.com/browse/EPMDEDP-7502)
+- add git executable to docker image [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
+- implement gerrit merge request CR [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
+- add status tracking to gerrit merge request [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
+
+### Testing
+
+- Add tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- Fix unit tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- add tests for git and gerrit client [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
+- fix running in cluster function [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
+
+### Routine
+
+- Update release CI pipelines [EPMDEDP-7847](https://jiraeu.epam.com/browse/EPMDEDP-7847)
+- Fix CI for codecov report [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- Update gerrit URL baseline link [EPMDEDP-8204](https://jiraeu.epam.com/browse/EPMDEDP-8204)
+
 
 <a name="v2.10.0"></a>
 ## [v2.10.0] - 2021-12-06
