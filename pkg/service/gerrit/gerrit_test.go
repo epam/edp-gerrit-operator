@@ -87,14 +87,6 @@ func TestIsErrUserNotFound(t *testing.T) {
 	}
 }
 
-func TestNewComponentService(t *testing.T) {
-	ps := &pmock.PlatformService{}
-	kc := fake.NewClientBuilder().Build()
-	ks := &runtime.Scheme{}
-	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
-	assert.Equal(t, CS, NewComponentService(ps, kc, ks))
-}
-
 func TestComponentService_IsDeploymentReady(t *testing.T) {
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{
@@ -126,7 +118,9 @@ func TestComponentService_GetGerritSSHUrlErr(t *testing.T) {
 	instance := CreateGerritInstance()
 	errTest := errors.New("test")
 	ps := &pmock.PlatformService{}
-	CS := ComponentService{PlatformService: ps}
+	CS := ComponentService{PlatformService: ps, runningInClusterFunc: func() bool {
+		return true
+	}}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", errTest)
 

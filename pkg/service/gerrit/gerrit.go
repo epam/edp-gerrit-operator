@@ -71,15 +71,29 @@ func IsErrUserNotFound(err error) bool {
 // ComponentService implements gerrit.Interface
 type ComponentService struct {
 	// Providing Gerrit EDP component implementation through the interface (platform abstract)
-	PlatformService platform.PlatformService
-	client          client.Client
-	k8sScheme       *runtime.Scheme
-	gerritClient    gerrit.Client
+	PlatformService      platform.PlatformService
+	client               client.Client
+	k8sScheme            *runtime.Scheme
+	gerritClient         gerrit.Client
+	runningInClusterFunc func() bool
 }
 
 // NewComponentService returns a new instance of a gerrit.Service type
 func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runtime.Scheme) Interface {
-	return ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
+	return ComponentService{
+		PlatformService:      ps,
+		client:               kc,
+		k8sScheme:            ks,
+		runningInClusterFunc: platformHelper.RunningInCluster,
+	}
+}
+
+func (s ComponentService) runningInCluster() bool {
+	if s.runningInClusterFunc != nil {
+		return s.runningInClusterFunc()
+	}
+
+	return false
 }
 
 // IsDeploymentReady check if DC for Gerrit is ready
@@ -99,7 +113,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	GerritScriptsPath := platformHelper.LocalScriptsRelativePath
-	if !platformHelper.RunningInCluster() {
+	if !s.runningInCluster() {
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
@@ -626,7 +640,7 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 
 func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
-	if !platformHelper.RunningInCluster() {
+	if !s.runningInCluster() {
 		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
@@ -638,7 +652,7 @@ func (s ComponentService) getGerritRestApiUrl(instance *v1alpha1.Gerrit) (string
 
 func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
-	if !platformHelper.RunningInCluster() {
+	if !s.runningInCluster() {
 		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)

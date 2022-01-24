@@ -77,6 +77,9 @@ func TestComponentService_GetGitClient(t *testing.T) {
 		PlatformService: &plt,
 		k8sScheme:       sch,
 		client:          fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build(),
+		runningInClusterFunc: func() bool {
+			return true
+		},
 	}
 
 	plt.On("GetSecretData", testCh.GetNamespace(), fmt.Sprintf("%v-admin-password", rootGerrit.Name)).
