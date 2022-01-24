@@ -23,6 +23,31 @@ func TestClient_Clone_Failure(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestClient_SetProjectUser(t *testing.T) {
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	createFakeProject("test-user-repo", t)
+
+	cl := New("base", tmpDir, "admin", "admin")
+	err := cl.SetProjectUser("test-user-repo", "foo", "bar")
+	assert.NoError(t, err)
+}
+
+func TestClient_SetProjectUserFailure(t *testing.T) {
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	createFakeProject("test-user-repo", t)
+
+	cl := New("base", tmpDir, "admin", "admin")
+	err := cl.SetProjectUser("test-user-repo1", "foo", "bar")
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unable to open repository: repository does not exist")
+}
+
 func createFakeProject(name string, t *testing.T) {
 	err := os.MkdirAll(projectsDir, 0777)
 	assert.NoError(t, err)

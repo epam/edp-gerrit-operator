@@ -8,3 +8,5 @@ spec:
   sourceBranch: rev123
   projectName: testmerge1
   commitMessage: kawabunga
+  authorName: John Doe
+  authorEmail: john.doe@example.com

@@ -99,3 +99,17 @@ func (_m *GitClient) Push(projectName string, remote string, refSpecs ...string)
 
 	return r0, r1
 }
+
+// SetProjectUser provides a mock function with given fields: projectName, name, email
+func (_m *GitClient) SetProjectUser(projectName string, name string, email string) error {
+	ret := _m.Called(projectName, name, email)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
+		r0 = rf(projectName, name, email)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

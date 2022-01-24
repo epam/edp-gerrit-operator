@@ -20,6 +20,8 @@ type GerritMergeRequestSpec struct {
 	TargetBranch  string `json:"targetBranch"`
 	SourceBranch  string `json:"sourceBranch"`
 	CommitMessage string `json:"commitMessage"`
+	AuthorName    string `json:"authorName"`
+	AuthorEmail   string `json:"authorEmail"`
 }
 
 type GerritMergeRequestStatus struct {

@@ -22,17 +22,6 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 )
 
-var (
-	rootGerrit   = v1alpha1.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
-	mergeRequest = v1alpha1.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",
-		Namespace: rootGerrit.Namespace},
-		Spec: v1alpha1.GerritMergeRequestSpec{
-			SourceBranch: "rev123",
-			OwnerName:    rootGerrit.Name,
-			ProjectName:  "prjX",
-		}}
-)
-
 type ControllerTestSuite struct {
 	suite.Suite
 	gerritService *gmock.Interface
@@ -40,6 +29,8 @@ type ControllerTestSuite struct {
 	gitClient     *gmock.GitClient
 	gerritClient  *gmock.ClientInterface
 	scheme        *runtime.Scheme
+	rootGerrit    *v1alpha1.Gerrit
+	mergeRequest  *v1alpha1.GerritMergeRequest
 }
 
 func (s *ControllerTestSuite) SetupTest() {
@@ -50,6 +41,17 @@ func (s *ControllerTestSuite) SetupTest() {
 	s.logger = &helper.Logger{}
 	s.gitClient = &gmock.GitClient{}
 	s.gerritClient = &gmock.ClientInterface{}
+
+	s.rootGerrit = &v1alpha1.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
+	s.mergeRequest = &v1alpha1.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",
+		Namespace: s.rootGerrit.Namespace},
+		Spec: v1alpha1.GerritMergeRequestSpec{
+			SourceBranch: "rev123",
+			OwnerName:    s.rootGerrit.Name,
+			ProjectName:  "prjX",
+			AuthorEmail:  "john.doe@example.com",
+			AuthorName:   "John Doe",
+		}}
 }
 
 func (s *ControllerTestSuite) TearDownTest() {
@@ -58,17 +60,48 @@ func (s *ControllerTestSuite) TearDownTest() {
 	s.gerritClient.AssertExpectations(s.T())
 }
 
+func (s *ControllerTestSuite) TestReconcileSetAuthorFailure() {
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
+
+	s.gitClient.On("Clone", s.mergeRequest.Spec.ProjectName).Return("path", nil)
+	s.gitClient.On("SetProjectUser", s.mergeRequest.Spec.ProjectName, s.mergeRequest.Spec.AuthorName,
+		s.mergeRequest.Spec.AuthorEmail).Return(errors.New("set author fatal"))
+
+	rec := Reconcile{
+		k8sClient: fakeClient,
+		service:   s.gerritService,
+		log:       s.logger,
+		getGitClient: func(ctx context.Context, child gerrit.Child, workDir string) (GitClient, error) {
+			return s.gitClient, nil
+		},
+	}
+
+	_, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
+		Name:      s.mergeRequest.Name,
+		Namespace: s.mergeRequest.Namespace,
+	}})
+	assert.NoError(s.T(), err)
+
+	err = s.logger.LastError()
+	assert.Error(s.T(), err)
+	assert.EqualError(s.T(), err, "unable to create change: unable to set project author: set author fatal")
+}
+
 func (s *ControllerTestSuite) TestReconcile() {
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, &mergeRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
 	changeID := "change123"
 
-	s.gitClient.On("Clone", mergeRequest.Spec.ProjectName).Return("path", nil)
+	s.gitClient.On("Clone", s.mergeRequest.Spec.ProjectName).Return("path", nil)
 	s.gitClient.On("GenerateChangeID").Return(changeID, nil)
-	s.gitClient.On("Merge", mergeRequest.Spec.ProjectName, fmt.Sprintf("origin/%s", mergeRequest.Spec.SourceBranch),
-		mergeRequest.TargetBranch(), "--no-ff", "-m", fmt.Sprintf("%s\n\nChange-Id: %s", mergeRequest.CommitMessage(), changeID)).
+	s.gitClient.On("Merge", s.mergeRequest.Spec.ProjectName,
+		fmt.Sprintf("origin/%s", s.mergeRequest.Spec.SourceBranch),
+		s.mergeRequest.TargetBranch(), "--no-ff", "-m", fmt.Sprintf("%s\n\nChange-Id: %s",
+			s.mergeRequest.CommitMessage(), changeID)).
 		Return(nil)
-	s.gitClient.On("Push", mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
+	s.gitClient.On("Push", s.mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
 		Return("http://gerrit.com/merge/1", nil)
+	s.gitClient.On("SetProjectUser", s.mergeRequest.Spec.ProjectName, s.mergeRequest.Spec.AuthorName,
+		s.mergeRequest.Spec.AuthorEmail).Return(nil)
 
 	rec := Reconcile{
 		k8sClient: fakeClient,
@@ -80,8 +113,8 @@ func (s *ControllerTestSuite) TestReconcile() {
 	}
 
 	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
-		Name:      mergeRequest.Name,
-		Namespace: mergeRequest.Namespace,
+		Name:      s.mergeRequest.Name,
+		Namespace: s.mergeRequest.Namespace,
 	}})
 	assert.NoError(s.T(), err)
 
@@ -92,11 +125,11 @@ func (s *ControllerTestSuite) TestReconcile() {
 }
 
 func (s *ControllerTestSuite) TestReconcileDelete() {
-	deleteMergeRequest := mergeRequest.DeepCopy()
+	deleteMergeRequest := s.mergeRequest.DeepCopy()
 	deleteMergeRequest.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	deleteMergeRequest.Status.ChangeID = "change321"
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, deleteMergeRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, deleteMergeRequest).Build()
 
 	s.gerritClient.On("ChangeGet", deleteMergeRequest.Status.ChangeID).
 		Return(&gerritClient.Change{Status: StatusNew}, nil)
@@ -112,8 +145,8 @@ func (s *ControllerTestSuite) TestReconcileDelete() {
 	}
 
 	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
-		Name:      mergeRequest.Name,
-		Namespace: mergeRequest.Namespace,
+		Name:      s.mergeRequest.Name,
+		Namespace: s.mergeRequest.Namespace,
 	}})
 	assert.NoError(s.T(), err)
 
@@ -124,11 +157,11 @@ func (s *ControllerTestSuite) TestReconcileDelete() {
 }
 
 func (s *ControllerTestSuite) TestReconcileCheckStatus() {
-	checkStatusRequest := mergeRequest.DeepCopy()
+	checkStatusRequest := s.mergeRequest.DeepCopy()
 	checkStatusRequest.Status.ChangeID = "change321"
 	checkStatusRequest.Status.Value = StatusNew
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, checkStatusRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, checkStatusRequest).Build()
 
 	s.gerritClient.On("ChangeGet", checkStatusRequest.Status.ChangeID).
 		Return(&gerritClient.Change{Status: StatusAbandoned}, nil).Once()
@@ -143,8 +176,8 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 	}
 
 	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
-		Name:      mergeRequest.Name,
-		Namespace: mergeRequest.Namespace,
+		Name:      s.mergeRequest.Name,
+		Namespace: s.mergeRequest.Namespace,
 	}})
 	assert.NoError(s.T(), err)
 
@@ -163,11 +196,11 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 }
 
 func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
-	checkStatusRequest := mergeRequest.DeepCopy()
+	checkStatusRequest := s.mergeRequest.DeepCopy()
 	checkStatusRequest.Status.ChangeID = "change321"
 	checkStatusRequest.Status.Value = StatusNew
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(&rootGerrit, checkStatusRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, checkStatusRequest).Build()
 
 	rec := Reconcile{
 		k8sClient: fakeClient,
@@ -182,8 +215,8 @@ func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
 		Return(nil, errors.New("change get fatal")).Once()
 
 	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
-		Name:      mergeRequest.Name,
-		Namespace: mergeRequest.Namespace,
+		Name:      s.mergeRequest.Name,
+		Namespace: s.mergeRequest.Namespace,
 	}})
 	assert.NoError(s.T(), err)
 

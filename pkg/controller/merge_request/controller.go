@@ -47,6 +47,7 @@ type GitClient interface {
 	Merge(projectName, sourceBranch, targetBranch string, options ...string) error
 	Push(projectName string, remote string, refSpecs ...string) (pushOutput string, retErr error)
 	GenerateChangeID() (string, error)
+	SetProjectUser(projectName, name, email string) error
 }
 
 type GerritClient interface {
@@ -185,6 +186,11 @@ func (r *Reconcile) createChange(ctx context.Context,
 	projectPath, err := gitClient.Clone(instance.Spec.ProjectName)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to clone repo")
+	}
+
+	if err := gitClient.SetProjectUser(instance.Spec.ProjectName, instance.Spec.AuthorName,
+		instance.Spec.AuthorEmail); err != nil {
+		return nil, errors.Wrap(err, "unable to set project author")
 	}
 
 	defer func() {

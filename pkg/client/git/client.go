@@ -81,6 +81,29 @@ func (c *Client) Merge(projectName, sourceBranch, targetBranch string, options .
 	return nil
 }
 
+func (c *Client) SetProjectUser(projectName, name, email string) error {
+	r, err := git.PlainOpen(c.projectPath(projectName))
+	if err != nil {
+		return errors.Wrap(err, "unable to open repository")
+	}
+
+	repoConf, err := r.Config()
+	if err != nil {
+		return errors.Wrap(err, "unable to get repo config")
+	}
+
+	repoConf.User = struct {
+		Name  string
+		Email string
+	}{Name: name, Email: email}
+
+	if err := r.SetConfig(repoConf); err != nil {
+		return errors.Wrap(err, "unable to set project user")
+	}
+
+	return nil
+}
+
 func (c *Client) Push(projectName string, remote string, refSpecs ...string) (pushOutput string, retErr error) {
 	projectPath := c.projectPath(projectName)
 
