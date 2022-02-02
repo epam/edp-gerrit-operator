@@ -3,10 +3,11 @@ package gerrit
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	common "github.com/epam/edp-common/pkg/mock"
-	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -14,12 +15,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"testing"
-	"time"
+
+	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
 const name = "name"
@@ -641,9 +644,9 @@ func TestReconcileGerrit_Reconcile_Valid(t *testing.T) {
 }
 
 func TestNewReconcileGerrit(t *testing.T) {
-	err := os.Setenv("PLATFORM_TYPE", "test")
+	err := os.Setenv("PLATFORM_TYPE", platform.Test)
 	if err != nil {
-		assert.NoError(t, err)
+		t.Fatal(err)
 	}
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})

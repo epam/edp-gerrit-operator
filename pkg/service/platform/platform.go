@@ -1,16 +1,25 @@
 package platform
 
 import (
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/openshift"
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
-	"strings"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/openshift"
+)
+
+const (
+	Kubernetes = "kubernetes"
+	OpenShift  = "openshift"
+	Test       = "test"
 )
 
 // PlatformService defines common behaviour of the services for the supported platforms
@@ -44,23 +53,24 @@ func NewService(platformType string, scheme *runtime.Scheme) (PlatformService, e
 	if err != nil {
 		return nil, errors.Wrap(helpers.LogErrorAndReturn(err), "Failed to get rest configs for platform")
 	}
-
-	switch strings.ToLower(platformType) {
-	case "openshift":
+	platformType = strings.ToLower(platformType)
+	switch platformType {
+	case OpenShift:
 		platform := &openshift.OpenshiftService{}
 		if err = platform.Init(restConfig, scheme); err != nil {
 			return nil, errors.Wrap(helpers.LogErrorAndReturn(err), "Failed to init for Openshift platform")
 		}
 		return platform, nil
-	case "kubernetes":
+	case Kubernetes:
 		platform := &k8s.K8SService{}
-		err := platform.Init(restConfig, scheme)
+		err = platform.Init(restConfig, scheme)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to init for Kubernetes platform")
 		}
 		return platform, nil
-
+	case Test:
+		return nil, nil // for tests only. remove it when will fix platform.Init()
 	default:
-		return nil, errors.Wrap(err, "Unknown platform type")
+		return nil, fmt.Errorf("unknown platform type '%s'", platformType)
 	}
 }

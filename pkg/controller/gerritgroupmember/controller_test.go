@@ -24,6 +24,7 @@ import (
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
 const name = "name"
@@ -220,7 +221,7 @@ func TestReconcile_IsSpecUpdated(t *testing.T) {
 }
 
 func TestNewReconcile(t *testing.T) {
-	err := os.Setenv("PLATFORM_TYPE", "test")
+	err := os.Setenv("PLATFORM_TYPE", platform.Test)
 	assert.NoError(t, err)
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})

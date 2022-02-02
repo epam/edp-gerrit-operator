@@ -43,6 +43,8 @@ spec:
               value: "{{ .Values.name }}"
             - name: PLATFORM_TYPE
               value: "{{ .Values.global.platform }}"
+            - name: GERRIT_PROJECT_SYNC_INTERVAL
+              value: "120s" # golang time.Duration-formatted string
 {{- if eq .Values.global.platform "openshift"}}
             - name: DEPLOYMENT_TYPE
               value: "{{ .Values.global.openshift.deploymentType }}"

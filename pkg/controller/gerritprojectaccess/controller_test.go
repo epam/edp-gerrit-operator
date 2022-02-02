@@ -10,10 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
-
-	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
-	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,8 +20,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
+	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
 const name = "name"
@@ -230,9 +229,9 @@ func TestReconcile_IsSpecUpdated(t *testing.T) {
 }
 
 func TestNewReconcile(t *testing.T) {
-	err := os.Setenv("PLATFORM_TYPE", "test")
+	err := os.Setenv("PLATFORM_TYPE", platform.Test)
 	if err != nil {
-		assert.NoError(t, err)
+		t.Fatal(err)
 	}
 
 	s := runtime.NewScheme()

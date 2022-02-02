@@ -2,6 +2,7 @@ package gerritproject
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"time"
 
@@ -23,7 +24,11 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const finalizerName = "gerritproject.gerrit.finalizer.name"
+const (
+	finalizerName       = "gerritproject.gerrit.finalizer.name"
+	syncIntervalEnv     = "GERRIT_PROJECT_SYNC_INTERVAL"
+	defaultSyncInterval = 300 * time.Second // 5 minutes
+)
 
 type Reconcile struct {
 	client  client.Client
@@ -31,7 +36,7 @@ type Reconcile struct {
 	log     logr.Logger
 }
 
-func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
+func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger) (*Reconcile, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create platform service")
@@ -44,12 +49,12 @@ func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger)
 	}, nil
 }
 
-func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
+func (r *Reconcile) SetupWithManager(mgr ctrl.Manager, syncInterval time.Duration) error {
 	pred := predicate.Funcs{
 		UpdateFunc: isSpecUpdated,
 	}
 
-	go r.syncBackendProjects(time.Second * 30)
+	go r.syncBackendProjects(syncInterval)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.GerritProject{}, builder.WithPredicates(pred)).
@@ -144,4 +149,16 @@ func (r *Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectNam
 
 		return nil
 	}
+}
+
+func SyncInterval() time.Duration {
+	value, ok := os.LookupEnv(syncIntervalEnv)
+	if !ok {
+		return defaultSyncInterval
+	}
+	interval, err := time.ParseDuration(value)
+	if err != nil {
+		return defaultSyncInterval
+	}
+	return interval
 }

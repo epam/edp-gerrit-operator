@@ -6,11 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (r *Reconcile) syncBackendProjects(interval time.Duration) {

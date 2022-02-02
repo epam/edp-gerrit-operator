@@ -143,13 +143,17 @@ func initControllers(mgr ctrl.Manager, ctrlLog logr.Logger) error {
 			return errors.Wrapf(err, "unable to create controller, controller: %s", cf.ControllerName)
 		}
 
-		if err := gCtrl.SetupWithManager(mgr); err != nil {
+		if err = gCtrl.SetupWithManager(mgr); err != nil {
 			return errors.Wrapf(err, "unable to create controller, controller: %s", cf.ControllerName)
 		}
 	}
 
-	if err := prepareMergeRequestReconciler(mgr, ctrlLog); err != nil {
-		return err
+	setupers := prepareControllers()
+	for i := range setupers {
+		setuper := setupers[i]
+		if err := setuper.PrepareFn(mgr, ctrlLog); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -177,9 +181,23 @@ func controllerConstructors() []helper.InitFunc {
 			Func:           gerritgroupmember.NewReconcile,
 			ControllerName: "gerrit-group-member",
 		},
+	}
+}
+
+type prepareController struct {
+	PrepareFn      func(manager ctrl.Manager, ctrlLog logr.Logger) error
+	ControllerName string
+}
+
+func prepareControllers() []prepareController {
+	return []prepareController{
 		{
-			Func:           gerritproject.NewReconcile,
+			ControllerName: "gerrit-merge-request",
+			PrepareFn:      prepareMergeRequestReconciler,
+		},
+		{
 			ControllerName: "gerrit-project",
+			PrepareFn:      prepareGerritProjectReconciler,
 		},
 	}
 }
@@ -200,6 +218,18 @@ func prepareMergeRequestReconciler(mgr ctrl.Manager, ctrlLog logr.Logger) error 
 	}
 	mergeRequestReconciler := mergerequest.NewReconcile(mgr.GetClient(), ctrlLog, mergeRequestReconcilerOpts...)
 	if err = mergeRequestReconciler.SetupWithManager(mgr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func prepareGerritProjectReconciler(manager ctrl.Manager, ctrlLog logr.Logger) error {
+	syncInterval := gerritproject.SyncInterval()
+	gerritProjectReconciler, err := gerritproject.NewReconcile(manager.GetClient(), manager.GetScheme(), ctrlLog)
+	if err != nil {
+		return err
+	}
+	if err = gerritProjectReconciler.SetupWithManager(manager, syncInterval); err != nil {
 		return err
 	}
 	return nil
