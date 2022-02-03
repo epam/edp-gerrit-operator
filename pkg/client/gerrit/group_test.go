@@ -2,11 +2,11 @@ package gerrit
 
 import (
 	"encoding/json"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/jarcoal/httpmock"
 )
@@ -152,67 +152,6 @@ func TestClient_DeleteUserFromGroup_RespErr(t *testing.T) {
 	err := cl.DeleteUserFromGroup(groupName, username)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "wrong response code"))
-}
-
-func TestClient_RemoveUsersFromGroup(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-	groups := map[string]Group{
-		groupName: {
-			ID:      "123",
-			GroupID: 12,
-			Members: []GroupMember{
-				{
-					Email:    "t@t.cow",
-					Username: username,
-				},
-			},
-		},
-	}
-	rawGroups, err := json.Marshal(groups)
-	assert.NoError(t, err)
-
-	httpmock.RegisterResponder("GET", "//%2Fgroups%2F%3Fo=MEMBERS/groups/?o=MEMBERS",
-		httpmock.NewStringResponder(200, "12345"+string(rawGroups)))
-
-	gu := []v1alpha1.GerritUsers{
-		{
-			Username: username,
-			Groups:   []string{groupName},
-		},
-	}
-	pu := map[string]struct{}{
-		username: {},
-	}
-	err = cl.RemoveUsersFromGroup(gu, pu)
-	assert.NoError(t, err)
-}
-
-func TestClient_RemoveUsersFromGroup_getUserGroupsErr(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-
-	httpmock.RegisterResponder("GET", "//%2Fgroups%2F%3Fo=MEMBERS/groups/?o=MEMBERS",
-		httpmock.NewStringResponder(404, ""))
-
-	gu := []v1alpha1.GerritUsers{
-		{
-			Username: username,
-			Groups:   []string{groupName},
-		},
-	}
-	pu := map[string]struct{}{
-		username: {},
-	}
-	err := cl.RemoveUsersFromGroup(gu, pu)
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "unable to get users groups"))
 }
 
 func TestClient_UpdateGroup(t *testing.T) {
@@ -370,18 +309,4 @@ func TestClient_CreateGroup_RespErr(t *testing.T) {
 		httpmock.NewStringResponder(404, ""))
 	_, err := cl.CreateGroup(gid, desc, true)
 	assert.Equal(t, errors.Errorf("status: %s, body: %s", "404", "").Error(), err.Error())
-}
-
-func TestClient_checkProcessedUserGroups(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-
-	ug := map[string][]string{}
-	cu := map[string]v1alpha1.GerritUsers{}
-
-	err := cl.checkProcessedUserGroups(ug, cu, "")
-	assert.NoError(t, err)
 }

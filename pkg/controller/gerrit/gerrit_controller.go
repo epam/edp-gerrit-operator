@@ -170,48 +170,48 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		}
 	}
 
-	instance, err = r.service.ExposeConfiguration(instance)
+	exposedInstance, err := r.service.ExposeConfiguration(instance)
 	if err != nil {
 		log.Error(err, "error while exposing configuration", "name", instance.Name)
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	if instance.Status.Status == StatusExposeStart {
+	if exposedInstance.Status.Status == StatusExposeStart {
 		log.Info("Exposing configuration has finished")
-		err = r.updateStatus(ctx, instance, StatusExposeFinish)
+		err = r.updateStatus(ctx, exposedInstance, StatusExposeFinish)
 		if err != nil {
 			log.Error(err, "error while updating status", "status", StatusExposeStart)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
-	if instance.Status.Status == StatusExposeFinish {
+	if exposedInstance.Status.Status == StatusExposeFinish {
 		log.Info("Integration has started")
-		err = r.updateStatus(ctx, instance, StatusIntegrationStart)
+		err = r.updateStatus(ctx, exposedInstance, StatusIntegrationStart)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", instance.Status.Status)
+			log.Error(err, "error while updating status", "status", exposedInstance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 		}
 	}
 
-	instance, err = r.service.Integrate(instance)
+	exposedInstance, err = r.service.Integrate(exposedInstance)
 	if err != nil {
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, errors.Wrapf(err, "Integration failed")
 	}
 
-	if instance.Status.Status == StatusIntegrationStart {
-		msg := fmt.Sprintf("Configuration of %v/%v object has been finished", instance.Namespace, instance.Name)
+	if exposedInstance.Status.Status == StatusIntegrationStart {
+		msg := fmt.Sprintf("Configuration of %v/%v object has been finished", exposedInstance.Namespace, exposedInstance.Name)
 		log.Info(msg)
-		err = r.updateStatus(ctx, instance, StatusReady)
+		err = r.updateStatus(ctx, exposedInstance, StatusReady)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", instance.Status.Status)
+			log.Error(err, "error while updating status", "status", exposedInstance.Status.Status)
 			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
-	err = r.updateAvailableStatus(ctx, instance, true)
+	err = r.updateAvailableStatus(ctx, exposedInstance, true)
 	if err != nil {
-		msg := fmt.Sprintf("Failed update avalability status for Gerrit object with name %s", instance.Name)
+		msg := fmt.Sprintf("Failed update avalability status for Gerrit object with name %s", exposedInstance.Name)
 		log.Info(msg)
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 	}

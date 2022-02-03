@@ -269,44 +269,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 	}
 
-	return instance, false, s.processUsers(instance)
-}
-
-func (s ComponentService) processUsers(instance *v1alpha1.Gerrit) error {
-	processedUsers := make(map[string]struct{})
-	for _, pu := range instance.Status.ProcessedUsers {
-		processedUsers[pu] = struct{}{}
-	}
-
-	var userErr error
-	for _, user := range instance.Spec.Users {
-		log.Info("add user to groups", "user", user, "group(s)", user.Groups)
-		userStatus, err := s.gerritClient.GetUser(user.Username)
-		if err != nil {
-			return errors.Wrapf(err, "Getting %v user failed", user.Username)
-		}
-
-		if *userStatus == 404 {
-			msg := fmt.Sprintf("User %v not found in Gerrit", user.Username)
-			log.Info(msg)
-			userErr = ErrUserNotFound(msg)
-		} else {
-			if err := s.gerritClient.AddUserToGroups(user.Username, user.Groups); err != nil {
-				return errors.Wrapf(err, "Failed to add user %v to groups: %v", user.Username, user.Groups)
-			}
-
-			if _, ok := processedUsers[user.Username]; !ok {
-				instance.Status.ProcessedUsers = append(instance.Status.ProcessedUsers, user.Username)
-				instance.Status.Status = spec.StatusConfiguring
-			}
-		}
-	}
-
-	if err := s.gerritClient.RemoveUsersFromGroup(instance.Spec.Users, processedUsers); err != nil {
-		return errors.Wrap(err, "unable to remove users from groups")
-	}
-
-	return userErr
+	return instance, false, nil
 }
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
@@ -546,7 +509,7 @@ func (s ComponentService) getKeycloakClient(instance *v1alpha1.Gerrit) (*keycloa
 }
 
 func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externalUrl string) error {
-	client := &keycloakApi.KeycloakClient{
+	keycloakClient := &keycloakApi.KeycloakClient{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "KeycloakClient",
 		},
@@ -573,10 +536,10 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 	}
 
 	if instance.Spec.KeycloakSpec.Realm != "" {
-		client.Spec.TargetRealm = instance.Spec.KeycloakSpec.Realm
+		keycloakClient.Spec.TargetRealm = instance.Spec.KeycloakSpec.Realm
 	}
 
-	return s.client.Create(context.TODO(), client)
+	return s.client.Create(context.TODO(), keycloakClient)
 }
 
 func (s ComponentService) GetRestClient(gerritInstance *v1alpha1.Gerrit) (gerrit.ClientInterface, error) {

@@ -29,13 +29,7 @@ type GerritSpec struct {
 	ImagePullSecrets []coreV1Api.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	Volumes          []GerritVolumes                  `json:"volumes,omitempty"`
 	KeycloakSpec     KeycloakSpec                     `json:"keycloakSpec"`
-	Users            []GerritUsers                    `json:"users,omitempty"`
 	SshPort          int32                            `json:"sshPort,omitempty"`
-}
-
-type GerritUsers struct {
-	Username string   `json:"username"`
-	Groups   []string `json:"groups,omitempty"`
 }
 
 // GerritStatus defines the observed state of Gerrit
@@ -48,7 +42,6 @@ type GerritStatus struct {
 	LastTimeUpdated time.Time `json:"lastTimeUpdated,omitempty"`
 	Status          string    `json:"status,omitempty"`
 	ExternalUrl     string    `json:"externalUrl"`
-	ProcessedUsers  []string  `json:"processedUsers"`
 }
 
 type KeycloakSpec struct {
