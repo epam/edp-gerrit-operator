@@ -39,12 +39,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: OPERATOR_NAME
-              value: "{{ .Values.name }}"
             - name: PLATFORM_TYPE
               value: "{{ .Values.global.platform }}"
             - name: GERRIT_PROJECT_SYNC_INTERVAL
-              value: "120s" # golang time.Duration-formatted string
+              value: "{{ .Values.projectSyncInterval }}"
 {{- if eq .Values.global.platform "openshift"}}
             - name: DEPLOYMENT_TYPE
               value: "{{ .Values.global.openshift.deploymentType }}"

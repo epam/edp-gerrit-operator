@@ -21,6 +21,11 @@ image:
   version:
 imagePullPolicy: "IfNotPresent"
 
+# Define interval for synchronizing Gerrit Projects with GerritProject CustomResources
+# Default: 5 minutes
+# Format: golang time.Duration-formatted string
+projectSyncInterval: 1h
+
 resources:
   limits:
     memory: 192Mi
