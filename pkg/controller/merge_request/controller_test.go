@@ -46,11 +46,12 @@ func (s *ControllerTestSuite) SetupTest() {
 	s.mergeRequest = &v1alpha1.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",
 		Namespace: s.rootGerrit.Namespace},
 		Spec: v1alpha1.GerritMergeRequestSpec{
-			SourceBranch: "rev123",
-			OwnerName:    s.rootGerrit.Name,
-			ProjectName:  "prjX",
-			AuthorEmail:  "john.doe@example.com",
-			AuthorName:   "John Doe",
+			SourceBranch:        "rev123",
+			OwnerName:           s.rootGerrit.Name,
+			ProjectName:         "prjX",
+			AuthorEmail:         "john.doe@example.com",
+			AuthorName:          "John Doe",
+			AdditionalArguments: []string{"-q"},
 		}}
 }
 
@@ -95,8 +96,8 @@ func (s *ControllerTestSuite) TestReconcile() {
 	s.gitClient.On("GenerateChangeID").Return(changeID, nil)
 	s.gitClient.On("Merge", s.mergeRequest.Spec.ProjectName,
 		fmt.Sprintf("origin/%s", s.mergeRequest.Spec.SourceBranch),
-		s.mergeRequest.TargetBranch(), "--no-ff", "-m", fmt.Sprintf("%s\n\nChange-Id: %s",
-			s.mergeRequest.CommitMessage(), changeID)).
+		s.mergeRequest.TargetBranch(), MergeArgNoFastForward, MergeArgCommitMessage, fmt.Sprintf("%s\n\nChange-Id: %s",
+			s.mergeRequest.CommitMessage(), changeID), "-q").
 		Return(nil)
 	s.gitClient.On("Push", s.mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
 		Return("http://gerrit.com/merge/1", nil)

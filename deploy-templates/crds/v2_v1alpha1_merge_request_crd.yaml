@@ -45,6 +45,12 @@ spec:
                   type: string
                 authorEmail:
                   type: string
+                additionalArguments:
+                  nullable: true
+                  type: array
+                  description: 'merge command additional command line arguments'
+                  items:
+                    type: string
               required:
                 - ownerName
                 - projectName

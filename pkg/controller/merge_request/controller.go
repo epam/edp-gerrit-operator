@@ -27,10 +27,12 @@ import (
 )
 
 const (
-	finalizerName   = "merge_request.gerrit.finalizer.name"
-	StatusNew       = "NEW"
-	StatusAbandoned = "ABANDONED"
-	StatusMerged    = "MERGED"
+	finalizerName         = "merge_request.gerrit.finalizer.name"
+	StatusNew             = "NEW"
+	StatusAbandoned       = "ABANDONED"
+	StatusMerged          = "MERGED"
+	MergeArgNoFastForward = "--no-ff"
+	MergeArgCommitMessage = "-m"
 )
 
 type Reconcile struct {
@@ -204,9 +206,14 @@ func (r *Reconcile) createChange(ctx context.Context,
 		return nil, errors.Wrap(err, "unable to generate change id")
 	}
 
+	mergeArguments := []string{MergeArgNoFastForward, MergeArgCommitMessage,
+		fmt.Sprintf("%s\n\nChange-Id: %s", instance.CommitMessage(), changeID)}
+	if len(instance.Spec.AdditionalArguments) > 0 {
+		mergeArguments = append(mergeArguments, instance.Spec.AdditionalArguments...)
+	}
+
 	if err := gitClient.Merge(instance.Spec.ProjectName, fmt.Sprintf("origin/%s", instance.Spec.SourceBranch),
-		instance.TargetBranch(), "--no-ff", "-m",
-		fmt.Sprintf("%s\n\nChange-Id: %s", instance.CommitMessage(), changeID)); err != nil {
+		instance.TargetBranch(), mergeArguments...); err != nil {
 		return nil, errors.Wrap(err, "unable to merge branches")
 	}
 

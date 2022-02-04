@@ -15,13 +15,14 @@ type GerritMergeRequest struct {
 }
 
 type GerritMergeRequestSpec struct {
-	OwnerName     string `json:"ownerName"`
-	ProjectName   string `json:"projectName"`
-	TargetBranch  string `json:"targetBranch"`
-	SourceBranch  string `json:"sourceBranch"`
-	CommitMessage string `json:"commitMessage"`
-	AuthorName    string `json:"authorName"`
-	AuthorEmail   string `json:"authorEmail"`
+	OwnerName           string   `json:"ownerName"`
+	ProjectName         string   `json:"projectName"`
+	TargetBranch        string   `json:"targetBranch"`
+	SourceBranch        string   `json:"sourceBranch"`
+	CommitMessage       string   `json:"commitMessage"`
+	AuthorName          string   `json:"authorName"`
+	AuthorEmail         string   `json:"authorEmail"`
+	AdditionalArguments []string `json:"additionalArguments"`
 }
 
 type GerritMergeRequestStatus struct {
