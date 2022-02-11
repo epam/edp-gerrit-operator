@@ -1,11 +1,127 @@
 apiVersion: v2
 description: A Helm chart for EDP Gerrit Operator
-home: https://solutionshub.epam.com/solution/epam-delivery-platform
+home: https://epam.github.io/edp-install/
 name: gerrit-operator
 type: application
 version: 2.11.0-SNAPSHOT
 appVersion: 2.11.0-SNAPSHOT
+icon: https://epam.github.io/edp-install/assets/logo.png
+keywords:
+  - edp
+  - gerrit
+  - operator
+  - git
 maintainers:
-    - name: EPAM EDP Team
+  - name: epmd-edp
+    email: SupportEPMD-EDP@epam.com
+    url: https://solutionshub.epam.com/solution/epam-delivery-platform
+  - name: sergk
+    url: https://github.com/SergK
 sources:
-    - https://github.com/epam/edp-gerrit-operator
+  - https://github.com/epam/edp-gerrit-operator
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/operator: "true"
+  artifacthub.io/images: |
+    - name: gerrit-operator:2.10.0
+      image: epamedp/gerrit-operator:2.10.0
+    - name: gerrit-operator:2.9.0
+      image: epamedp/gerrit-operator:2.9.0
+    - name: gerrit:3.3.2
+      image: openfrontier/gerrit:3.3.2
+    - name: alpine:3.13.7
+      image: alpine:3.13.7
+  artifacthub.io/operatorCapabilities: Full Lifecycle
+  artifacthub.io/crds: |
+    - kind: Gerrit
+      version: v2.edp.epam.com/v1alpha1
+      name: gerrit
+      displayName: Gerrit
+      description: Operates Gerrit application
+    - kind: GerritGroup
+      version: v2.edp.epam.com/v1alpha1
+      name: gerritgroup
+      displayName: GerritGroup
+      description: Operates Gerrit groups
+    - kind: GerritGroupMember
+      version: v2.edp.epam.com/v1alpha1
+      name: gerritgroupmember
+      displayName: GerritGroupMember
+      description: Operates Gerrit group member access
+    - kind: GerritProject
+      version: v2.edp.epam.com/v1alpha1
+      name: gerritproject
+      displayName: GerritProject
+      description: Creates repo on a Gerrit server
+    - kind: GerritProjectAccess
+      version: v2.edp.epam.com/v1alpha1
+      name: gerritprojectaccess
+      displayName: GerritProjectAccess
+      description: Operates Gerrit group accesses
+    - kind: GerritReplicationConfig
+      version: v2.edp.epam.com/v1alpha1
+      name: gerritreplicationconfig
+      displayName: GerritReplicationConfig
+      description: Takes part in replication
+    - kind: GerritMergeRequest
+      version: v2.edp.epam.com/v1alpha1
+      name: gerritmergerequest
+      displayName: GerritMergeRequest
+      description: Takes part in merge requests
+  artifacthub.io/crdsExamples: |
+   - apiVersion: v2.edp.epam.com/v1alpha1
+     kind: Gerrit
+     metadata:
+       name: gerrit
+     spec:
+       image: openfrontier/gerrit
+       keycloakSpec:
+         enabled: true
+       sshPort: 30024
+       type: Gerrit
+       users:
+         - groups:
+             - Administrators
+           username: test@example.com
+       version: 3.3.2
+       volumes:
+         - capacity: 1Gi
+           name: data
+           storage_class: gp2-retain
+   - apiVersion: v2.edp.epam.com/v1alpha1
+     kind: GerritGroup
+     metadata:
+       name: developers
+     spec:
+       description: Gerrit Site Developers
+       gerritOwner: 'test'
+       name: Developers
+       visibleToAll: false
+   - apiVersion: v2.edp.epam.com/v1alpha1
+     kind: GerritGroupMember
+     metadata:
+       name: reader
+     spec:
+       accountId: reader
+       groupId: Developers
+       ownerName: 'test'
+   - apiVersion: v2.edp.epam.com/v1alpha1
+     kind: GerritProject
+     metadata:
+       name: gerrit-test
+     spec:
+       branches: 'master'
+       createEmptyCommit: false
+       description: 'test'
+       name: gerrit-test
+       ownerName: gerrit
+       owners: 'test'
+       parent: All-Projects
+       permissionsOnly: false
+       rejectEmptyCommit: 'test'
+       submitType: 'test'
+  artifacthub.io/links: |
+    - name: EDP Documentation
+      url: https://epam.github.io/edp-install/
+    - name: EPAM SolutionHub
+      url: https://solutionshub.epam.com/solution/epam-delivery-platform
