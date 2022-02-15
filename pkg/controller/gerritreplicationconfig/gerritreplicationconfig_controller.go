@@ -31,6 +31,14 @@ import (
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 )
 
+const (
+	config        = "/config"
+	bin           = "/bin/sh"
+	requeueTime   = 10 * time.Second
+	requeueTime30 = 30 * time.Second
+	containerFlag = "-c"
+)
+
 func NewReconcileGerritReplicationConfig(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
@@ -106,13 +114,13 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 	}
 
 	if gerritInstance.Status.Status == gerrit.StatusReady && (instance.Status.Status == "" || instance.Status.Status == spec.StatusFailed) {
-		log.Info(fmt.Sprintf("Replication configuration of %v/%v object with name has been started",
+		log.Info(fmt.Sprintf("Replication configuration of %s/%s object with name has been started",
 			gerritInstance.Namespace, gerritInstance.Name))
-		log.Info(fmt.Sprintf("Configuration of %v/%v object with name has been started", instance.Namespace, instance.Name))
+		log.Info(fmt.Sprintf("Configuration of %s/%s object with name has been started", instance.Namespace, instance.Name))
 		err := r.updateStatus(ctx, instance, spec.StatusConfiguring)
 		if err != nil {
 			log.Error(err, "error while updating status", "status", instance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			return reconcile.Result{RequeueAfter: requeueTime}, nil
 		}
 
 		err = r.configureReplication(instance, gerritInstance)
@@ -122,21 +130,21 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 	}
 
 	if instance.Status.Status == spec.StatusConfiguring {
-		log.Info(fmt.Sprintf("Configuration of %v/%v object has been finished", instance.Namespace, instance.Name))
+		log.Info(fmt.Sprintf("Configuration of %s/%s object has been finished", instance.Namespace, instance.Name))
 		err = r.updateStatus(ctx, instance, spec.StatusConfigured)
 		if err != nil {
 			log.Error(err, "error while updating status", "status", instance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			return reconcile.Result{RequeueAfter: requeueTime}, nil
 		}
 	}
 
 	err = r.updateAvailableStatus(ctx, instance, true)
 	if err != nil {
 		log.Info("Failed update availability status for Gerrit Replication Config object with name %s", instance.Name)
-		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: requeueTime30}, nil
 	}
 
-	log.Info(fmt.Sprintf("Reconciling Gerrit Replication Config component %v/%v has been finished", request.Namespace, request.Name))
+	log.Info(fmt.Sprintf("Reconciling Gerrit Replication Config component %s/%s has been finished", request.Namespace, request.Name))
 	return reconcile.Result{}, nil
 }
 
@@ -151,7 +159,7 @@ func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, ins
 		}
 	}
 
-	r.log.V(1).Info(fmt.Sprintf("Status for Gerrit Replication Config %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
+	r.log.V(1).Info(fmt.Sprintf("Status for Gerrit Replication Config %s has been updated to '%s' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
 	return nil
 }
 
@@ -163,10 +171,10 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1
 	}
 
 	if helper.RunningInCluster() {
-		GerritTemplatesPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
+		GerritTemplatesPath = fmt.Sprintf("%s/../%s/%s", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
 	}
 
-	podList, err := r.platform.GetPods(gerrit.Namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", gerrit.Name)})
+	podList, err := r.platform.GetPods(gerrit.Namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%s", gerrit.Name)})
 	if err != nil || len(podList.Items) != 1 {
 		return err
 	}
@@ -213,7 +221,7 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1
 	}
 
 	err = r.updateSshConfig(gerrit.Namespace, podList.Items[0].Name, *config, GerritTemplatesPath,
-		fmt.Sprintf("%v/%v", spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName))
+		filepath.Join(spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName))
 	if err != nil {
 		return err
 	}
@@ -227,7 +235,7 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1
 }
 
 func (r *ReconcileGerritReplicationConfig) createReplicationConfig(namespace, podName string) error {
-	_, _, err := r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
+	_, _, err := r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)})
 	if err != nil {
@@ -238,10 +246,10 @@ func (r *ReconcileGerritReplicationConfig) createReplicationConfig(namespace, po
 }
 
 func (r *ReconcileGerritReplicationConfig) createSshConfig(namespace, podName string) error {
-	_, _, err := r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
+	_, _, err := r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
-			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")})
+			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath,
+			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath+config)})
 	if err != nil {
 		return err
 	}
@@ -250,8 +258,8 @@ func (r *ReconcileGerritReplicationConfig) createSshConfig(namespace, podName st
 }
 
 func (r *ReconcileGerritReplicationConfig) saveSshReplicationKey(namespace, podName string, key string) error {
-	path := fmt.Sprintf("%v/%v", spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
-	_, _, err := r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
+	path := filepath.Join(spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
+	_, _, err := r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
 		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", key, path, path)})
 	if err != nil {
 		return err
@@ -267,7 +275,7 @@ func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, po
 		return err
 	}
 
-	_, _, err = r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
+	_, _, err = r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
 		fmt.Sprintf("echo \"%v\" >> %v", config.String(), spec.DefaultGerritReplicationConfigPath)})
 	if err != nil {
 		return err
@@ -283,13 +291,13 @@ func (r *ReconcileGerritReplicationConfig) updateSshConfig(namespace, podName st
 		return err
 	}
 
-	config, err := resolveSshTemplate(grc, templatePath, "ssh-config.tmpl", keyPath)
+	sshTemplate, err := resolveSshTemplate(grc, templatePath, "ssh-sshTemplate.tmpl", keyPath)
 	if err != nil {
 		return err
 	}
 
-	_, _, err = r.platform.ExecInPod(namespace, podName, []string{"/bin/sh", "-c",
-		fmt.Sprintf("echo \"%v\" >> %v", config.String(), spec.DefaultGerritSSHConfigPath+"/config")})
+	_, _, err = r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
+		fmt.Sprintf("echo \"%s\" >> %s", sshTemplate.String(), spec.DefaultGerritSSHConfigPath+config)})
 	if err != nil {
 		return err
 	}
@@ -309,7 +317,7 @@ func (r *ReconcileGerritReplicationConfig) reloadReplicationPlugin(client gerrit
 func resolveReplicationTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName string) (*bytes.Buffer, error) {
 	var config bytes.Buffer
 
-	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(fmt.Sprintf("%v/%v", path, templateName)))
+	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(filepath.Join(path, templateName)))
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +340,7 @@ func resolveSshTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName
 		KeyPath  string
 	}{host[1], keyPath}
 
-	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(fmt.Sprintf("%v/%v", path, templateName)))
+	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(filepath.Join(path, templateName)))
 	if err != nil {
 		return nil, err
 	}

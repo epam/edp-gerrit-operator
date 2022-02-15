@@ -504,9 +504,9 @@ func TestClient_AddUserToGroups_RunCommandErr(t *testing.T) {
 
 func TestNewClient(t *testing.T) {
 	cl := NewClient(nil, resty.New(), nil)
-	accept, ok := cl.resty.Header["Accept"]
+	accept, ok := cl.resty.Header[acceptHeader]
 	if !ok || len(accept) == 0 {
-		t.Fatal("no accept header set")
+		t.Fatal("no acceptHeader header set")
 	}
 
 	assert.Equal(t, accept[0], "application/json")

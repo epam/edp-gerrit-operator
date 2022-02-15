@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -39,6 +40,11 @@ const (
 	imgFolder                        = "img"
 	gerritIcon                       = "gerrit.svg"
 	jenkinsDefaultScriptConfigMapKey = "context"
+	user                             = "user"
+	password                         = "password"
+	rsaID                            = "id_rsa"
+	rsaIDFile                        = "id_rsa.pub"
+	admin                            = "-admin"
 )
 
 // Interface expresses behaviour of the Gerrit EDP Component
@@ -118,10 +124,10 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	if err := s.PlatformService.CreateSecret(instance, instance.Name+"-admin-password", map[string][]byte{
-		"user":     []byte(spec.GerritDefaultAdminUser),
-		"password": []byte(uniuri.New()),
+		user:     []byte(spec.GerritDefaultAdminUser),
+		password: []byte(uniuri.New()),
 	}); err != nil {
-		return instance, false, errors.Wrapf(err, "Failed to create admin Secret %v for Gerrit", instance.Name+"-admin-password")
+		return instance, false, errors.Wrapf(err, "Failed to create admin Secret %s for Gerrit", instance.Name+"-admin-password")
 	}
 
 	sshPortService, err := s.GetServicePort(instance)
@@ -160,7 +166,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 
 	gerritAdminPassword, err := s.getGerritAdminPassword(instance)
 	if err != nil {
-		return instance, false, errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %v/%v", instance.Namespace, instance.Name)
+		return instance, false, errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %s/%s", instance.Namespace, instance.Name)
 	}
 
 	podList, err := s.PlatformService.GetPods(instance.Namespace, metav1.ListOptions{LabelSelector: "app=" + instance.Name})
@@ -168,7 +174,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, errors.Wrapf(err, "Unable to determine Gerrit pod name: %v", len(podList.Items))
 	}
 
-	_, gerritAdminPublicKey, err := s.createSSHKeyPairs(instance, instance.Name+"-admin")
+	_, gerritAdminPublicKey, err := s.createSSHKeyPairs(instance, instance.Name+admin)
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Failed to create Gerrit admin SSH keypair %v/%v", instance.Namespace, instance.Name)
 	}
@@ -184,21 +190,21 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 	}
 
 	status, err := s.gerritClient.CheckCredentials()
-	if (status != 401 && status >= 400 && status <= 600) || err != nil {
+	if (status != http.StatusUnauthorized && status >= http.StatusBadRequest && status <= http.StatusHTTPVersionNotSupported) || err != nil {
 		return instance, false, errors.Wrapf(err, "Failed to check credentials in Gerrit")
 	}
 
-	if status == 401 {
+	if status == http.StatusUnauthorized {
 		err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, spec.GerritDefaultAdminPassword)
 		if err != nil {
 			return instance, false, errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 		}
 		status, err = s.gerritClient.CheckCredentials()
-		if (status != 401 && status >= 400 && status <= 600) || err != nil {
+		if (status != http.StatusUnauthorized && status >= http.StatusBadRequest && status <= http.StatusHTTPVersionNotSupported) || err != nil {
 			return instance, false, errors.Wrapf(err, "Failed to check credentials in Gerrit")
 		}
 
-		if status == 401 {
+		if status == http.StatusUnauthorized {
 			instance, err := s.gerritClient.InitAdminUser(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
 				string(gerritAdminPublicKey))
 			if err != nil {
@@ -212,7 +218,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		}
 	}
 
-	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
+	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+admin)
 	if err != nil {
 		return instance, false, err
 	}
@@ -223,7 +229,7 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, err
 	}
 
-	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys[rsaID], gerritUrl, sshPortService)
 	if err != nil {
 		return instance, false, err
 	}
@@ -237,9 +243,9 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		return instance, false, err
 	}
 
-	if *ciToolsStatus == 404 || *projectBootstrappersStatus == 404 {
+	if *ciToolsStatus == http.StatusNotFound || *projectBootstrappersStatus == http.StatusNotFound {
 
-		err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+		err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys[rsaID], gerritUrl, sshPortService)
 		if err != nil {
 			return instance, false, err
 		}
@@ -283,14 +289,13 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	if err := s.initSSHClient(instance); err != nil {
 		return instance, errors.Wrapf(err, "Failed to init Gerrit SSH client")
 	}
-
-	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
-	projectCreatorSecretKeyName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
-	projectCreatorSecretPasswordName := fmt.Sprintf("%v-%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, "password")
+	ciUserSecretName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	projectCreatorSecretKeyName := createSecretName(instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
+	projectCreatorSecretPasswordName := fmt.Sprintf("%s-%s-%s", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, password)
 
 	if err := s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
-		"user":     []byte(spec.GerritDefaultCiUserUser),
-		"password": []byte(uniuri.New()),
+		user:     []byte(spec.GerritDefaultCiUserUser),
+		password: []byte(uniuri.New()),
 	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
 	}
@@ -299,8 +304,8 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	s.setAnnotation(instance, ciUserAnnotationKey, ciUserSecretName)
 
 	if err := s.PlatformService.CreateSecret(instance, projectCreatorSecretPasswordName, map[string][]byte{
-		"user":     []byte(spec.GerritDefaultProjectCreatorUser),
-		"password": []byte(uniuri.New()),
+		user:     []byte(spec.GerritDefaultProjectCreatorUser),
+		password: []byte(uniuri.New()),
 	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create project-creator Secret %v for Gerrit", projectCreatorSecretPasswordName)
 	}
@@ -310,7 +315,7 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserSecretName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Secret %v for %v/%v", ciUserSecretName,
+		return nil, errors.Wrapf(err, "Failed to get Secret %s for %s/%s", ciUserSecretName,
 			instance.Namespace, instance.Name)
 	}
 
@@ -321,9 +326,9 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 	if err := s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
-		"username":   []byte(ciUserSshSecretName),
-		"id_rsa":     privateKey,
-		"id_rsa.pub": publicKey,
+		"username": []byte(ciUserSshSecretName),
+		rsaID:      privateKey,
+		rsaIDFile:  publicKey,
 	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
@@ -338,7 +343,7 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 	projectCreatorUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorSshKeySuffix)
 	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 
-	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials["password"]),
+	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials[password]),
 		"CI Jenkins", string(publicKey)); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", spec.GerritDefaultCiUserUser)
 	}
@@ -355,8 +360,8 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 			instance.Namespace, instance.Name)
 	}
 
-	if err := s.gerritClient.CreateUser(spec.GerritDefaultProjectCreatorUser, string(projectCreatorCredentials["password"]),
-		"Project Creator", string(projectCreatorKeys["id_rsa.pub"])); err != nil {
+	if err := s.gerritClient.CreateUser(spec.GerritDefaultProjectCreatorUser, string(projectCreatorCredentials[password]),
+		"Project Creator", string(projectCreatorKeys[rsaIDFile])); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create project-creator user %v in Gerrit", spec.GerritDefaultProjectCreatorUser)
 	}
 
@@ -389,14 +394,14 @@ func (s ComponentService) ExposeConfiguration(instance *v1alpha1.Gerrit) (*v1alp
 			"clientSecret": []byte(secret.String()),
 		}
 
-		identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
+		identityServiceSecretName := createSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
 		err = s.PlatformService.CreateSecret(instance, identityServiceSecretName, identityServiceClientCredentials)
 		if err != nil {
 			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to create secret %v", identityServiceSecretName))
 		}
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
-		s.setAnnotation(instance, annotationKey, fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
+		s.setAnnotation(instance, annotationKey, createSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
 		if err := s.client.Update(context.TODO(), instance); err != nil {
 			return nil, errors.Wrap(err, "couldn't update annotations")
 		}
@@ -559,7 +564,7 @@ func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {
 	vLog.Info("init rest client")
 	gerritAdminPassword, err := s.getGerritAdminPassword(instance)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %v/%v", instance.Namespace, instance.Name)
+		return errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %s/%s", instance.Namespace, instance.Name)
 	}
 
 	gerritApiUrl, err := s.getGerritRestApiUrl(instance)
@@ -588,12 +593,12 @@ func (s *ComponentService) initSSHClient(instance *v1alpha1.Gerrit) error {
 		return err
 	}
 
-	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
+	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+admin)
 	if err != nil {
 		return err
 	}
 
-	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys[rsaID], gerritUrl, sshPortService)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to init Gerrit SSH client %v/%v", instance.Namespace, instance.Name)
 	}
@@ -626,12 +631,12 @@ func (s ComponentService) GetGerritSSHUrl(instance *v1alpha1.Gerrit) (string, er
 }
 
 func (s ComponentService) getGerritAdminPassword(instance *v1alpha1.Gerrit) (string, error) {
-	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
+	secretName := fmt.Sprintf("%s-admin-password", instance.Name)
 	gerritAdminCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, secretName)
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to get Secret %v for %v/%v", secretName, instance.Namespace, instance.Name)
 	}
-	return string(gerritAdminCredentials["password"]), nil
+	return string(gerritAdminCredentials[password]), nil
 }
 
 func (s ComponentService) createSSHKeyPairs(instance *v1alpha1.Gerrit, secretName string) ([]byte, []byte, error) {
@@ -647,37 +652,37 @@ func (s ComponentService) createSSHKeyPairs(instance *v1alpha1.Gerrit, secretNam
 		}
 
 		if err := s.PlatformService.CreateSecret(instance, secretName, map[string][]byte{
-			"id_rsa":     privateKey,
-			"id_rsa.pub": publicKey,
+			rsaID:     privateKey,
+			rsaIDFile: publicKey,
 		}); err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 		}
 		return privateKey, publicKey, nil
 	}
 
-	return secretData["id_rsa"], secretData["id_rsa.pub"], nil
+	return secretData[rsaID], secretData[rsaIDFile], nil
 }
 
 func (s ComponentService) setGerritAdminUserPassword(instance v1alpha1.Gerrit, gerritUrl, gerritAdminPassword,
 	gerritApiUrl string, sshPortService int32) error {
-	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+"-admin")
+	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+admin)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get Gerrit admin secret for %v/%v", instance.Namespace, instance.Name)
+		return errors.Wrapf(err, "Failed to get Gerrit admin secret for %s/%s", instance.Namespace, instance.Name)
 	}
 
-	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
+	err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys[rsaID], gerritUrl, sshPortService)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to initialize Gerrit SSH client for %v/%v", instance.Namespace, instance.Name)
+		return errors.Wrapf(err, "Failed to initialize Gerrit SSH client for %s/%s", instance.Namespace, instance.Name)
 	}
 
 	err = s.gerritClient.ChangePassword("admin", gerritAdminPassword)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to set Gerrit admin password for %v/%v", instance.Namespace, instance.Name)
+		return errors.Wrapf(err, "Failed to set Gerrit admin password for %s/%s", instance.Namespace, instance.Name)
 	}
 
 	err = s.gerritClient.InitNewRestClient(&instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
+		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %s/%s", instance.Namespace, instance.Name)
 	}
 
 	return nil
@@ -730,26 +735,26 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerr
 		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)
 	}
 
-	ciUserCredentialsName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	ciUserCredentialsName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserCredentialsName)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get Secret for CI user for %v/%v", instance.Namespace, instance.Name)
+		return errors.Wrapf(err, "Failed to get Secret for CI user for %s/%s", instance.Namespace, instance.Name)
 	}
 
-	externalUrl := fmt.Sprintf("%v://%v", scheme, host)
+	externalUrl := fmt.Sprintf("%s://%s", scheme, host)
 	jenkinsPluginInfo := platformHelper.InitNewJenkinsPluginInfo()
 	jenkinsPluginInfo.ServerName = instance.Name
 	jenkinsPluginInfo.ExternalUrl = externalUrl
 	jenkinsPluginInfo.SshPort = sshPort
-	jenkinsPluginInfo.UserName = string(ciUserCredentials["user"])
-	jenkinsPluginInfo.HttpPassword = string(ciUserCredentials["password"])
+	jenkinsPluginInfo.UserName = string(ciUserCredentials[user])
+	jenkinsPluginInfo.HttpPassword = string(ciUserCredentials[password])
 
 	jenkinsScriptContext, err := platformHelper.ParseDefaultTemplate(jenkinsPluginInfo)
 	if err != nil {
 		return err
 	}
 
-	jenkinsPluginConfigurationName := fmt.Sprintf("%v-%v", instance.Name, spec.JenkinsPluginConfigPostfix)
+	jenkinsPluginConfigurationName := createSecretName(instance.Name, spec.JenkinsPluginConfigPostfix)
 	configMapData := map[string]string{
 		jenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
 	}
@@ -764,4 +769,8 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *v1alpha1.Gerr
 	}
 
 	return nil
+}
+
+func createSecretName(name, postfix string) string {
+	return fmt.Sprintf("%s-%s", name, postfix)
 }

@@ -134,7 +134,8 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 
 	if requeue, err := r.tryReconcile(ctx, &instance); err != nil {
 		instance.Status.Value = err.Error()
-		result.RequeueAfter = time.Second * helper.DefaultRequeueTime
+		result.RequeueAfter =
+			time.Second * helper.DefaultRequeueTime
 		reqLogger.Error(err, "an error has occurred while handling GerritMergeRequest", "name",
 			request.Name)
 	} else if requeue {

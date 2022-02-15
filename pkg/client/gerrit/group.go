@@ -2,9 +2,14 @@ package gerrit
 
 import (
 	"fmt"
+
 	"net/http"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	contentType = "Content-Type"
 )
 
 type ErrAlreadyExists string
@@ -44,36 +49,12 @@ type GroupMember struct {
 	Username string `json:"username"`
 }
 
-func (gc *Client) getUserGroups() (map[string][]string, error) {
-	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
-		Get("groups/?o=MEMBERS")
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to get Gerrit groups")
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return nil, errors.Errorf("wrong response code: %d, body: %s", resp.StatusCode(), resp.String())
-	}
-
-	var groups map[string]Group
-	if err := decodeGerritResponse(resp.String(), &groups); err != nil {
-		return nil, errors.Wrap(err, "unable to unmarshal group response")
-	}
-
-	usersGroups := make(map[string][]string)
-	for groupName, gr := range groups {
-		for _, u := range gr.Members {
-			usersGroups[u.Email] = append(usersGroups[u.Email], groupName)
-		}
-	}
-
-	return usersGroups, nil
-}
+//Deleted unused func
+//func (gc *Client) getUserGroups() (map[string][]string, error) {}
 
 func (gc *Client) DeleteUserFromGroup(groupName, username string) error {
 	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
+		SetHeader(acceptHeader, applicationJson).
 		Delete(fmt.Sprintf("groups/%s/members/%s", groupName, username))
 	if err != nil {
 		return errors.Wrapf(err, "Unable to get Gerrit groups")
@@ -93,8 +74,8 @@ func (gc *Client) AddUserToGroup(groupName, username string) error {
 
 func (gc *Client) UpdateGroup(groupID, description string, visibleToAll bool) error {
 	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
-		SetHeader("content-type", "application/json").
+		SetHeader(acceptHeader, applicationJson).
+		SetHeader(contentType, applicationJson).
 		SetBody(map[string]interface{}{
 			"description": description,
 		}).
@@ -109,8 +90,8 @@ func (gc *Client) UpdateGroup(groupID, description string, visibleToAll bool) er
 	}
 
 	resp, err = gc.resty.R().
-		SetHeader("accept", "application/json").
-		SetHeader("content-type", "application/json").
+		SetHeader(acceptHeader, applicationJson).
+		SetHeader(contentType, applicationJson).
 		SetBody(map[string]interface{}{
 			"visible_to_all": visibleToAll,
 		}).
@@ -129,8 +110,8 @@ func (gc *Client) UpdateGroup(groupID, description string, visibleToAll bool) er
 
 func (gc *Client) CreateGroup(name, description string, visibleToAll bool) (*Group, error) {
 	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
-		SetHeader("content-type", "application/json").
+		SetHeader(acceptHeader, applicationJson).
+		SetHeader(contentType, applicationJson).
 		SetBody(map[string]interface{}{
 			"description":    description,
 			"name":           name,
@@ -143,7 +124,7 @@ func (gc *Client) CreateGroup(name, description string, visibleToAll bool) (*Gro
 	}
 
 	if resp.IsError() {
-		if resp.StatusCode() == 409 {
+		if resp.StatusCode() == http.StatusConflict {
 			return nil, ErrAlreadyExists("already exists")
 		}
 

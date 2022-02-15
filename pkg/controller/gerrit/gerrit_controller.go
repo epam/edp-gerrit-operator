@@ -46,6 +46,19 @@ const (
 
 	// StatusReady = ready
 	StatusReady = "ready"
+
+	// RequeueTime10 = 10
+	RequeueTime10 = 10 * time.Second
+
+	// requeueTime30 = 30
+	requeueTime30 = 30 * time.Second
+
+	// requeueTime60 = 60
+	requeueTime60 = 60 * time.Second
+
+	status = "status"
+
+	updatingStatusErr = "error while updating status"
 )
 
 func NewReconcileGerrit(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
@@ -91,39 +104,39 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	}
 
 	if instance.Status.Status == "" || instance.Status.Status == StatusFailed {
-		log.Info(fmt.Sprintf("%v/%v Gerrit installation started", instance.Namespace, instance.Name))
+		log.Info(fmt.Sprintf("%s/%s Gerrit installation started", instance.Namespace, instance.Name))
 		err = r.updateStatus(ctx, instance, StatusInstall)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", instance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			log.Error(err, updatingStatusErr, status, instance.Status.Status)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
 
 	if instance.Status.Status == StatusInstall {
-		log.Info(fmt.Sprintf("%v/%v Gerrit has been installed", instance.Namespace, instance.Name))
+		log.Info(fmt.Sprintf("%s/%s Gerrit has been installed", instance.Namespace, instance.Name))
 		err = r.updateStatus(ctx, instance, StatusCreated)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 	}
 
 	if dIsReady, err := r.service.IsDeploymentReady(instance); err != nil {
-		msg := fmt.Sprintf("Failed to check Deployment for %v/%v object!", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("Failed to check Deployment for %s/%s object!", instance.Namespace, instance.Name)
 		log.Info(msg)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 	} else if !dIsReady {
-		log.Info(fmt.Sprintf("Deployment for %v/%v object is not ready for configuration yet", instance.Namespace, instance.Name))
-		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+		log.Info(fmt.Sprintf("Deployment for %s/%s object is not ready for configuration yet", instance.Namespace, instance.Name))
+		return reconcile.Result{RequeueAfter: requeueTime30}, nil
 	}
 
 	if instance.Status.Status == StatusCreated || instance.Status.Status == "" {
-		msg := fmt.Sprintf("Configuration for %v/%v object has started", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("Configuration for %s/%s object has started", instance.Namespace, instance.Name)
 		log.Info(msg)
 		err = r.updateStatus(ctx, instance, StatusConfiguring)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", instance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			log.Error(err, updatingStatusErr, status, instance.Status.Status)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
 
@@ -132,32 +145,32 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	if err != nil {
 		log.Error(err, "Gerrit configuration has been failed.")
 		if gerrit.IsErrUserNotFound(err) {
-			finalRequeueAfterTimeout = 60 * time.Second
+			finalRequeueAfterTimeout = requeueTime60
 		} else {
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+			return reconcile.Result{RequeueAfter: RequeueTime10}, err
 		}
 	}
 
 	if dPatched {
 		log.Info("Restarting deployment after configuration change")
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 	}
 
 	if dIsReady, err := r.service.IsDeploymentReady(instance); err != nil {
-		log.Info(fmt.Sprintf("Failed to check Deployment config for %v/%v Gerrit!", instance.Namespace, instance.Name))
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+		log.Info(fmt.Sprintf("Failed to check Deployment config for %s/%s Gerrit!", instance.Namespace, instance.Name))
+		return reconcile.Result{RequeueAfter: RequeueTime10}, err
 	} else if !dIsReady {
 		log.Info(fmt.Sprintf("Deployment config for %v/%v Gerrit is not ready for configuration yet", instance.Namespace, instance.Name))
-		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: requeueTime30}, nil
 	}
 
 	if instance.Status.Status == StatusConfiguring {
-		msg := fmt.Sprintf("%v/%v Gerrit configuration has finished", instance.Namespace, instance.Name)
+		msg := fmt.Sprintf("%s/%s Gerrit configuration has finished", instance.Namespace, instance.Name)
 		log.Info(msg)
 		err = r.updateStatus(ctx, instance, StatusConfigured)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", instance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			log.Error(err, updatingStatusErr, status, instance.Status.Status)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
 
@@ -165,23 +178,23 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info("Exposing configuration has started")
 		err = r.updateStatus(ctx, instance, StatusExposeStart)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", instance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			log.Error(err, updatingStatusErr, status, instance.Status.Status)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
 
 	exposedInstance, err := r.service.ExposeConfiguration(instance)
 	if err != nil {
 		log.Error(err, "error while exposing configuration", "name", instance.Name)
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 	}
 
 	if exposedInstance.Status.Status == StatusExposeStart {
 		log.Info("Exposing configuration has finished")
 		err = r.updateStatus(ctx, exposedInstance, StatusExposeFinish)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", StatusExposeStart)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			log.Error(err, updatingStatusErr, status, StatusExposeStart)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
 
@@ -189,23 +202,23 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Info("Integration has started")
 		err = r.updateStatus(ctx, exposedInstance, StatusIntegrationStart)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", exposedInstance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+			log.Error(err, updatingStatusErr, status, exposedInstance.Status.Status)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, err
 		}
 	}
 
 	exposedInstance, err = r.service.Integrate(exposedInstance)
 	if err != nil {
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, errors.Wrapf(err, "Integration failed")
+		return reconcile.Result{RequeueAfter: RequeueTime10}, errors.Wrapf(err, "Integration failed")
 	}
 
 	if exposedInstance.Status.Status == StatusIntegrationStart {
-		msg := fmt.Sprintf("Configuration of %v/%v object has been finished", exposedInstance.Namespace, exposedInstance.Name)
+		msg := fmt.Sprintf("Configuration of %s/%s object has been finished", exposedInstance.Namespace, exposedInstance.Name)
 		log.Info(msg)
 		err = r.updateStatus(ctx, exposedInstance, StatusReady)
 		if err != nil {
-			log.Error(err, "error while updating status", "status", exposedInstance.Status.Status)
-			return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+			log.Error(err, updatingStatusErr, status, exposedInstance.Status.Status)
+			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
 
@@ -213,10 +226,10 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	if err != nil {
 		msg := fmt.Sprintf("Failed update avalability status for Gerrit object with name %s", exposedInstance.Name)
 		log.Info(msg)
-		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: requeueTime30}, nil
 	}
 
-	log.Info(fmt.Sprintf("Reconciling Gerrit component %v/%v has been finished", request.Namespace, request.Name))
+	log.Info(fmt.Sprintf("Reconciling Gerrit component %s/%s has been finished", request.Namespace, request.Name))
 	return reconcile.Result{RequeueAfter: finalRequeueAfterTimeout}, nil
 }
 
@@ -230,7 +243,7 @@ func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *v1alpha1.G
 			return err
 		}
 	}
-	r.log.Info(fmt.Sprintf("Status for Gerrit %v has been updated to '%v' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
+	r.log.Info(fmt.Sprintf("Status for Gerrit %s has been updated to '%s' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
 	return nil
 }
 

@@ -28,6 +28,7 @@ const (
 	finalizerName       = "gerritproject.gerrit.finalizer.name"
 	syncIntervalEnv     = "GERRIT_PROJECT_SYNC_INTERVAL"
 	defaultSyncInterval = 300 * time.Second // 5 minutes
+	requeueTime         = 10 * time.Second
 )
 
 type Reconcile struct {
@@ -92,7 +93,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
 		reqLogger.Error(err, "unable to reconcile GerritProject")
 		instance.Status.Value = err.Error()
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: requeueTime}, nil
 	}
 
 	instance.Status.Value = helper.StatusOK

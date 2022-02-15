@@ -33,6 +33,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	nameKey = "name"
+	Base    = 10
+	BitSize = 32
+)
+
 var log = ctrl.Log.WithName("platform")
 
 // K8SService implements platform.Service interface (k8s platform integration)
@@ -147,7 +153,7 @@ func (service K8SService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32
 				if len(ports) != 1 {
 					return 0, nil
 				}
-				portNumber, err := strconv.ParseInt(ports[0], 10, 32)
+				portNumber, err := strconv.ParseInt(ports[0], Base, BitSize)
 				if err != nil {
 					return 0, err
 				}
@@ -265,7 +271,7 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 
 // GetSecret return data field of Secret
 func (service K8SService) GetSecretData(namespace string, name string) (map[string][]byte, error) {
-	log.Info("getting secret data", "name", name)
+	log.Info("getting secret data", nameKey, name)
 	secret, err := service.CoreClient.Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && k8serr.IsNotFound(err) {
 		log.Info(fmt.Sprintf("Secret %v in namespace %v not found", name, namespace))
@@ -334,12 +340,12 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 
 // CreateSecret creates a new Secret Resource for a Gerrit EDP Component
 func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, data map[string][]byte) error {
-	vLog := log.WithValues("name", secretName)
+	vLog := log.WithValues(nameKey, secretName)
 	vLog.Info("creating secret")
 
 	if _, err := s.CoreClient.Secrets(gerrit.Namespace).Get(context.TODO(), secretName, metav1.GetOptions{}); err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Info("Creating a new Secret for Gerrit", "name", secretName)
+			log.Info("Creating a new Secret for Gerrit", nameKey, secretName)
 
 			gerritSecretObject := newGerritSecret(secretName, gerrit.Name, gerrit.Namespace, data)
 
@@ -350,7 +356,7 @@ func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, da
 			if _, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(context.TODO(), gerritSecretObject, metav1.CreateOptions{}); err != nil {
 				return err
 			}
-			log.Info("Secret has been created", "name", gerritSecretObject.Name)
+			log.Info("Secret has been created", nameKey, gerritSecretObject.Name)
 		}
 		return err
 	}
@@ -467,7 +473,7 @@ func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName st
 }
 
 func (s K8SService) CreateJenkinsServiceAccount(namespace, secretName, serviceAccountType string) error {
-	vLog := log.WithValues("name", secretName, "service account type", serviceAccountType)
+	vLog := log.WithValues(nameKey, secretName, "service account type", serviceAccountType)
 	vLog.Info("creating jenkins service account")
 	if _, err := s.getJenkinsServiceAccount(secretName, namespace); err != nil {
 		if k8serr.IsNotFound(err) {
@@ -539,7 +545,7 @@ func (s K8SService) getJenkinsScript(name, namespace string) (*jenkinsV1Api.Jenk
 }
 
 func (s K8SService) CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error {
-	vLog := log.WithValues("name", gerrit.Name)
+	vLog := log.WithValues(nameKey, gerrit.Name)
 	vLog.Info("creating EDP component")
 	if _, err := s.getEDPComponent(gerrit.Name, gerrit.Namespace); err != nil {
 		if k8serr.IsNotFound(err) {
@@ -583,6 +589,6 @@ func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon 
 	if err := s.client.Create(context.TODO(), obj); err != nil {
 		return err
 	}
-	log.Info("edp component has been created.", "name", gerrit.Name)
+	log.Info("edp component has been created.", nameKey, gerrit.Name)
 	return nil
 }

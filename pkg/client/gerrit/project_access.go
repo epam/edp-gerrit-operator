@@ -40,7 +40,7 @@ func (gc Client) AddAccessRights(projectName string, permissions []AccessInfo) e
 	accessInfo := generateSetAccessRequest(permissions, true, false)
 	addRequest := map[string]map[string]reference{"add": accessInfo}
 
-	rsp, err := gc.resty.R().SetBody(addRequest).SetHeader("Content-Type", "application/json").
+	rsp, err := gc.resty.R().SetBody(addRequest).SetHeader(contentType, applicationJson).
 		Post(fmt.Sprintf("/projects/%s/access", projectName))
 
 	return parseRestyResponse(rsp, err)
@@ -50,7 +50,7 @@ func (gc Client) UpdateAccessRights(projectName string, permissions []AccessInfo
 	accessInfo := generateSetAccessRequest(permissions, false, true)
 	addRequest := map[string]map[string]reference{"add": accessInfo, "remove": accessInfo}
 
-	rsp, err := gc.resty.R().SetBody(addRequest).SetHeader("Content-Type", "application/json").
+	rsp, err := gc.resty.R().SetBody(addRequest).SetHeader(contentType, applicationJson).
 		Post(fmt.Sprintf("/projects/%s/access", projectName))
 
 	return parseRestyResponse(rsp, err)
@@ -60,7 +60,7 @@ func (gc Client) DeleteAccessRights(projectName string, permissions []AccessInfo
 	accessInfo := generateSetAccessRequest(permissions, false, false)
 	addRequest := map[string]map[string]reference{"remove": accessInfo}
 
-	rsp, err := gc.resty.R().SetBody(addRequest).SetHeader("Content-Type", "application/json").
+	rsp, err := gc.resty.R().SetBody(addRequest).SetHeader(contentType, applicationJson).
 		Post(fmt.Sprintf("/projects/%s/access", projectName))
 
 	return parseRestyResponse(rsp, err)
@@ -103,7 +103,7 @@ func generateSetAccessRequest(permissions []AccessInfo, added bool, modified boo
 func (gc Client) SetProjectParent(projectName, parentName string) error {
 	rsp, err := gc.resty.R().SetBody(map[string]string{
 		"parent": parentName,
-	}).SetHeader("Content-Type", "application/json").
+	}).SetHeader(contentType, applicationJson).
 		Put(fmt.Sprintf("/projects/%s/parent", projectName))
 
 	return parseRestyResponse(rsp, err)

@@ -24,6 +24,8 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
+const requeueTime = 10 * time.Second
+
 type Reconcile struct {
 	client  client.Client
 	service gerrit.Interface
@@ -86,7 +88,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
 		log.Error(err, "unable to reconcile gerrit group")
 		instance.Status.Value = err.Error()
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: requeueTime}, nil
 	}
 
 	instance.Status.Value = helper.StatusOK

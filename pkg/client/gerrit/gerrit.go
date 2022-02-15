@@ -21,6 +21,14 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
+const (
+	acceptHeader    = "Accept"
+	applicationJson = "application/json"
+	path            = "/bin/sh"
+	minBodyLength   = 5
+	containerFlag   = "-c"
+)
+
 var log = ctrl.Log.WithName("client_gerrit")
 
 type Client struct {
@@ -33,7 +41,7 @@ func NewClient(instance *v1alpha1.Gerrit, resty *resty.Client, sshClient ssh.SSH
 	return Client{
 		instance: instance,
 		resty: resty.SetHeaders(map[string]string{
-			"accept": "application/json",
+			acceptHeader: applicationJson,
 		}),
 		sshClient: sshClient,
 	}
@@ -62,7 +70,7 @@ func (gc *Client) InitNewSshClient(userName string, privateKey []byte, host stri
 // CheckCredentials checks whether provided creds are correct
 func (gc Client) CheckCredentials() (int, error) {
 	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
+		SetHeader(acceptHeader, applicationJson).
 		Get("config/server/summary")
 	if err != nil {
 		return 0, errors.Wrapf(err, "Unable to verify Gerrit credentials")
@@ -86,7 +94,7 @@ func (gc Client) CheckGroup(groupName string) (*int, error) {
 	}
 
 	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
+		SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("groups/%v", uuid))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit groups")
@@ -100,7 +108,7 @@ func (gc Client) CheckGroup(groupName string) (*int, error) {
 //GetUser checks gerrit user
 func (gc Client) GetUser(username string) (*int, error) {
 	resp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
+		SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("accounts/%v", username))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit user")
@@ -118,19 +126,19 @@ func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.Platf
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", "mkdir -p /tmp/scripts && touch /tmp/scripts/add-initial-admin-user.sh && chmod +x /tmp/scripts/add-initial-admin-user.sh"})
+		[]string{path, containerFlag, "mkdir -p /tmp/scripts && touch /tmp/scripts/add-initial-admin-user.sh && chmod +x /tmp/scripts/add-initial-admin-user.sh"})
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create add-initial-admin-user.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", fmt.Sprintf("echo \"%v\" > /tmp/scripts/add-initial-admin-user.sh", string(addInitialAdminUserScript))})
+		[]string{path, containerFlag, fmt.Sprintf("echo \"%v\" > /tmp/scripts/add-initial-admin-user.sh", string(addInitialAdminUserScript))})
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to add content to add-initial-admin-user.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/add-initial-admin-user.sh \"%v\"", gerritAdminPublicKey)})
+		[]string{path, containerFlag, fmt.Sprintf("sh /tmp/scripts/add-initial-admin-user.sh \"%v\"", gerritAdminPublicKey)})
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to execute add-initial-admin-user.sh script inside gerrit pod")
 	}
@@ -177,7 +185,7 @@ func (gc *Client) CreateUser(username string, password string, fullname string, 
 		return errors.Wrapf(err, "Getting %v user failed", username)
 	}
 
-	if *userStatus == 404 {
+	if *userStatus == http.StatusNotFound {
 		cmd := &ssh.SSHCommand{
 			Path: fmt.Sprintf("gerrit create-account --full-name \"%v\" --http-password \"%v\" --ssh-key \"%v\" \"%v\"",
 				fullname, password, publicKey, username),
@@ -203,7 +211,7 @@ func (gc *Client) AddUserToGroups(userName string, groupNames []string) error {
 			return err
 		}
 
-		if *groupStatus == 404 {
+		if *groupStatus == http.StatusNotFound {
 			log.Info(fmt.Sprintf("Group %v not found in Gerrit", group))
 		} else {
 			cmd := &ssh.SSHCommand{
@@ -276,19 +284,19 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", "mkdir -p /tmp/scripts && touch /tmp/scripts/init-all-projects.sh && chmod +x /tmp/scripts/init-all-projects.sh"})
+		[]string{path, containerFlag, "mkdir -p /tmp/scripts && touch /tmp/scripts/init-all-projects.sh && chmod +x /tmp/scripts/init-all-projects.sh"})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create init-all-projects.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", fmt.Sprintf("echo \"%v\" > /tmp/scripts/init-all-projects.sh", string(initAllProjectsScript))})
+		[]string{path, containerFlag, fmt.Sprintf("echo \"%v\" > /tmp/scripts/init-all-projects.sh", string(initAllProjectsScript))})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create init-all-projects.sh script inside gerrit pod")
 	}
 
 	_, _, err = platform.ExecInPod(instance.Namespace, podName,
-		[]string{"/bin/sh", "-c", fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\" \"%v\"",
+		[]string{path, containerFlag, fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\" \"%v\"",
 			string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid, developersGroupUuid)})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
@@ -298,11 +306,11 @@ func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.Pl
 }
 
 func decodeGerritResponse(body string, v interface{}) error {
-	if len(body) < 5 {
+	if len(body) < minBodyLength {
 		return errors.New("wrong gerrit body format")
 	}
 	//gerrit has prefix )]}' in all responses so we need to truncate it
-	if err := json.Unmarshal([]byte(body[5:]), v); err != nil {
+	if err := json.Unmarshal([]byte(body[minBodyLength:]), v); err != nil {
 		return errors.Wrap(err, "unable to decode gerrit response")
 	}
 

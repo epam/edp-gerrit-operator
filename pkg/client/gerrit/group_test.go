@@ -42,76 +42,7 @@ func TestClient_AddUserToGroup(t *testing.T) {
 	}
 }
 
-func TestClient_getUserGroups(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-
-	groups := map[string]Group{
-		"gr1": {
-			ID:      "123",
-			GroupID: 12,
-			Members: []GroupMember{
-				{
-					Email:    "t@t.cow",
-					Username: username,
-				},
-			},
-		},
-	}
-	rawGroups, err := json.Marshal(groups)
-	assert.NoError(t, err)
-
-	httpmock.RegisterResponder("GET", "//%2Fgroups%2F%3Fo=MEMBERS/groups/?o=MEMBERS",
-		httpmock.NewStringResponder(200, "12345"+string(rawGroups)))
-
-	_, err = cl.getUserGroups()
-	assert.NoError(t, err)
-}
-
-func TestClient_getUserGroups_GetErr(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-
-	_, err := cl.getUserGroups()
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Unable to get Gerrit groups"))
-}
-
-func TestClient_getUserGroups_RespErr(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-
-	httpmock.RegisterResponder("GET", "//%2Fgroups%2F%3Fo=MEMBERS/groups/?o=MEMBERS",
-		httpmock.NewStringResponder(404, "12345"))
-
-	_, err := cl.getUserGroups()
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "wrong response code"))
-}
-
-func TestClient_getUserGroups_UnmarshallErr(t *testing.T) {
-	restyClient := CreateMockResty()
-
-	cl := Client{
-		resty: restyClient,
-	}
-
-	httpmock.RegisterResponder("GET", "//%2Fgroups%2F%3Fo=MEMBERS/groups/?o=MEMBERS",
-		httpmock.NewStringResponder(200, "12345"))
-
-	_, err := cl.getUserGroups()
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "unable to unmarshal group response"))
-}
+//Deleted test for an unused func
 
 func TestClient_DeleteUserFromGroup(t *testing.T) {
 	restyClient := CreateMockResty()

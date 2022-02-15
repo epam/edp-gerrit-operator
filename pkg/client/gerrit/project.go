@@ -40,7 +40,7 @@ type WebLink struct {
 }
 
 func (gc Client) CreateProject(prj *Project) error {
-	rsp, err := gc.resty.R().SetBody(prj).SetHeader("Content-Type", "application/json").
+	rsp, err := gc.resty.R().SetBody(prj).SetHeader(contentType, applicationJson).
 		Put(fmt.Sprintf("/projects/%s", url.QueryEscape(prj.Name)))
 
 	return parseRestyResponse(rsp, err)
@@ -48,7 +48,7 @@ func (gc Client) CreateProject(prj *Project) error {
 
 func (gc Client) GetProject(name string) (*Project, error) {
 	rsp, err := gc.resty.R().
-		SetHeader("accept", "application/json").
+		SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/%s", url.QueryEscape(name)))
 
 	if err != nil {
@@ -56,7 +56,7 @@ func (gc Client) GetProject(name string) (*Project, error) {
 	}
 
 	if rsp.StatusCode() != http.StatusOK {
-		if rsp.StatusCode() == 404 {
+		if rsp.StatusCode() == http.StatusNotFound {
 			return nil, ErrDoesNotExist("does not exists")
 		}
 
@@ -72,7 +72,7 @@ func (gc Client) GetProject(name string) (*Project, error) {
 }
 
 func (gc Client) UpdateProject(prj *Project) error {
-	rsp, err := gc.resty.R().SetHeader("Content-Type", "application/json").
+	rsp, err := gc.resty.R().SetHeader(contentType, applicationJson).
 		SetBody(map[string]string{
 			"description":    prj.Description,
 			"commit_message": "Update the project description",
@@ -82,7 +82,7 @@ func (gc Client) UpdateProject(prj *Project) error {
 		return errors.Wrap(err, "unable to update project description")
 	}
 
-	rsp, err = gc.resty.R().SetHeader("Content-Type", "application/json").
+	rsp, err = gc.resty.R().SetHeader(contentType, applicationJson).
 		SetBody(map[string]string{
 			"parent":         prj.Parent,
 			"commit_message": "Update the project parent",
@@ -92,7 +92,7 @@ func (gc Client) UpdateProject(prj *Project) error {
 }
 
 func (gc Client) DeleteProject(name string) error {
-	rsp, err := gc.resty.R().SetHeader("Content-Type", "application/json").
+	rsp, err := gc.resty.R().SetHeader(contentType, applicationJson).
 		SetBody(map[string]bool{
 			"force":    false,
 			"preserve": false,
@@ -102,7 +102,7 @@ func (gc Client) DeleteProject(name string) error {
 }
 
 func (gc Client) ListProjects(_type string) ([]Project, error) {
-	rsp, err := gc.resty.R().SetHeader("accept", "application/json").
+	rsp, err := gc.resty.R().SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/?type=%s&d=1&t=1", _type))
 
 	if err != nil {
@@ -132,7 +132,7 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 }
 
 func (gc Client) ListProjectBranches(projectName string) ([]Branch, error) {
-	rsp, err := gc.resty.R().SetHeader("accept", "application/json").
+	rsp, err := gc.resty.R().SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/%s/branches/", url.QueryEscape(projectName)))
 
 	if err != nil {

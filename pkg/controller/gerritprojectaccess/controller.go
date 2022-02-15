@@ -23,7 +23,10 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const finalizerName = "gerritprojectaccess.gerrit.finalizer.name"
+const (
+	finalizerName = "gerritprojectaccess.gerrit.finalizer.name"
+	requeueTime   = 10 * time.Second
+)
 
 type Reconcile struct {
 	client  client.Client
@@ -84,7 +87,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
 		reqLogger.Error(err, "unable to reconcile GerritProjectAccess")
 		instance.Status.Value = err.Error()
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: requeueTime}, nil
 	}
 
 	instance.Status.Value = helper.StatusOK

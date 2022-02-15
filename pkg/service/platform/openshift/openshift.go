@@ -179,7 +179,7 @@ func getPort(value string) (int32, error) {
 		if len(ports) != 1 {
 			return 0, nil
 		}
-		portNumber, err := strconv.ParseInt(ports[0], 10, 32)
+		portNumber, err := strconv.ParseInt(ports[0], k8s.Base, k8s.BitSize)
 		if err != nil {
 			return 0, err
 		}
