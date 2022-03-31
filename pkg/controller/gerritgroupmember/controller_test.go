@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -57,7 +59,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerrit.ClientInterfaceMock{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(nil)
@@ -163,7 +165,7 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerrit.ClientInterfaceMock{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))

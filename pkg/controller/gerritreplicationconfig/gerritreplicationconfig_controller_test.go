@@ -28,6 +28,7 @@ import (
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	pmocks "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -724,7 +725,7 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 }
 
 func Test_reloadReplicationPluginErr(t *testing.T) {
-	gclient := gmock.ClientInterface{}
+	gclient := gerritClient.ClientInterfaceMock{}
 
 	errTest := errors.New("test")
 
@@ -740,7 +741,7 @@ func Test_reloadReplicationPluginErr(t *testing.T) {
 }
 
 func Test_reloadReplicationPlugin(t *testing.T) {
-	gclient := gmock.ClientInterface{}
+	gclient := gerritClient.ClientInterfaceMock{}
 
 	gclient.On("ReloadPlugin", "replication").Return(nil)
 

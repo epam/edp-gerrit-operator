@@ -15,6 +15,7 @@ printf \"global:Change-Owner\\tChange Owner\\n\" >> groups
 printf \"\$2\\tContinuous Integration Tools\\n\" >> groups
 printf \"\$3\\tProject Bootstrappers\\n\" >> groups
 printf \"\$4\\tDevelopers\\n\" >> groups
+printf \"\$5\\tReadOnly\\n\" >> groups
 git add .
 git commit -a -m \"Uploaded EDP Gerrit config\"
 git push origin HEAD:refs/meta/config

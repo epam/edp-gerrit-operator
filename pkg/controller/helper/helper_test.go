@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -89,7 +91,7 @@ func TestGetGerritClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
-	gCl := gmock.ClientInterface{}
+	gCl := gerrit.ClientInterfaceMock{}
 
 	gerritService.On("GetRestClient", &g).Return(&gCl, nil)
 	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService); err != nil {

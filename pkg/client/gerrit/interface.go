@@ -2,6 +2,9 @@ package gerrit
 
 import (
 	"gopkg.in/resty.v1"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
 type ClientInterface interface {
@@ -23,4 +26,14 @@ type ClientInterface interface {
 	ReloadPlugin(plugin string) error
 	ChangeAbandon(changeID string) error
 	ChangeGet(changeID string) (*Change, error)
+	InitNewRestClient(instance *v1alpha1.Gerrit, url string, user string, password string) error
+	CheckCredentials() (int, error)
+	InitAdminUser(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (v1alpha1.Gerrit, error)
+	InitNewSshClient(userName string, privateKey []byte, host string, port int32) error
+	CheckGroup(groupName string) (*int, error)
+	InitAllProjects(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
+		podName string, gerritAdminPublicKey string) error
+	CreateUser(username string, password string, fullname string, publicKey string) error
+	ChangePassword(username string, password string) error
+	AddUserToGroups(userName string, groupNames []string) error
 }

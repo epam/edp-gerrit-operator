@@ -226,7 +226,7 @@ func TestReconcileGerrit_Reconcile_GetRestClientErr(t *testing.T) {
 	mc := mocks.Client{}
 	ctx := context.Background()
 	gServiceMock := gmock.Interface{}
-	gClientMock := gmock.ClientInterface{}
+	gClientMock := gerrit.ClientInterfaceMock{}
 
 	instance := createGerritGroupByOwner(nil)
 	var list v1alpha1.GerritList
@@ -270,7 +270,7 @@ func TestReconcileGerrit_Reconcile_CreateGroupErr(t *testing.T) {
 	mc := mocks.Client{}
 	ctx := context.Background()
 	gServiceMock := gmock.Interface{}
-	gClientMock := gmock.ClientInterface{}
+	gClientMock := gerrit.ClientInterfaceMock{}
 
 	instance := createGerritGroupByOwner(nil)
 	var list v1alpha1.GerritList
@@ -315,7 +315,7 @@ func TestReconcileGerrit_Reconcile_CreateGroup(t *testing.T) {
 	ctx := context.Background()
 
 	gServiceMock := gmock.Interface{}
-	gClientMock := gmock.ClientInterface{}
+	gClientMock := gerrit.ClientInterfaceMock{}
 	instance := createGerritGroupByOwner(nil)
 	var list v1alpha1.GerritList
 
