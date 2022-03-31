@@ -130,7 +130,7 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.Gerri
 		}
 	}
 
-	if instance.Spec.ProjectName != "" {
+	if instance.Spec.Parent != "" {
 		if err := cl.SetProjectParent(instance.Spec.ProjectName, instance.Spec.Parent); err != nil {
 			return errors.Wrap(err, "unable to set project parent")
 		}

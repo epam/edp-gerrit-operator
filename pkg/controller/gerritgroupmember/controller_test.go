@@ -23,6 +23,7 @@ import (
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
@@ -57,7 +58,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerrit.ClientInterfaceMock{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(nil)
@@ -163,7 +164,7 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerrit.ClientInterfaceMock{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))

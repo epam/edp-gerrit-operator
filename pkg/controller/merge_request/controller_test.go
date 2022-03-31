@@ -27,7 +27,7 @@ type ControllerTestSuite struct {
 	gerritService *gmock.Interface
 	logger        *helper.Logger
 	gitClient     *gmock.GitClient
-	gerritClient  *gmock.ClientInterface
+	gerritClient  *gerritClient.ClientInterfaceMock
 	scheme        *runtime.Scheme
 	rootGerrit    *v1alpha1.Gerrit
 	mergeRequest  *v1alpha1.GerritMergeRequest
@@ -40,7 +40,7 @@ func (s *ControllerTestSuite) SetupTest() {
 	s.gerritService = &gmock.Interface{}
 	s.logger = &helper.Logger{}
 	s.gitClient = &gmock.GitClient{}
-	s.gerritClient = &gmock.ClientInterface{}
+	s.gerritClient = &gerritClient.ClientInterfaceMock{}
 
 	s.rootGerrit = &v1alpha1.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
 	s.mergeRequest = &v1alpha1.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",

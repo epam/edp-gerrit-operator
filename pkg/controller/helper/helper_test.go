@@ -17,6 +17,7 @@ import (
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 )
 
 func TestTryToDelete(t *testing.T) {
@@ -89,7 +90,7 @@ func TestGetGerritClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
-	gCl := gmock.ClientInterface{}
+	gCl := gerrit.ClientInterfaceMock{}
 
 	gerritService.On("GetRestClient", &g).Return(&gCl, nil)
 	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService); err != nil {

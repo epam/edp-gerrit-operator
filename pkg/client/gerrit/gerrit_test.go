@@ -14,8 +14,10 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	testifyMock "github.com/stretchr/testify/mock"
 	"gopkg.in/resty.v1"
 
+	platformMock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	mock "github.com/epam/edp-gerrit-operator/v2/mock/ssh"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
@@ -510,4 +512,40 @@ func TestNewClient(t *testing.T) {
 	}
 
 	assert.Equal(t, accept[0], "application/json")
+}
+
+func TestClient_InitAllProjects(t *testing.T) {
+	sshClient := mock.SSHClientInterface{}
+	gc := Client{
+		sshClient: &sshClient,
+	}
+	ps := platformMock.PlatformService{}
+
+	assert.NoError(t, os.MkdirAll("/tmp/test", 0777))
+
+	fp, err := os.Create("/tmp/test/init-all-projects.sh")
+	assert.NoError(t, err)
+	_, err = fp.WriteString("demo")
+	assert.NoError(t, err)
+	assert.NoError(t, fp.Close())
+
+	fp, err = os.Create("/tmp/gerrit.config")
+	assert.NoError(t, err)
+	_, err = fp.WriteString("demo")
+	assert.NoError(t, err)
+	assert.NoError(t, fp.Close())
+
+	defer func() {
+		assert.NoError(t, os.RemoveAll("/tmp/test"))
+	}()
+
+	sshClient.On("RunCommand", testifyMock.Anything).
+		Return([]byte(`Continuous Integration Tools\t25`), nil)
+	ps.On("ExecInPod", "", "",
+		testifyMock.Anything).
+		Return("", "", nil)
+
+	err = gc.InitAllProjects(v1alpha1.Gerrit{}, &ps, "/tmp/test", "", "")
+	assert.NoError(t, err)
+
 }

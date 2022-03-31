@@ -80,7 +80,7 @@ type ComponentService struct {
 	PlatformService      platform.PlatformService
 	client               client.Client
 	k8sScheme            *runtime.Scheme
-	gerritClient         gerrit.Client
+	gerritClient         gerrit.ClientInterface
 	runningInClusterFunc func() bool
 }
 
@@ -91,6 +91,7 @@ func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runt
 		client:               kc,
 		k8sScheme:            ks,
 		runningInClusterFunc: platformHelper.RunningInCluster,
+		gerritClient:         &gerrit.Client{},
 	}
 }
 
@@ -265,6 +266,10 @@ func (s ComponentService) Configure(instance *v1alpha1.Gerrit) (*v1alpha1.Gerrit
 		_, err = s.gerritClient.CreateGroup(spec.GerritProjectDevelopersGroupName,
 			spec.GerritProjectDevelopersGroupNameDescription, true)
 		if err != nil {
+			return instance, false, err
+		}
+
+		if _, err := s.gerritClient.CreateGroup(spec.GerritReadOnlyGroupName, "", true); err != nil {
 			return instance, false, err
 		}
 
@@ -549,14 +554,14 @@ func (s ComponentService) createKeycloakClient(instance v1alpha1.Gerrit, externa
 
 func (s ComponentService) GetRestClient(gerritInstance *v1alpha1.Gerrit) (gerrit.ClientInterface, error) {
 	if s.gerritClient.Resty() != nil {
-		return &s.gerritClient, nil
+		return s.gerritClient, nil
 	}
 
 	if err := s.initRestClient(gerritInstance); err != nil {
 		return nil, errors.Wrap(err, "unable to init gerrit rest client")
 	}
 
-	return &s.gerritClient, nil
+	return s.gerritClient, nil
 }
 
 func (s *ComponentService) initRestClient(instance *v1alpha1.Gerrit) error {

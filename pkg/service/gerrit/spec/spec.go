@@ -64,6 +64,8 @@ const (
 	//GerritProjectDevelopersGroupName - default group description for Developers group
 	GerritProjectDevelopersGroupName = "Developers"
 
+	GerritReadOnlyGroupName = "ReadOnly"
+
 	//GerritProjectDevelopersGroupNameDescription - default group description for Developers group
 	GerritProjectDevelopersGroupNameDescription = "Grant access to all projects in Gerrit"
 

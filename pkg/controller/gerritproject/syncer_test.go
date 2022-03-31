@@ -46,7 +46,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerritClient.ClientInterfaceMock{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
@@ -113,7 +113,7 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerritClient.ClientInterfaceMock{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
@@ -177,7 +177,7 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
 
-	clientMock := gmock.ClientInterface{}
+	clientMock := gerritClient.ClientInterfaceMock{}
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	clientMock.On("ListProjects", "CODE").
