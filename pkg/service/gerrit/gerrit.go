@@ -91,6 +91,7 @@ func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runt
 		client:               kc,
 		k8sScheme:            ks,
 		runningInClusterFunc: platformHelper.RunningInCluster,
+		gerritClient:         &gerrit.Client{},
 	}
 }
 

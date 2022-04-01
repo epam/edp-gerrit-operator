@@ -9,9 +9,6 @@ import (
 	"strconv"
 
 	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
-	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1alpha1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
 	"github.com/pkg/errors"
@@ -31,6 +28,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 )
 
 const (
@@ -253,6 +254,10 @@ func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, erro
 	realm, err := s.getKeycloakRealm(instance)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(realm.OwnerReferences) == 0 {
+		return nil, errors.Errorf("realm [%s] does not have owner refs", realm.Name)
 	}
 
 	keycloak := &keycloakApi.Keycloak{}

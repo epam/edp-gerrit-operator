@@ -995,5 +995,10 @@ func TestComponentService_Configure_CreateGroups(t *testing.T) {
 
 	ps.AssertExpectations(t)
 	gerritClient.AssertExpectations(t)
+}
 
+func TestNewComponentService(t *testing.T) {
+	svc := NewComponentService(nil, nil, nil)
+	_, ok := svc.(ComponentService)
+	assert.True(t, ok)
 }
