@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -31,7 +30,7 @@ func TestClient_SetProjectUser(t *testing.T) {
 	createFakeProject("test-user-repo", t)
 
 	cl := New("base", tmpDir, "admin", "admin")
-	err := cl.SetProjectUser("test-user-repo", "foo", "bar")
+	err := cl.SetProjectUser("test-user-repo", &User{Name: "foo", Email: "bar"})
 	assert.NoError(t, err)
 }
 
@@ -43,7 +42,7 @@ func TestClient_SetProjectUserFailure(t *testing.T) {
 	createFakeProject("test-user-repo", t)
 
 	cl := New("base", tmpDir, "admin", "admin")
-	err := cl.SetProjectUser("test-user-repo1", "foo", "bar")
+	err := cl.SetProjectUser("test-user-repo1", &User{Name: "foo", Email: "bar"})
 	assert.Error(t, err)
 	assert.EqualError(t, err, "unable to open repository: repository does not exist")
 }
@@ -67,7 +66,7 @@ func createFakeProject(name string, t *testing.T) {
 
 	assert.NoError(t, err)
 
-	fp, err := os.Create(fmt.Sprintf("%s/test.txt", cloneRepo))
+	fp, err := os.Create(path.Join(cloneRepo, "test.txt"))
 	assert.NoError(t, err)
 
 	_, err = fp.WriteString("test")
@@ -141,4 +140,77 @@ func TestClient_GenerateChangeID(t *testing.T) {
 	cl := Client{}
 	_, err := cl.GenerateChangeID()
 	assert.NoError(t, err)
+}
+
+func TestClient_SetFileContents(t *testing.T) {
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	createFakeProject("demo", t)
+
+	cl := New(tmpDir, tmpDir, "admin", "admin")
+	err := cl.SetFileContents("demo", "test.txt", "test")
+	assert.NoError(t, err)
+
+	err = cl.SetFileContents("demo-fail", "test.txt", "test")
+	assert.Error(t, err)
+}
+
+func TestClient_Commit(t *testing.T) {
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	createFakeProject("demo", t)
+
+	cl := New(tmpDir, tmpDir, "admin", "admin")
+	err := cl.SetFileContents("demo", "kwest.txt", "kwest")
+	assert.NoError(t, err)
+
+	err = cl.Commit("demo", "test commit", []string{"kwest.txt"},
+		&User{Name: "mike", Email: "mk@gmail.com"})
+	assert.NoError(t, err)
+
+	err = cl.Commit("demo-failure", "fail", []string{}, nil)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "unable to open repository: repository does not exist")
+
+	err = cl.Commit("demo", "test commit", []string{"11kwest.txt"},
+		&User{Name: "mike", Email: "mk@gmail.com"})
+	assert.EqualError(t, err, "unable to add file: 11kwest.txt: entry not found")
+}
+
+func TestClient_CheckoutBranch(t *testing.T) {
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	createFakeProject("demo", t)
+
+	cmd := exec.Command("git", "branch", "test-checkout")
+	cmd.Dir = path.Join(tmpDir, "demo")
+	err := cmd.Run()
+	assert.NoError(t, err)
+
+	cl := New(tmpDir, tmpDir, "admin", "admin")
+	err = cl.CheckoutBranch("demo", "test-checkout")
+	assert.NoError(t, err)
+
+	err = cl.CheckoutBranch("demo", "test-checkout-2")
+	assert.EqualError(t, err, "unable to checkout to branch: test-checkout-2: reference not found")
+
+	err = cl.CheckoutBranch("demo-failure", "test-checkout")
+	assert.EqualError(t, err, "unable to open repository: repository does not exist")
+}
+
+func TestClient_Push(t *testing.T) {
+	defer func() {
+		os.RemoveAll(tmpDir)
+	}()
+
+	createFakeProject("demo", t)
+	cl := New(tmpDir, tmpDir, "admin", "admin")
+	_, err := cl.Push("demo", "origin", "HEAD:refs/for/master")
+	assert.EqualError(t, err, "unable to create new remote: unable to get origin remote: remote not found")
 }

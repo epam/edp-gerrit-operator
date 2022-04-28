@@ -4,13 +4,15 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"path"
 	"time"
 
-	"github.com/go-git/go-git/v5/config"
-
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
 )
@@ -19,6 +21,11 @@ type Client struct {
 	username, password string
 	workingDir         string
 	gerritBaseURL      string
+}
+
+type User struct {
+	Name  string
+	Email string
 }
 
 func (c Client) GerritBaseURL() string {
@@ -36,6 +43,26 @@ func New(gerritBaseURL, workingDir, username, password string) *Client {
 
 func (c *Client) projectPath(projectName string) string {
 	return path.Join(c.workingDir, projectName)
+}
+
+func (c *Client) SetFileContents(projectName, filePath, contents string) error {
+	projectPath := c.projectPath(projectName)
+	filePath = path.Join(projectPath, filePath)
+
+	fp, err := os.Create(filePath)
+	if err != nil {
+		return errors.Wrapf(err, "unable to create file: %s", filePath)
+	}
+
+	if _, err := fp.WriteString(contents); err != nil {
+		return errors.Wrapf(err, "unable to put file contents, file: %s", filePath)
+	}
+
+	if err := fp.Close(); err != nil {
+		return errors.Wrapf(err, "unable to close file: %s", filePath)
+	}
+
+	return nil
 }
 
 func (c *Client) Clone(projectName string) (projectPath string, err error) {
@@ -81,7 +108,35 @@ func (c *Client) Merge(projectName, sourceBranch, targetBranch string, options .
 	return nil
 }
 
-func (c *Client) SetProjectUser(projectName, name, email string) error {
+func (c *Client) Commit(projectName, message string, files []string, user *User) error {
+	projectPath := c.projectPath(projectName)
+
+	r, err := git.PlainOpen(projectPath)
+	if err != nil {
+		return errors.Wrap(err, "unable to open repository")
+	}
+
+	w, err := r.Worktree()
+	if err != nil {
+		return errors.Wrap(err, "unable to get repo worktree")
+	}
+
+	for _, f := range files {
+		if _, err := w.Add(f); err != nil {
+			return errors.Wrapf(err, "unable to add file: %s", f)
+		}
+	}
+
+	if _, err := w.Commit(message, &git.CommitOptions{
+		Author: &object.Signature{Name: user.Name, Email: user.Email, When: time.Now()},
+	}); err != nil {
+		return errors.Wrap(err, "unable to perform git commit")
+	}
+
+	return nil
+}
+
+func (c *Client) SetProjectUser(projectName string, user *User) error {
 	r, err := git.PlainOpen(c.projectPath(projectName))
 	if err != nil {
 		return errors.Wrap(err, "unable to open repository")
@@ -95,10 +150,30 @@ func (c *Client) SetProjectUser(projectName, name, email string) error {
 	repoConf.User = struct {
 		Name  string
 		Email string
-	}{Name: name, Email: email}
+	}{Name: user.Name, Email: user.Email}
 
 	if err := r.SetConfig(repoConf); err != nil {
 		return errors.Wrap(err, "unable to set project user")
+	}
+
+	return nil
+}
+
+func (c *Client) CheckoutBranch(projectName, branch string) error {
+	projectPath := c.projectPath(projectName)
+
+	r, err := git.PlainOpen(projectPath)
+	if err != nil {
+		return errors.Wrap(err, "unable to open repository")
+	}
+
+	w, err := r.Worktree()
+	if err != nil {
+		return errors.Wrap(err, "unable to get repo worktree")
+	}
+
+	if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName(branch)}); err != nil {
+		return errors.Wrapf(err, "unable to checkout to branch: %s", branch)
 	}
 
 	return nil

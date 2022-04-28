@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,8 +69,10 @@ func (s *ControllerTestSuite) TestReconcileSetAuthorFailure() {
 	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
 
 	s.gitClient.On("Clone", s.mergeRequest.Spec.ProjectName).Return("path", nil)
-	s.gitClient.On("SetProjectUser", s.mergeRequest.Spec.ProjectName, s.mergeRequest.Spec.AuthorName,
-		s.mergeRequest.Spec.AuthorEmail).Return(errors.New("set author fatal"))
+	s.gitClient.On("GenerateChangeID").Return("change-id-1", nil)
+	s.gitClient.On("SetProjectUser", s.mergeRequest.Spec.ProjectName,
+		&git.User{Name: s.mergeRequest.Spec.AuthorName, Email: s.mergeRequest.Spec.AuthorEmail}).
+		Return(errors.New("set author fatal"))
 
 	rec := Reconcile{
 		k8sClient: fakeClient,
@@ -85,7 +91,8 @@ func (s *ControllerTestSuite) TestReconcileSetAuthorFailure() {
 
 	err = s.logger.LastError()
 	assert.Error(s.T(), err)
-	assert.EqualError(s.T(), err, "unable to create change: unable to set project author: set author fatal")
+	assert.EqualError(s.T(), err,
+		"unable to create change: unable to perform merge: unable to set project author: set author fatal")
 }
 
 func (s *ControllerTestSuite) TestReconcile() {
@@ -101,8 +108,9 @@ func (s *ControllerTestSuite) TestReconcile() {
 		Return(nil)
 	s.gitClient.On("Push", s.mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
 		Return("http://gerrit.com/merge/1", nil)
-	s.gitClient.On("SetProjectUser", s.mergeRequest.Spec.ProjectName, s.mergeRequest.Spec.AuthorName,
-		s.mergeRequest.Spec.AuthorEmail).Return(nil)
+	s.gitClient.On("SetProjectUser", s.mergeRequest.Spec.ProjectName,
+		&git.User{Name: s.mergeRequest.Spec.AuthorName, Email: s.mergeRequest.Spec.AuthorEmail}).
+		Return(nil)
 
 	rec := Reconcile{
 		k8sClient: fakeClient,
@@ -194,6 +202,51 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), updatedMergeRequest.Status.Value,
 		StatusAbandoned)
+}
+
+func (s *ControllerTestSuite) TestConfigMap() {
+	s.mergeRequest.Spec.SourceBranch = ""
+	s.mergeRequest.Spec.ChangesConfigMap = "changes"
+	err := corev1.AddToScheme(s.scheme)
+	assert.NoError(s.T(), err)
+	cm := corev1.ConfigMap{Data: map[string]string{"test.txt": `{"path": "test.txt", "contents": "test"}`}, ObjectMeta: metav1.ObjectMeta{
+		Name: s.mergeRequest.Spec.ChangesConfigMap, Namespace: s.mergeRequest.Namespace,
+	}}
+
+	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).
+		WithRuntimeObjects(s.rootGerrit, s.mergeRequest, &cm).Build()
+	changeID := "change123"
+
+	s.gitClient.On("Clone", s.mergeRequest.Spec.ProjectName).Return("path", nil)
+	s.gitClient.On("GenerateChangeID").Return(changeID, nil)
+	s.gitClient.On("Push", s.mergeRequest.Spec.ProjectName, "origin", "HEAD:refs/for/master").
+		Return("http://gerrit.com/merge/1", nil)
+	s.gitClient.On("CheckoutBranch", s.mergeRequest.Spec.ProjectName, s.mergeRequest.TargetBranch()).
+		Return(nil)
+	s.gitClient.On("SetFileContents", s.mergeRequest.Spec.ProjectName, "test.txt", "test").Return(nil)
+	s.gitClient.On("Commit", s.mergeRequest.Spec.ProjectName, commitMessage(s.mergeRequest.CommitMessage(),
+		changeID), []string{"test.txt"},
+		&git.User{Name: s.mergeRequest.Spec.AuthorName, Email: s.mergeRequest.Spec.AuthorEmail}).Return(nil)
+
+	rec := Reconcile{
+		k8sClient: fakeClient,
+		service:   s.gerritService,
+		log:       s.logger,
+		getGitClient: func(ctx context.Context, child gerrit.Child, workDir string) (GitClient, error) {
+			return s.gitClient, nil
+		},
+	}
+
+	result, err := rec.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{
+		Name:      s.mergeRequest.Name,
+		Namespace: s.mergeRequest.Namespace,
+	}})
+	assert.NoError(s.T(), err)
+
+	err = s.logger.LastError()
+	assert.NoError(s.T(), err)
+
+	assert.Equal(s.T(), result.RequeueAfter, time.Second*helper.DefaultRequeueTime)
 }
 
 func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
