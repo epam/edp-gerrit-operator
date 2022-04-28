@@ -408,13 +408,6 @@ Resource Types:
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>sourceBranch</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>additionalArguments</b></td>
         <td>[]string</td>
         <td>
@@ -422,10 +415,24 @@ Resource Types:
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>changesConfigMap</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>commitMessage</b></td>
         <td>string</td>
         <td>
           merge commit message<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sourceBranch</b></td>
+        <td>string</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr><tr>

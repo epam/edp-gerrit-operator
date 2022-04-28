@@ -8,6 +8,11 @@ import (
 	"regexp"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,7 +54,10 @@ type GitClient interface {
 	Merge(projectName, sourceBranch, targetBranch string, options ...string) error
 	Push(projectName string, remote string, refSpecs ...string) (pushOutput string, retErr error)
 	GenerateChangeID() (string, error)
-	SetProjectUser(projectName, name, email string) error
+	SetProjectUser(projectName string, user *git.User) error
+	CheckoutBranch(projectName, branch string) error
+	Commit(projectName, message string, files []string, user *git.User) error
+	SetFileContents(projectName, filePath, contents string) error
 }
 
 type GerritClient interface {
@@ -154,6 +162,10 @@ func (r *Reconcile) tryReconcile(ctx context.Context, instance *v1alpha1.GerritM
 	requeue := false
 
 	if instance.Status.ChangeID == "" {
+		if instance.Spec.SourceBranch == "" && instance.Spec.ChangesConfigMap == "" {
+			return false, errors.New("sourceBranch or changesConfigMap must be specified")
+		}
+
 		status, err := r.createChange(ctx, instance)
 		if err != nil {
 			return false, errors.Wrap(err, "unable to create change")
@@ -181,44 +193,40 @@ func (r *Reconcile) tryReconcile(ctx context.Context, instance *v1alpha1.GerritM
 
 func (r *Reconcile) createChange(ctx context.Context,
 	instance *v1alpha1.GerritMergeRequest) (status *v1alpha1.GerritMergeRequestStatus, retErr error) {
+	//init git client
 	gitClient, err := r.getGitClient(ctx, instance, r.gitWorkDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to init git client")
 	}
-
+	//clone project
 	projectPath, err := gitClient.Clone(instance.Spec.ProjectName)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to clone repo")
 	}
-
-	if err := gitClient.SetProjectUser(instance.Spec.ProjectName, instance.Spec.AuthorName,
-		instance.Spec.AuthorEmail); err != nil {
-		return nil, errors.Wrap(err, "unable to set project author")
-	}
-
+	//clear cloned project
 	defer func() {
 		if err := os.RemoveAll(projectPath); err != nil {
 			retErr = err
 		}
 	}()
-
+	//generate change id for commit or merge
 	changeID, err := gitClient.GenerateChangeID()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to generate change id")
 	}
-
-	mergeArguments := []string{MergeArgNoFastForward, MergeArgCommitMessage,
-		fmt.Sprintf("%s\n\nChange-Id: %s", instance.CommitMessage(), changeID)}
-	if len(instance.Spec.AdditionalArguments) > 0 {
-		mergeArguments = append(mergeArguments, instance.Spec.AdditionalArguments...)
+	//perform merge or commit files from config map
+	if instance.Spec.SourceBranch != "" {
+		if err := mergeBranches(instance, gitClient, changeID); err != nil {
+			return nil, errors.Wrap(err, "unable to perform merge")
+		}
+	} else {
+		if err := r.commitFiles(ctx, instance, gitClient, changeID); err != nil {
+			return nil, errors.Wrap(err, "unable to commit files")
+		}
 	}
-
-	if err := gitClient.Merge(instance.Spec.ProjectName, fmt.Sprintf("origin/%s", instance.Spec.SourceBranch),
-		instance.TargetBranch(), mergeArguments...); err != nil {
-		return nil, errors.Wrap(err, "unable to merge branches")
-	}
-
-	pushMessage, err := gitClient.Push(instance.Spec.ProjectName, "origin", "HEAD:refs/for/master")
+	//push changes for review
+	pushMessage, err := gitClient.Push(instance.Spec.ProjectName, "origin",
+		fmt.Sprintf("HEAD:refs/for/%s", instance.TargetBranch()))
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to push repo")
 	}
@@ -228,6 +236,61 @@ func (r *Reconcile) createChange(ctx context.Context,
 		ChangeURL: extractMrURL(pushMessage),
 		Value:     StatusNew,
 	}, nil
+}
+
+func (r *Reconcile) commitFiles(ctx context.Context, instance *v1alpha1.GerritMergeRequest, gitClient GitClient, changeID string) error {
+	var cMap corev1.ConfigMap
+	if err := r.k8sClient.Get(ctx, types.NamespacedName{
+		Namespace: instance.Namespace,
+		Name:      instance.Spec.ChangesConfigMap,
+	}, &cMap); err != nil {
+		return errors.Wrap(err, "unable to get files config map")
+	}
+
+	if err := gitClient.CheckoutBranch(instance.Spec.ProjectName, instance.TargetBranch()); err != nil {
+		return errors.Wrap(err, "unable to checkout branch")
+	}
+
+	addFiles := make([]string, 0, len(cMap.Data))
+
+	for filePath, fileContents := range cMap.Data {
+		if err := gitClient.SetFileContents(instance.Spec.ProjectName, filePath, fileContents); err != nil {
+			return errors.Wrap(err, "unable to set file contents")
+		}
+		addFiles = append(addFiles, filePath)
+	}
+
+	if err := gitClient.Commit(instance.Spec.ProjectName,
+		commitMessage(instance.CommitMessage(), changeID), addFiles, &git.User{
+			Name: instance.Spec.AuthorName, Email: instance.Spec.AuthorEmail}); err != nil {
+		return errors.Wrap(err, "unable to commit changes")
+	}
+
+	return nil
+}
+
+func mergeBranches(instance *v1alpha1.GerritMergeRequest, gitClient GitClient, changeID string) error {
+	if err := gitClient.SetProjectUser(instance.Spec.ProjectName,
+		&git.User{Name: instance.Spec.AuthorName, Email: instance.Spec.AuthorEmail}); err != nil {
+		return errors.Wrap(err, "unable to set project author")
+	}
+
+	mergeArguments := []string{MergeArgNoFastForward, MergeArgCommitMessage,
+		commitMessage(instance.CommitMessage(), changeID)}
+	if len(instance.Spec.AdditionalArguments) > 0 {
+		mergeArguments = append(mergeArguments, instance.Spec.AdditionalArguments...)
+	}
+
+	if err := gitClient.Merge(instance.Spec.ProjectName, fmt.Sprintf("origin/%s", instance.Spec.SourceBranch),
+		instance.TargetBranch(), mergeArguments...); err != nil {
+		return errors.Wrap(err, "unable to merge branches")
+	}
+
+	return nil
+}
+
+func commitMessage(commitMessage, changeID string) string {
+	return fmt.Sprintf("%s\n\nChange-Id: %s", commitMessage, changeID)
 }
 
 func (r *Reconcile) getChangeStatus(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (string, error) {

@@ -22,6 +22,7 @@ type GerritMergeRequestSpec struct {
 	CommitMessage       string   `json:"commitMessage"`
 	AuthorName          string   `json:"authorName"`
 	AuthorEmail         string   `json:"authorEmail"`
+	ChangesConfigMap    string   `json:"changesConfigMap"`
 	AdditionalArguments []string `json:"additionalArguments"`
 }
 
@@ -51,8 +52,10 @@ func (in GerritMergeRequest) TargetBranch() string {
 }
 
 func (in GerritMergeRequest) CommitMessage() string {
-	if in.Spec.CommitMessage == "" {
+	if in.Spec.CommitMessage == "" && in.Spec.SourceBranch != "" {
 		return fmt.Sprintf("merge %s to %s", in.Spec.SourceBranch, in.TargetBranch())
+	} else if in.Spec.CommitMessage == "" && in.Spec.ChangesConfigMap != "" {
+		return fmt.Sprintf("merge files contents from config map: %s", in.Spec.ChangesConfigMap)
 	}
 
 	return in.Spec.CommitMessage

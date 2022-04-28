@@ -45,6 +45,8 @@ spec:
                   type: string
                 authorEmail:
                   type: string
+                changesConfigMap:
+                  type: string
                 additionalArguments:
                   nullable: true
                   type: array
@@ -54,7 +56,6 @@ spec:
               required:
                 - ownerName
                 - projectName
-                - sourceBranch
                 - authorName
                 - authorEmail
               type: object
