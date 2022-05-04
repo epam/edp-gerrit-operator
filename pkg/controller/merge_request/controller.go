@@ -2,6 +2,7 @@ package mergerequest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -63,6 +64,11 @@ type GitClient interface {
 type GerritClient interface {
 	ChangeAbandon(changeID string) error
 	ChangeGet(changeID string) (*gerritClient.Change, error)
+}
+
+type MRConfigMapFile struct {
+	Path     string `json:"path"`
+	Contents string `json:"contents"`
 }
 
 func NewReconcile(k8sClient client.Client, log logr.Logger,
@@ -253,11 +259,16 @@ func (r *Reconcile) commitFiles(ctx context.Context, instance *v1alpha1.GerritMe
 
 	addFiles := make([]string, 0, len(cMap.Data))
 
-	for filePath, fileContents := range cMap.Data {
-		if err := gitClient.SetFileContents(instance.Spec.ProjectName, filePath, fileContents); err != nil {
+	for _, mrContents := range cMap.Data {
+		var mrFile MRConfigMapFile
+		if err := json.Unmarshal([]byte(mrContents), &mrFile); err != nil {
+			return errors.Wrap(err, "unable to decode file")
+		}
+
+		if err := gitClient.SetFileContents(instance.Spec.ProjectName, mrFile.Path, mrFile.Contents); err != nil {
 			return errors.Wrap(err, "unable to set file contents")
 		}
-		addFiles = append(addFiles, filePath)
+		addFiles = append(addFiles, mrFile.Path)
 	}
 
 	if err := gitClient.Commit(instance.Spec.ProjectName,

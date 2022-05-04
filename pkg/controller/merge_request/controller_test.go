@@ -209,7 +209,7 @@ func (s *ControllerTestSuite) TestConfigMap() {
 	s.mergeRequest.Spec.ChangesConfigMap = "changes"
 	err := corev1.AddToScheme(s.scheme)
 	assert.NoError(s.T(), err)
-	cm := corev1.ConfigMap{Data: map[string]string{"test.txt": "test"}, ObjectMeta: metav1.ObjectMeta{
+	cm := corev1.ConfigMap{Data: map[string]string{"test.txt": `{"path": "test.txt", "contents": "test"}`}, ObjectMeta: metav1.ObjectMeta{
 		Name: s.mergeRequest.Spec.ChangesConfigMap, Namespace: s.mergeRequest.Namespace,
 	}}
 
