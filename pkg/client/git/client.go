@@ -49,7 +49,7 @@ func (c *Client) SetFileContents(projectName, filePath, contents string) error {
 	projectPath := c.projectPath(projectName)
 	filePath = path.Join(projectPath, filePath)
 
-	fp, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0660)
+	fp, err := os.Create(filePath)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create file: %s", filePath)
 	}
@@ -128,7 +128,7 @@ func (c *Client) Commit(projectName, message string, files []string, user *User)
 	}
 
 	if _, err := w.Commit(message, &git.CommitOptions{
-		Author: &object.Signature{Name: user.Name, Email: user.Email},
+		Author: &object.Signature{Name: user.Name, Email: user.Email, When: time.Now()},
 	}); err != nil {
 		return errors.Wrap(err, "unable to perform git commit")
 	}
