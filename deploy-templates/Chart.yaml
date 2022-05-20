@@ -23,14 +23,12 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/operator: "true"
   artifacthub.io/images: |
-    - name: gerrit-operator:2.10.0
-      image: epamedp/gerrit-operator:2.10.0
-    - name: gerrit-operator:2.9.0
-      image: epamedp/gerrit-operator:2.9.0
+    - name: gerrit-operator:2.11.0
+      image: epamedp/gerrit-operator:2.11.0
     - name: gerrit:3.3.2
       image: openfrontier/gerrit:3.3.2
-    - name: alpine:3.13.7
-      image: alpine:3.13.7
+    - name: alpine:3.15.4
+      image: alpine:3.15.4
   artifacthub.io/operatorCapabilities: Full Lifecycle
   artifacthub.io/crds: |
     - kind: Gerrit
@@ -69,57 +67,90 @@ annotations:
       displayName: GerritMergeRequest
       description: Takes part in merge requests
   artifacthub.io/crdsExamples: |
-   - apiVersion: v2.edp.epam.com/v1alpha1
-     kind: Gerrit
-     metadata:
-       name: gerrit
-     spec:
-       image: openfrontier/gerrit
-       keycloakSpec:
-         enabled: true
-       sshPort: 30024
-       type: Gerrit
-       users:
-         - groups:
-             - Administrators
-           username: test@example.com
-       version: 3.3.2
-       volumes:
-         - capacity: 1Gi
-           name: data
-           storage_class: gp2-retain
-   - apiVersion: v2.edp.epam.com/v1alpha1
-     kind: GerritGroup
-     metadata:
-       name: developers
-     spec:
-       description: Gerrit Site Developers
-       gerritOwner: 'test'
-       name: Developers
-       visibleToAll: false
-   - apiVersion: v2.edp.epam.com/v1alpha1
-     kind: GerritGroupMember
-     metadata:
-       name: reader
-     spec:
-       accountId: reader
-       groupId: Developers
-       ownerName: 'test'
-   - apiVersion: v2.edp.epam.com/v1alpha1
-     kind: GerritProject
-     metadata:
-       name: gerrit-test
-     spec:
-       branches: 'master'
-       createEmptyCommit: false
-       description: 'test'
-       name: gerrit-test
-       ownerName: gerrit
-       owners: 'test'
-       parent: All-Projects
-       permissionsOnly: false
-       rejectEmptyCommit: 'test'
-       submitType: 'test'
+    - apiVersion: v2.edp.epam.com/v1alpha1
+      kind: Gerrit
+      metadata:
+        name: gerrit
+      spec:
+        image: openfrontier/gerrit
+        keycloakSpec:
+          enabled: true
+        sshPort: 30024
+        type: Gerrit
+        users:
+          - groups:
+              - Administrators
+            username: test@example.com
+        version: 3.3.2
+        volumes:
+          - capacity: 1Gi
+            name: data
+            storage_class: gp2
+    - apiVersion: v2.edp.epam.com/v1alpha1
+      kind: GerritGroup
+      metadata:
+        name: developers
+      spec:
+        description: Gerrit Site Developers
+        gerritOwner: 'test'
+        name: Developers
+        visibleToAll: false
+    - apiVersion: v2.edp.epam.com/v1alpha1
+      kind: GerritGroupMember
+      metadata:
+        name: reader
+      spec:
+        accountId: reader
+        groupId: Developers
+        ownerName: 'test'
+    - apiVersion: v2.edp.epam.com/v1alpha1
+      kind: GerritProject
+      metadata:
+        name: gerrit-test
+      spec:
+        branches: 'master'
+        createEmptyCommit: false
+        description: 'test'
+        name: gerrit-test
+        ownerName: gerrit
+        owners: 'test'
+        parent: All-Projects
+        permissionsOnly: false
+        rejectEmptyCommit: 'test'
+        submitType: 'test'
+    - apiVersion: v2.edp.epam.com/v1alpha1
+      kind: GerritMergeRequest
+      metadata:
+        name: gerritmergerequest
+      spec:
+        ownerName: gerrit
+        targetBranch: master
+        sourceBranch: rev123
+        projectName: testmerge1
+        commitMessage: kawabunga
+        authorName: John Doe
+        authorEmail: john.doe@example.com
+        changesConfigMap: demo-changes
+        additionalArguments: null
+    - apiVersion: v2.edp.epam.com/v1alpha1
+      kind: GerritProjectAccess
+      metadata:
+        name: test-access1
+      spec:
+        projectName: test123
+        references:
+          - refPattern: "refs/for/*"
+            permissionName: "label-Verified"
+            groupName: "Administrators"
+            action: "ALLOW"
+            min: -1
+            max: 1
+          - refPattern: "refs/for/*"
+            permissionName: "label-Verified"
+            groupName: "test321"
+            action: "ALLOW"
+            min: -1
+            max: 1
   artifacthub.io/links: |
     - name: EDP Documentation
       url: https://epam.github.io/edp-install/
