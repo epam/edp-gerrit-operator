@@ -6,37 +6,69 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion
+
+// GerritMergeRequest is the Schema for the gerrit merge request API
 type GerritMergeRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              GerritMergeRequestSpec   `json:"spec,omitempty"`
-	Status            GerritMergeRequestStatus `json:"status,omitempty"`
+
+	Spec   GerritMergeRequestSpec   `json:"spec,omitempty"`
+	Status GerritMergeRequestStatus `json:"status,omitempty"`
 }
 
+// GerritMergeRequestSpec defines the desired state of GerritMergeRequest
 type GerritMergeRequestSpec struct {
-	OwnerName           string   `json:"ownerName"`
-	ProjectName         string   `json:"projectName"`
-	TargetBranch        string   `json:"targetBranch"`
-	SourceBranch        string   `json:"sourceBranch"`
-	CommitMessage       string   `json:"commitMessage"`
-	AuthorName          string   `json:"authorName"`
-	AuthorEmail         string   `json:"authorEmail"`
-	ChangesConfigMap    string   `json:"changesConfigMap"`
-	AdditionalArguments []string `json:"additionalArguments"`
+	// OwnerName indicates which gerrit CR should be taken to initialize correct client.
+	// +nullable
+	OwnerName string `json:"ownerName"`
+
+	// ProjectName is gerrit project name.
+	ProjectName string `json:"projectName"`
+
+	AuthorName string `json:"authorName"`
+
+	AuthorEmail string `json:"authorEmail"`
+
+	// TargetBranch default value is master.
+	// +optional
+	TargetBranch string `json:"targetBranch,omitempty"`
+
+	// +optional
+	SourceBranch string `json:"sourceBranch,omitempty"`
+
+	// +optional
+	CommitMessage string `json:"commitMessage,omitempty"`
+
+	// +optional
+	ChangesConfigMap string `json:"changesConfigMap,omitempty"`
+
+	// AdditionalArguments contains merge command additional command line arguments.
+	// +nullable
+	// +optional
+	AdditionalArguments []string `json:"additionalArguments,omitempty"`
 }
 
+// GerritMergeRequestStatus defines the observed state of GerritMergeRequest
 type GerritMergeRequestStatus struct {
-	Value     string `json:"value"`
-	ChangeURL string `json:"changeUrl"`
-	ChangeID  string `json:"changeId"`
+	// +optional
+	Value string `json:"value,omitempty"`
+	// +optional
+	ChangeURL string `json:"changeUrl,omitempty"`
+	// +optional
+	ChangeID string `json:"changeId,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+
+// GerritMergeRequestList contains a list of GerritMergeRequest
 type GerritMergeRequestList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GerritMergeRequest `json:"items"`
+
+	Items []GerritMergeRequest `json:"items"`
 }
 
 func (in GerritMergeRequest) OwnerName() string {
@@ -59,4 +91,8 @@ func (in GerritMergeRequest) CommitMessage() string {
 	}
 
 	return in.Spec.CommitMessage
+}
+
+func init() {
+	SchemeBuilder.Register(&GerritMergeRequest{}, &GerritMergeRequestList{})
 }

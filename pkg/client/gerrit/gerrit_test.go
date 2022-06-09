@@ -19,7 +19,7 @@ import (
 
 	platformMock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	mock "github.com/epam/edp-gerrit-operator/v2/mock/ssh"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
 )
 
@@ -66,7 +66,7 @@ func TestClient_InitNewSshClient_Err(t *testing.T) {
 
 func TestClient_InitNewRestClient(t *testing.T) {
 	cl := Client{}
-	err := cl.InitNewRestClient(&v1alpha1.Gerrit{}, "", "", "")
+	err := cl.InitNewRestClient(&gerritApi.Gerrit{}, "", "", "")
 	assert.NoError(t, err)
 }
 
@@ -545,7 +545,7 @@ func TestClient_InitAllProjects(t *testing.T) {
 		testifyMock.Anything).
 		Return("", "", nil)
 
-	err = gc.InitAllProjects(v1alpha1.Gerrit{}, &ps, "/tmp/test", "", "")
+	err = gc.InitAllProjects(gerritApi.Gerrit{}, &ps, "/tmp/test", "", "")
 	assert.NoError(t, err)
 
 }

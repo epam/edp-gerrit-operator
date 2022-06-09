@@ -12,7 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
@@ -65,13 +65,13 @@ type ReconcileGerritReplicationConfig struct {
 func (r *ReconcileGerritReplicationConfig) SetupWithManager(mgr ctrl.Manager) error {
 	p := predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			oldObject := e.ObjectOld.(*v1alpha1.GerritReplicationConfig)
-			newObject := e.ObjectNew.(*v1alpha1.GerritReplicationConfig)
+			oldObject := e.ObjectOld.(*gerritApi.GerritReplicationConfig)
+			newObject := e.ObjectNew.(*gerritApi.GerritReplicationConfig)
 			return oldObject.Status == newObject.Status
 		},
 	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritReplicationConfig{}, builder.WithPredicates(p)).
+		For(&gerritApi.GerritReplicationConfig{}, builder.WithPredicates(p)).
 		Complete(r)
 }
 
@@ -79,7 +79,7 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	log.Info("Reconciling GerritReplicationConfig")
 
-	instance := &v1alpha1.GerritReplicationConfig{}
+	instance := &gerritApi.GerritReplicationConfig{}
 	err := r.client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
@@ -148,9 +148,9 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, instance *v1alpha1.GerritReplicationConfig, status string) error {
+func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, instance *gerritApi.GerritReplicationConfig, status string) error {
 	instance.Status.Status = status
-	instance.Status.LastTimeUpdated = time.Now()
+	instance.Status.LastTimeUpdated = metav1.Now()
 	err := r.client.Status().Update(ctx, instance)
 	if err != nil {
 		err := r.client.Update(ctx, instance)
@@ -163,7 +163,7 @@ func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, ins
 	return nil
 }
 
-func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1.GerritReplicationConfig, gerrit *v1alpha1.Gerrit) error {
+func (r *ReconcileGerritReplicationConfig) configureReplication(config *gerritApi.GerritReplicationConfig, gerrit *gerritApi.Gerrit) error {
 	GerritTemplatesPath := platformHelper.LocalTemplatesRelativePath
 	executableFilePath, err := helper.GetExecutableFilePath()
 	if err != nil {
@@ -174,7 +174,7 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *v1alpha1
 		GerritTemplatesPath = fmt.Sprintf("%s/../%s/%s", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
 	}
 
-	podList, err := r.platform.GetPods(gerrit.Namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%s", gerrit.Name)})
+	podList, err := r.platform.GetPods(gerrit.Namespace, metav1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%s", gerrit.Name)})
 	if err != nil || len(podList.Items) != 1 {
 		return err
 	}
@@ -269,7 +269,7 @@ func (r *ReconcileGerritReplicationConfig) saveSshReplicationKey(namespace, podN
 }
 
 func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, podName string,
-	grc v1alpha1.GerritReplicationConfig, templatePath string) error {
+	grc gerritApi.GerritReplicationConfig, templatePath string) error {
 	config, err := resolveReplicationTemplate(grc, templatePath, "replication-conf.tmpl")
 	if err != nil {
 		return err
@@ -285,7 +285,7 @@ func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, po
 }
 
 func (r *ReconcileGerritReplicationConfig) updateSshConfig(namespace, podName string,
-	grc v1alpha1.GerritReplicationConfig, templatePath string, keyPath string) error {
+	grc gerritApi.GerritReplicationConfig, templatePath string, keyPath string) error {
 	err := r.createSshConfig(namespace, podName)
 	if err != nil {
 		return err
@@ -314,7 +314,7 @@ func (r *ReconcileGerritReplicationConfig) reloadReplicationPlugin(client gerrit
 	return nil
 }
 
-func resolveReplicationTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName string) (*bytes.Buffer, error) {
+func resolveReplicationTemplate(grc gerritApi.GerritReplicationConfig, path, templateName string) (*bytes.Buffer, error) {
 	var config bytes.Buffer
 
 	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(filepath.Join(path, templateName)))
@@ -330,7 +330,7 @@ func resolveReplicationTemplate(grc v1alpha1.GerritReplicationConfig, path, temp
 	return &config, nil
 }
 
-func resolveSshTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName, keyPath string) (*bytes.Buffer, error) {
+func resolveSshTemplate(grc gerritApi.GerritReplicationConfig, path, templateName, keyPath string) (*bytes.Buffer, error) {
 	var config bytes.Buffer
 	re := regexp.MustCompile(`\@([^\[\]]*)\:`)
 	host := re.FindStringSubmatch(grc.Spec.SSHUrl)
@@ -353,10 +353,10 @@ func resolveSshTemplate(grc v1alpha1.GerritReplicationConfig, path, templateName
 	return &config, nil
 }
 
-func (r ReconcileGerritReplicationConfig) updateAvailableStatus(ctx context.Context, instance *v1alpha1.GerritReplicationConfig, value bool) error {
+func (r ReconcileGerritReplicationConfig) updateAvailableStatus(ctx context.Context, instance *gerritApi.GerritReplicationConfig, value bool) error {
 	if instance.Status.Available != value {
 		instance.Status.Available = value
-		instance.Status.LastTimeUpdated = time.Now()
+		instance.Status.LastTimeUpdated = metav1.Now()
 		err := r.client.Status().Update(ctx, instance)
 		if err != nil {
 			err := r.client.Update(ctx, instance)

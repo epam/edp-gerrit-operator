@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/openshift"
@@ -28,18 +28,18 @@ type PlatformService interface {
 	GetExternalEndpoint(namespace string, name string) (string, string, error)
 	ExecInPod(namespace string, podName string, command []string) (string, string, error)
 	GetSecretData(namespace string, name string) (map[string][]byte, error)
-	CreateSecret(gerrit *v1alpha1.Gerrit, name string, data map[string][]byte) error
+	CreateSecret(gerrit *gerritApi.Gerrit, name string, data map[string][]byte) error
 	GetSecret(namespace string, name string) (map[string][]byte, error)
-	IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error)
-	PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error
-	GetDeploymentSSHPort(gerrit *v1alpha1.Gerrit) (int32, error)
+	IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error)
+	PatchDeploymentEnv(gerrit gerritApi.Gerrit, env []coreV1Api.EnvVar) error
+	GetDeploymentSSHPort(gerrit *gerritApi.Gerrit) (int32, error)
 	GetService(namespace string, name string) (*coreV1Api.Service, error)
 	UpdateService(svc coreV1Api.Service, port int32) error
-	GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]coreV1Api.EnvVar, error)
+	GenerateKeycloakSettings(instance *gerritApi.Gerrit) (*[]coreV1Api.EnvVar, error)
 	CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error
 	CreateJenkinsScript(namespace string, configMap string) error
-	CreateConfigMap(instance *v1alpha1.Gerrit, configMapName string, configMapData map[string]string) error
-	CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error
+	CreateConfigMap(instance *gerritApi.Gerrit, configMapName string, configMapData map[string]string) error
+	CreateEDPComponentIfNotExist(gerrit gerritApi.Gerrit, url string, icon string) error
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided

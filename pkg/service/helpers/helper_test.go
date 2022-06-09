@@ -5,10 +5,12 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ssh"
-	"testing"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )
 
 func TestLogErrorAndReturn(t *testing.T) {

@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
@@ -58,13 +58,13 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager, syncInterval time.Duratio
 	go r.syncBackendProjects(syncInterval)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritProject{}, builder.WithPredicates(pred)).
+		For(&gerritApi.GerritProject{}, builder.WithPredicates(pred)).
 		Complete(r)
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*v1alpha1.GerritProject)
-	no := e.ObjectNew.(*v1alpha1.GerritProject)
+	oo := e.ObjectOld.(*gerritApi.GerritProject)
+	no := e.ObjectNew.(*gerritApi.GerritProject)
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -74,7 +74,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.V(2).Info("Reconciling GerritProject has been started")
 
-	var instance v1alpha1.GerritProject
+	var instance gerritApi.GerritProject
 	if err := r.client.Get(context.TODO(), request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			reqLogger.Info("instance not found")
@@ -101,7 +101,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	return
 }
 
-func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritProject) error {
+func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.GerritProject) error {
 	cl, err := helper.GetGerritClient(ctx, r.client, instance, instance.Spec.OwnerName, r.service)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")

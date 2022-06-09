@@ -27,7 +27,7 @@ import (
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	pmocks "github.com/epam/edp-gerrit-operator/v2/mock/platform"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
@@ -42,18 +42,18 @@ var nsn = types.NamespacedName{
 	Name:      name,
 }
 
-func createGerritReplicationConfig(status string) *v1alpha1.GerritReplicationConfig {
-	return &v1alpha1.GerritReplicationConfig{
+func createGerritReplicationConfig(status string) *gerritApi.GerritReplicationConfig {
+	return &gerritApi.GerritReplicationConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace},
-		Status: v1alpha1.GerritReplicationConfigStatus{
+		Status: gerritApi.GerritReplicationConfigStatus{
 			Status: status,
 		}}
 }
 
-func createGerritByStatus(status string) *v1alpha1.Gerrit {
-	return &v1alpha1.Gerrit{
+func createGerritByStatus(status string) *gerritApi.Gerrit {
+	return &gerritApi.Gerrit{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Gerrit",
 			APIVersion: "apps/v1",
@@ -62,7 +62,7 @@ func createGerritByStatus(status string) *v1alpha1.Gerrit {
 			Name:      name,
 			Namespace: namespace,
 		},
-		Status: v1alpha1.GerritStatus{
+		Status: gerritApi.GerritStatus{
 			Status: status,
 		},
 	}
@@ -72,7 +72,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetUnregisteredErr(t *testin
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -93,7 +93,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetErr(t *testing.T) {
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -118,7 +118,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetGerritInstanceErr(t *test
 	instance := createGerritReplicationConfig("")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -144,16 +144,16 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateAfterSetOwnerErr(t *te
 
 	gerritInstance := createGerritByStatus("")
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	mc.On("Update").Return(errTest)
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
 	mc.On("List", &list).Return(cl)
 
 	rg := ReconcileGerritReplicationConfig{
@@ -180,19 +180,19 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetInstanceOwnerErr(t *testi
 
 	gerritInstance := createGerritByStatus("")
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	sw.On("Update").Return(nil)
 
 	mc.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(errTest).Once()
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(errTest).Once()
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
@@ -220,17 +220,17 @@ func TestReconcileGerritReplicationConfig_Reconcile_Valid(t *testing.T) {
 
 	gerritInstance := createGerritByStatus("")
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	sw.On("Update").Return(nil)
 
 	mc.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl).Once()
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl).Once()
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
@@ -257,11 +257,11 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusConfiguringUpdateErr(t
 	instance := createGerritReplicationConfig(spec.StatusConfiguring)
 	gerritInstance := createGerritByStatus("")
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{},
-		&v1alpha1.Gerrit{}, &v1alpha1.GerritList{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{},
+		&gerritApi.Gerrit{}, &gerritApi.GerritList{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	errTest := errors.New("test")
@@ -270,8 +270,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusConfiguringUpdateErr(t
 
 	mc.On("Update").Return(nil).Once()
 	mc.On("Update").Return(errTest).Once()
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl).Once()
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl).Once()
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
@@ -299,11 +299,11 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusUpdate(t *testing.T) {
 	instance := createGerritReplicationConfig(spec.StatusConfiguring)
 	gerritInstance := createGerritByStatus("")
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{}, &v1alpha1.Gerrit{},
-		&v1alpha1.GerritList{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
+		&gerritApi.GerritList{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	errTest := errors.New("test")
@@ -312,8 +312,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusUpdate(t *testing.T) {
 
 	mc.On("Update").Return(nil).Once()
 	mc.On("Update").Return(errTest).Once()
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl).Once()
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl).Once()
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
@@ -340,11 +340,11 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateStatusReadyErr(t *test
 	instance := createGerritReplicationConfig("")
 	gerritInstance := createGerritByStatus(gerrit.StatusReady)
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{}, &v1alpha1.Gerrit{},
-		&v1alpha1.GerritList{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
+		&gerritApi.GerritList{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	errTest := errors.New("test")
@@ -353,8 +353,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateStatusReadyErr(t *test
 
 	mc.On("Update").Return(nil).Once()
 	mc.On("Update").Return(errTest).Once()
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl).Once()
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl).Once()
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
@@ -384,11 +384,11 @@ func TestReconcileGerritReplicationConfig_Reconcile_configureReplicationErr(t *t
 	instance := createGerritReplicationConfig("")
 	gerritInstance := createGerritByStatus(gerrit.StatusReady)
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritReplicationConfig{}, &v1alpha1.Gerrit{},
-		&v1alpha1.GerritList{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
+		&gerritApi.GerritList{})
 
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
@@ -398,8 +398,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_configureReplicationErr(t *t
 
 	mc.On("Update").Return(nil).Once()
 	mc.On("Update").Return(errTest).Once()
-	mc.On("Get", nsn, &v1alpha1.GerritReplicationConfig{}).Return(cl)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl).Once()
+	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl).Once()
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
@@ -824,8 +824,8 @@ func Test_updateSshConfig(t *testing.T) {
 
 	platformMock.On("ExecInPod", name, "", tr).Return("", "", nil)
 
-	config := v1alpha1.GerritReplicationConfig{
-		Spec: v1alpha1.GerritReplicationConfigSpec{SSHUrl: "@:"},
+	config := gerritApi.GerritReplicationConfig{
+		Spec: gerritApi.GerritReplicationConfigSpec{SSHUrl: "@:"},
 	}
 
 	err := rg.updateSshConfig(name, "", config, "", "")
@@ -849,6 +849,6 @@ func Test_updateAvailableStatusErr(t *testing.T) {
 		log:    logr.Discard(),
 	}
 
-	err := rg.updateAvailableStatus(ctx, &v1alpha1.GerritReplicationConfig{}, true)
+	err := rg.updateAvailableStatus(ctx, &gerritApi.GerritReplicationConfig{}, true)
 	assert.Equal(t, errTest, err)
 }

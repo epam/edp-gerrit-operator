@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )
 
 const (

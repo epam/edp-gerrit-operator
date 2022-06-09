@@ -22,7 +22,7 @@ import (
 
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -33,25 +33,25 @@ const namespace = "namespace"
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	groupMember := v1alpha1.GerritGroupMember{
+	groupMember := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mem1",
 			Namespace: "ns1",
 		},
-		Spec: v1alpha1.GerritGroupMemberSpec{
+		Spec: gerritApi.GerritGroupMemberSpec{
 			AccountID: "acc1",
 			GroupID:   "gr1",
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: groupMember.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -80,7 +80,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var updateInstance v1alpha1.GerritGroupMember
+	var updateInstance gerritApi.GerritGroupMember
 	if err := client.Get(context.Background(), nn, &updateInstance); err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 func TestReconcile_ReconcileFailure1(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	client := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -139,25 +139,25 @@ func TestReconcile_ReconcileFailure1(t *testing.T) {
 
 func TestReconcile_ReconcileFailure2(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	groupMember := v1alpha1.GerritGroupMember{
+	groupMember := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mem1",
 			Namespace: "ns1",
 		},
-		Spec: v1alpha1.GerritGroupMemberSpec{
+		Spec: gerritApi.GerritGroupMemberSpec{
 			AccountID: "acc1",
 			GroupID:   "gr1",
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: groupMember.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -185,7 +185,7 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var updateInstance v1alpha1.GerritGroupMember
+	var updateInstance gerritApi.GerritGroupMember
 	if err := client.Get(context.Background(), nn, &updateInstance); err != nil {
 		t.Fatal(err)
 	}
@@ -200,12 +200,12 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 }
 
 func TestReconcile_IsSpecUpdated(t *testing.T) {
-	groupMember := v1alpha1.GerritGroupMember{
+	groupMember := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mem1",
 			Namespace: "ns1",
 		},
-		Spec: v1alpha1.GerritGroupMemberSpec{
+		Spec: gerritApi.GerritGroupMemberSpec{
 			AccountID: "acc1",
 			GroupID:   "gr1",
 		},
@@ -225,7 +225,7 @@ func TestNewReconcile(t *testing.T) {
 	err := os.Setenv("PLATFORM_TYPE", platform.Test)
 	assert.NoError(t, err)
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
 	_, err = NewReconcile(cl, &sch, logr.Discard())
@@ -238,7 +238,7 @@ func TestReconcile_UpdateErr(t *testing.T) {
 	mc := mocks.Client{}
 	ctx := context.Background()
 
-	instance := &v1alpha1.GerritGroupMember{
+	instance := &gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -256,10 +256,10 @@ func TestReconcile_UpdateErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroupMember{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroupMember{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
-	mc.On("Get", nsn, &v1alpha1.GerritGroupMember{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroupMember{}).Return(cl)
 
 	sw.On("Update").Return(errTest)
 	mc.On("Status").Return(sw)
@@ -276,5 +276,4 @@ func TestReconcile_UpdateErr(t *testing.T) {
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
-
 }

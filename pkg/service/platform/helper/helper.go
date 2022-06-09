@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 )
 
 const (

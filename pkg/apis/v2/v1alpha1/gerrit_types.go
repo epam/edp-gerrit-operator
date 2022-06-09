@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -11,49 +9,61 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // GerritSpec defines the desired state of Gerrit
-// +k8s:openapi-gen=true
-
 type GerritVolumes struct {
-	Name         string `json:"name"`
-	StorageClass string `json:"storage_class"`
-	Capacity     string `json:"capacity"`
+	Name     string `json:"name"`
+	Capacity string `json:"capacity"`
+
+	// +optional
+	StorageClass string `json:"storage_class,omitempty"`
 }
 
 type GerritSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Image            string                           `json:"image"`
-	Type             string                           `json:"type"`
-	Version          string                           `json:"version"`
+	Image        string       `json:"image"`
+	Type         string       `json:"type"`
+	Version      string       `json:"version"`
+	KeycloakSpec KeycloakSpec `json:"keycloakSpec"`
+
+	// +nullable
+	// +optional
 	ImagePullSecrets []coreV1Api.LocalObjectReference `json:"imagePullSecrets,omitempty"`
-	Volumes          []GerritVolumes                  `json:"volumes,omitempty"`
-	KeycloakSpec     KeycloakSpec                     `json:"keycloakSpec"`
-	SshPort          int32                            `json:"sshPort,omitempty"`
+
+	// +nullable
+	// +optional
+	Volumes []GerritVolumes `json:"volumes,omitempty"`
+
+	// +optional
+	SshPort int32 `json:"sshPort,omitempty"`
 }
 
 // GerritStatus defines the observed state of Gerrit
-// +k8s:openapi-gen=true
 type GerritStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Available       bool      `json:"available,omitempty"`
-	LastTimeUpdated time.Time `json:"lastTimeUpdated,omitempty"`
-	Status          string    `json:"status,omitempty"`
-	ExternalUrl     string    `json:"externalUrl"`
+	ExternalUrl string `json:"externalUrl"`
+
+	// +optional
+	Available bool `json:"available,omitempty"`
+
+	// +optional
+	LastTimeUpdated metav1.Time `json:"lastTimeUpdated,omitempty"`
+
+	// +optional
+	Status string `json:"status,omitempty"`
 }
 
 type KeycloakSpec struct {
-	Enabled bool   `json:"enabled"`
-	Url     string `json:"url,omitempty"`
-	Realm   string `json:"realm,omitempty"`
+	Enabled bool `json:"enabled"`
+
+	// +optional
+	Url string `json:"url,omitempty"`
+
+	// +optional
+	Realm string `json:"realm,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion
 
 // Gerrit is the Schema for the gerrits API
-// +k8s:openapi-gen=true
 type Gerrit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -61,11 +71,15 @@ type Gerrit struct {
 	Status            GerritStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // GerritList contains a list of Gerrit
 type GerritList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Gerrit `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&Gerrit{}, &GerritList{})
 }

@@ -21,7 +21,7 @@ import (
 
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
@@ -29,8 +29,8 @@ import (
 const name = "name"
 const namespace = "namespace"
 
-func createGerritGroupByOwner(owner []metav1.OwnerReference) *v1alpha1.GerritGroup {
-	return &v1alpha1.GerritGroup{
+func createGerritGroupByOwner(owner []metav1.OwnerReference) *gerritApi.GerritGroup {
+	return &gerritApi.GerritGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
@@ -39,13 +39,13 @@ func createGerritGroupByOwner(owner []metav1.OwnerReference) *v1alpha1.GerritGro
 	}
 }
 
-func createGerrit() *v1alpha1.Gerrit {
-	return &v1alpha1.Gerrit{
+func createGerrit() *gerritApi.Gerrit {
+	return &gerritApi.Gerrit{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Gerrit",
 			APIVersion: "apps/v1",
 		},
-		Spec: v1alpha1.GerritSpec{},
+		Spec: gerritApi.GerritSpec{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -62,7 +62,7 @@ func TestReconcileGerrit_Reconcile_GerErr(t *testing.T) {
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -89,13 +89,13 @@ func TestReconcileGerrit_Reconcile_tryToReconcileErr(t *testing.T) {
 	instance := createGerritGroupByOwner([]metav1.OwnerReference{{APIVersion: "test"}})
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 
 	sw.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 	mc.On("Update").Return(nil)
 
@@ -124,13 +124,13 @@ func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 
 	sw.On("Update").Return(errTest)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 
 	log := &common.Logger{}
@@ -154,17 +154,17 @@ func TestReconcileGerrit_Reconcile_ListErr(t *testing.T) {
 	ctx := context.Background()
 
 	instance := createGerritGroupByOwner(nil)
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 	listOpts := client.ListOptions{Namespace: namespace}
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 
 	sw.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 	mc.On("Update").Return(nil)
 
@@ -191,16 +191,16 @@ func TestReconcileGerrit_Reconcile_ListEmpty(t *testing.T) {
 	ctx := context.Background()
 
 	instance := createGerritGroupByOwner(nil)
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 
 	sw.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 	mc.On("Update").Return(nil)
 
@@ -229,21 +229,21 @@ func TestReconcileGerrit_Reconcile_GetRestClientErr(t *testing.T) {
 	gClientMock := gerrit.ClientInterfaceMock{}
 
 	instance := createGerritGroupByOwner(nil)
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 	gerritInstance := createGerrit()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	errTest := errors.New("test")
 
 	gServiceMock.On("GetRestClient", gerritInstance).Return(&gClientMock, errTest)
 
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 
 	sw.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 	mc.On("Update").Return(nil)
 
@@ -273,12 +273,12 @@ func TestReconcileGerrit_Reconcile_CreateGroupErr(t *testing.T) {
 	gClientMock := gerrit.ClientInterfaceMock{}
 
 	instance := createGerritGroupByOwner(nil)
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 	gerritInstance := createGerrit()
 	Group := &gerrit.Group{}
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	errTest := errors.New("test")
@@ -286,9 +286,9 @@ func TestReconcileGerrit_Reconcile_CreateGroupErr(t *testing.T) {
 	gClientMock.On("CreateGroup", instance.Spec.Name, instance.Spec.Description,
 		instance.Spec.VisibleToAll).Return(Group, errTest)
 	gServiceMock.On("GetRestClient", gerritInstance).Return(&gClientMock, nil)
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 	sw.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 	mc.On("Update").Return(nil)
 	mc.On("List", &list).Return(cl)
@@ -317,9 +317,9 @@ func TestReconcileGerrit_Reconcile_CreateGroup(t *testing.T) {
 	gServiceMock := gmock.Interface{}
 	gClientMock := gerrit.ClientInterfaceMock{}
 	instance := createGerritGroupByOwner(nil)
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
-	gerritInstance := &v1alpha1.Gerrit{
+	gerritInstance := &gerritApi.Gerrit{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Gerrit",
 			APIVersion: "apps/v1",
@@ -331,17 +331,17 @@ func TestReconcileGerrit_Reconcile_CreateGroup(t *testing.T) {
 	}
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	Group := gerrit.Group{}
 	gClientMock.On("CreateGroup", instance.Spec.Name, instance.Spec.Description,
 		instance.Spec.VisibleToAll).Return(&Group, nil)
 	gServiceMock.On("GetRestClient", gerritInstance).Return(&gClientMock, nil)
-	mc.On("Get", nsn, &v1alpha1.GerritGroup{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 
 	sw.On("Update").Return(nil)
-	mc.On("Get", nsn, &v1alpha1.Gerrit{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 	mc.On("Status").Return(sw)
 	mc.On("Update").Return(nil)
 
@@ -363,8 +363,8 @@ func TestReconcileGerrit_Reconcile_CreateGroup(t *testing.T) {
 }
 
 func Test_isSpecUpdatedFalse(t *testing.T) {
-	oldI := &v1alpha1.GerritGroup{}
-	newI := &v1alpha1.GerritGroup{}
+	oldI := &gerritApi.GerritGroup{}
+	newI := &gerritApi.GerritGroup{}
 	e := event.UpdateEvent{
 		ObjectOld: oldI,
 		ObjectNew: newI,
@@ -378,7 +378,7 @@ func TestNewReconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
 	_, err = NewReconcile(cl, &sch, logr.Discard())

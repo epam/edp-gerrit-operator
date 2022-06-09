@@ -29,7 +29,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 )
@@ -62,7 +62,7 @@ func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string,
 	return i.Spec.Rules[0].Host, platformHelper.RouteHTTPSScheme, nil
 }
 
-func (s *K8SService) IsDeploymentReady(gerrit *v1alpha1.Gerrit) (bool, error) {
+func (s *K8SService) IsDeploymentReady(gerrit *gerritApi.Gerrit) (bool, error) {
 	deployment, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
 	if err != nil {
 		return false, err
@@ -75,7 +75,7 @@ func (s *K8SService) IsDeploymentReady(gerrit *v1alpha1.Gerrit) (bool, error) {
 	return false, nil
 }
 
-func (s *K8SService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
+func (s *K8SService) PatchDeploymentEnv(gerrit gerritApi.Gerrit, env []coreV1Api.EnvVar) error {
 	d, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
 
 	if err != nil {
@@ -140,7 +140,7 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (service K8SService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
+func (service K8SService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, error) {
 	d, err := service.appsV1Client.Deployments(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
 	if err != nil {
 		return 0, err
@@ -167,7 +167,7 @@ func (service K8SService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32
 }
 
 // GenerateKeycloakSettings generates a set of environment var
-func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]coreV1Api.EnvVar, error) {
+func (s *K8SService) GenerateKeycloakSettings(instance *gerritApi.Gerrit) (*[]coreV1Api.EnvVar, error) {
 	identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
 	realm, err := s.getKeycloakRealm(instance)
 	if err != nil {
@@ -212,7 +212,7 @@ func (s *K8SService) GenerateKeycloakSettings(instance *v1alpha1.Gerrit) (*[]cor
 	return &envVar, nil
 }
 
-func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.KeycloakRealm, error) {
+func (s K8SService) getKeycloakRealm(instance *gerritApi.Gerrit) (*keycloakApi.KeycloakRealm, error) {
 	if instance.Spec.KeycloakSpec.Realm != "" {
 		var realmList keycloakApi.KeycloakRealmList
 		listOpts := k8sclient.ListOptions{Namespace: instance.Namespace}
@@ -250,7 +250,7 @@ func (s K8SService) getKeycloakRealm(instance *v1alpha1.Gerrit) (*keycloakApi.Ke
 	return realm, nil
 }
 
-func (s K8SService) getKeycloakRootUrl(instance *v1alpha1.Gerrit) (*string, error) {
+func (s K8SService) getKeycloakRootUrl(instance *gerritApi.Gerrit) (*string, error) {
 	realm, err := s.getKeycloakRealm(instance)
 	if err != nil {
 		return nil, err
@@ -344,7 +344,7 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 }
 
 // CreateSecret creates a new Secret Resource for a Gerrit EDP Component
-func (s *K8SService) CreateSecret(gerrit *v1alpha1.Gerrit, secretName string, data map[string][]byte) error {
+func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, data map[string][]byte) error {
 	vLog := log.WithValues(nameKey, secretName)
 	vLog.Info("creating secret")
 
@@ -448,7 +448,7 @@ func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]c
 	return ports, nil
 }
 
-func (s *K8SService) CreateConfigMap(instance *v1alpha1.Gerrit, configMapName string, configMapData map[string]string) error {
+func (s *K8SService) CreateConfigMap(instance *gerritApi.Gerrit, configMapName string, configMapData map[string]string) error {
 	labels := platformHelper.GenerateLabels(instance.Name)
 	configMapObject := &coreV1Api.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -549,7 +549,7 @@ func (s K8SService) getJenkinsScript(name, namespace string) (*jenkinsV1Api.Jenk
 	return js, nil
 }
 
-func (s K8SService) CreateEDPComponentIfNotExist(gerrit v1alpha1.Gerrit, url string, icon string) error {
+func (s K8SService) CreateEDPComponentIfNotExist(gerrit gerritApi.Gerrit, url string, icon string) error {
 	vLog := log.WithValues(nameKey, gerrit.Name)
 	vLog.Info("creating EDP component")
 	if _, err := s.getEDPComponent(gerrit.Name, gerrit.Namespace); err != nil {
@@ -574,7 +574,7 @@ func (s K8SService) getEDPComponent(name, namespace string) (*edpCompApi.EDPComp
 	return c, nil
 }
 
-func (s K8SService) createEDPComponent(gerrit v1alpha1.Gerrit, url string, icon string) error {
+func (s K8SService) createEDPComponent(gerrit gerritApi.Gerrit, url string, icon string) error {
 	obj := &edpCompApi.EDPComponent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gerrit.Name,

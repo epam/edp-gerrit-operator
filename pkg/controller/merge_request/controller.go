@@ -9,15 +9,12 @@ import (
 	"regexp"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,8 +22,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -46,7 +44,7 @@ type Reconcile struct {
 	service         gerrit.Interface
 	log             logr.Logger
 	getGitClient    func(ctx context.Context, child gerrit.Child, workDir string) (GitClient, error)
-	getGerritClient func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error)
+	getGerritClient func(ctx context.Context, child *gerritApi.GerritMergeRequest) (GerritClient, error)
 	gitWorkDir      string
 }
 
@@ -109,7 +107,7 @@ func PrepareGerritServiceOption(k8sClient client.Client, platformType string, sc
 		r.getGitClient = func(ctx context.Context, child gerrit.Child, workDir string) (GitClient, error) {
 			return gerritService.GetGitClient(ctx, child, workDir)
 		}
-		r.getGerritClient = func(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (GerritClient, error) {
+		r.getGerritClient = func(ctx context.Context, instance *gerritApi.GerritMergeRequest) (GerritClient, error) {
 			return helper.GetGerritClient(ctx, r.k8sClient, instance, instance.OwnerName(), r.service)
 		}
 	}, nil
@@ -121,13 +119,13 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritMergeRequest{}, builder.WithPredicates(pred)).
+		For(&gerritApi.GerritMergeRequest{}, builder.WithPredicates(pred)).
 		Complete(r)
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*v1alpha1.GerritMergeRequest)
-	no := e.ObjectNew.(*v1alpha1.GerritMergeRequest)
+	oo := e.ObjectOld.(*gerritApi.GerritMergeRequest)
+	no := e.ObjectNew.(*gerritApi.GerritMergeRequest)
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -137,7 +135,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.V(2).Info("Reconciling GerritMergeRequest has been started")
 
-	var instance v1alpha1.GerritMergeRequest
+	var instance gerritApi.GerritMergeRequest
 	if err := r.k8sClient.Get(ctx, request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			reqLogger.Info("instance not found")
@@ -164,7 +162,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	return
 }
 
-func (r *Reconcile) tryReconcile(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (bool, error) {
+func (r *Reconcile) tryReconcile(ctx context.Context, instance *gerritApi.GerritMergeRequest) (bool, error) {
 	requeue := false
 
 	if instance.Status.ChangeID == "" {
@@ -198,7 +196,7 @@ func (r *Reconcile) tryReconcile(ctx context.Context, instance *v1alpha1.GerritM
 }
 
 func (r *Reconcile) createChange(ctx context.Context,
-	instance *v1alpha1.GerritMergeRequest) (status *v1alpha1.GerritMergeRequestStatus, retErr error) {
+	instance *gerritApi.GerritMergeRequest) (status *gerritApi.GerritMergeRequestStatus, retErr error) {
 	//init git client
 	gitClient, err := r.getGitClient(ctx, instance, r.gitWorkDir)
 	if err != nil {
@@ -237,14 +235,14 @@ func (r *Reconcile) createChange(ctx context.Context,
 		return nil, errors.Wrap(err, "unable to push repo")
 	}
 
-	return &v1alpha1.GerritMergeRequestStatus{
+	return &gerritApi.GerritMergeRequestStatus{
 		ChangeID:  changeID,
 		ChangeURL: extractMrURL(pushMessage),
 		Value:     StatusNew,
 	}, nil
 }
 
-func (r *Reconcile) commitFiles(ctx context.Context, instance *v1alpha1.GerritMergeRequest, gitClient GitClient, changeID string) error {
+func (r *Reconcile) commitFiles(ctx context.Context, instance *gerritApi.GerritMergeRequest, gitClient GitClient, changeID string) error {
 	var cMap corev1.ConfigMap
 	if err := r.k8sClient.Get(ctx, types.NamespacedName{
 		Namespace: instance.Namespace,
@@ -280,7 +278,7 @@ func (r *Reconcile) commitFiles(ctx context.Context, instance *v1alpha1.GerritMe
 	return nil
 }
 
-func mergeBranches(instance *v1alpha1.GerritMergeRequest, gitClient GitClient, changeID string) error {
+func mergeBranches(instance *gerritApi.GerritMergeRequest, gitClient GitClient, changeID string) error {
 	projectName := instance.Spec.ProjectName
 	gitUser := &git.User{Name: instance.Spec.AuthorName, Email: instance.Spec.AuthorEmail}
 	if err := gitClient.SetProjectUser(projectName, gitUser); err != nil {
@@ -308,7 +306,7 @@ func commitMessage(commitMessage, changeID string) string {
 	return fmt.Sprintf("%s\n\nChange-Id: %s", commitMessage, changeID)
 }
 
-func (r *Reconcile) getChangeStatus(ctx context.Context, instance *v1alpha1.GerritMergeRequest) (string, error) {
+func (r *Reconcile) getChangeStatus(ctx context.Context, instance *gerritApi.GerritMergeRequest) (string, error) {
 	gClient, err := r.getGerritClient(ctx, instance)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get gerrit client")
@@ -328,7 +326,7 @@ func extractMrURL(pushMessage string) string {
 		FindString(pushMessage)
 }
 
-func (r *Reconcile) makeDeletionFunc(ctx context.Context, instance *v1alpha1.GerritMergeRequest) func() error {
+func (r *Reconcile) makeDeletionFunc(ctx context.Context, instance *gerritApi.GerritMergeRequest) func() error {
 	return func() error {
 		gClient, err := r.getGerritClient(ctx, instance)
 		if err != nil {

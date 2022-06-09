@@ -32,42 +32,42 @@ annotations:
   artifacthub.io/operatorCapabilities: Full Lifecycle
   artifacthub.io/crds: |
     - kind: Gerrit
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerrit
       displayName: Gerrit
       description: Operates Gerrit application
     - kind: GerritGroup
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerritgroup
       displayName: GerritGroup
       description: Operates Gerrit groups
     - kind: GerritGroupMember
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerritgroupmember
       displayName: GerritGroupMember
       description: Operates Gerrit group member access
     - kind: GerritProject
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerritproject
       displayName: GerritProject
       description: Creates repo on a Gerrit server
     - kind: GerritProjectAccess
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerritprojectaccess
       displayName: GerritProjectAccess
       description: Operates Gerrit group accesses
     - kind: GerritReplicationConfig
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerritreplicationconfig
       displayName: GerritReplicationConfig
       description: Takes part in replication
     - kind: GerritMergeRequest
-      version: v2.edp.epam.com/v1alpha1
+      version: v2.edp.epam.com/v1
       name: gerritmergerequest
       displayName: GerritMergeRequest
       description: Takes part in merge requests
   artifacthub.io/crdsExamples: |
-    - apiVersion: v2.edp.epam.com/v1alpha1
+    - apiVersion: v2.edp.epam.com/v1
       kind: Gerrit
       metadata:
         name: gerrit
@@ -86,7 +86,7 @@ annotations:
           - capacity: 1Gi
             name: data
             storage_class: gp2
-    - apiVersion: v2.edp.epam.com/v1alpha1
+    - apiVersion: v2.edp.epam.com/v1
       kind: GerritGroup
       metadata:
         name: developers
@@ -95,7 +95,7 @@ annotations:
         gerritOwner: 'test'
         name: Developers
         visibleToAll: false
-    - apiVersion: v2.edp.epam.com/v1alpha1
+    - apiVersion: v2.edp.epam.com/v1
       kind: GerritGroupMember
       metadata:
         name: reader
@@ -103,7 +103,7 @@ annotations:
         accountId: reader
         groupId: Developers
         ownerName: 'test'
-    - apiVersion: v2.edp.epam.com/v1alpha1
+    - apiVersion: v2.edp.epam.com/v1
       kind: GerritProject
       metadata:
         name: gerrit-test
@@ -118,7 +118,7 @@ annotations:
         permissionsOnly: false
         rejectEmptyCommit: 'test'
         submitType: 'test'
-    - apiVersion: v2.edp.epam.com/v1alpha1
+    - apiVersion: v2.edp.epam.com/v1
       kind: GerritMergeRequest
       metadata:
         name: gerritmergerequest
@@ -132,7 +132,7 @@ annotations:
         authorEmail: john.doe@example.com
         changesConfigMap: demo-changes
         additionalArguments: null
-    - apiVersion: v2.edp.epam.com/v1alpha1
+    - apiVersion: v2.edp.epam.com/v1
       kind: GerritProjectAccess
       metadata:
         name: test-access1

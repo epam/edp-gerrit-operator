@@ -21,7 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritAlpha "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroup"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerritgroupmember"
@@ -45,7 +46,8 @@ const (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	gerritApi.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
+	utilruntime.Must(gerritAlpha.AddToScheme(scheme))
 	utilruntime.Must(edpCompApi.AddToScheme(scheme))
 	utilruntime.Must(jenkinsApi.AddToScheme(scheme))
 	utilruntime.Must(keycloakApi.AddToScheme(scheme))

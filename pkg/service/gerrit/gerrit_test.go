@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	pmock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )
@@ -54,8 +54,8 @@ func GenPkey() (error, []byte) {
 	return nil, pkey
 }
 
-func CreateGerritInstance() *v1alpha1.Gerrit {
-	return &v1alpha1.Gerrit{
+func CreateGerritInstance() *gerritApi.Gerrit {
+	return &gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -93,7 +93,7 @@ func TestComponentService_IsDeploymentReady(t *testing.T) {
 		PlatformService: ps,
 	}
 
-	inst := &v1alpha1.Gerrit{}
+	inst := &gerritApi.Gerrit{}
 
 	ps.On("IsDeploymentReady", inst).Return(true, nil)
 
@@ -136,14 +136,14 @@ func TestComponentService_GetGerritSSHUrlErr(t *testing.T) {
 }
 
 func Test_setAnnotation_EmptyInstance(t *testing.T) {
-	inst := &v1alpha1.Gerrit{}
+	inst := &gerritApi.Gerrit{}
 	CS := ComponentService{}
 	CS.setAnnotation(inst, key, value)
 	assert.Equal(t, map[string]string{key: value}, inst.Annotations)
 }
 
 func Test_setAnnotation(t *testing.T) {
-	inst := &v1alpha1.Gerrit{
+	inst := &gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{oldK: oldV},
 		},
@@ -518,13 +518,13 @@ func TestComponentService_Integrate_GetExternalEndpointErr(t *testing.T) {
 }
 
 func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
-	instance := &v1alpha1.Gerrit{
+	instance := &gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
-		Spec: v1alpha1.GerritSpec{
-			KeycloakSpec: v1alpha1.KeycloakSpec{
+		Spec: gerritApi.GerritSpec{
+			KeycloakSpec: gerritApi.KeycloakSpec{
 				Enabled: true,
 			},
 		},
@@ -545,7 +545,7 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
@@ -563,13 +563,13 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 }
 
 func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
-	instance := &v1alpha1.Gerrit{
+	instance := &gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
-		Spec: v1alpha1.GerritSpec{
-			KeycloakSpec: v1alpha1.KeycloakSpec{
+		Spec: gerritApi.GerritSpec{
+			KeycloakSpec: gerritApi.KeycloakSpec{
 				Enabled: true,
 			},
 		},
@@ -577,7 +577,7 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.Gerrit{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects().Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
@@ -589,13 +589,13 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 }
 
 func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
-	instance := &v1alpha1.Gerrit{
+	instance := &gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
-		Spec: v1alpha1.GerritSpec{
-			KeycloakSpec: v1alpha1.KeycloakSpec{
+		Spec: gerritApi.GerritSpec{
+			KeycloakSpec: gerritApi.KeycloakSpec{
 				Enabled: true,
 			},
 		},
@@ -606,7 +606,7 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
@@ -619,13 +619,13 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 }
 
 func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
-	instance := &v1alpha1.Gerrit{
+	instance := &gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
-		Spec: v1alpha1.GerritSpec{
-			KeycloakSpec: v1alpha1.KeycloakSpec{
+		Spec: gerritApi.GerritSpec{
+			KeycloakSpec: gerritApi.KeycloakSpec{
 				Enabled: true,
 			},
 		},
@@ -639,7 +639,7 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 

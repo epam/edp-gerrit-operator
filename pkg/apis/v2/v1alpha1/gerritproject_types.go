@@ -2,37 +2,71 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+// GerritProjectStatus defines the observed state of GerritProject
 type GerritProjectStatus struct {
-	Value    string   `json:"value"`
-	Branches []string `json:"branches"`
+	// +optional
+	Value string `json:"value,omitempty"`
+
+	// +nullable
+	// +optional
+	Branches []string `json:"branches,omitempty"`
 }
 
+// GerritProjectSpec defines the desired state of GerritProject
 type GerritProjectSpec struct {
-	OwnerName         string `json:"ownerName"`
-	Name              string `json:"name"`
-	Parent            string `json:"parent"`
-	Description       string `json:"description"`
-	PermissionsOnly   bool   `json:"permissionsOnly"`
-	CreateEmptyCommit bool   `json:"createEmptyCommit"`
-	SubmitType        string `json:"submitType"`
-	Branches          string `json:"branches"`
-	Owners            string `json:"owners"`
-	RejectEmptyCommit string `json:"rejectEmptyCommit"`
+	Name string `json:"name"`
+
+	// +optional
+	OwnerName string `json:"ownerName,omitempty"`
+
+	// +optional
+	Parent string `json:"parent,omitempty"`
+
+	// +optional
+	Description string `json:"description,omitempty"`
+
+	// +optional
+	PermissionsOnly bool `json:"permissionsOnly,omitempty"`
+
+	// +optional
+	CreateEmptyCommit bool `json:"createEmptyCommit,omitempty"`
+
+	// +optional
+	SubmitType string `json:"submitType,omitempty"`
+
+	// +optional
+	Branches string `json:"branches,omitempty"`
+
+	// +optional
+	Owners string `json:"owners,omitempty"`
+
+	// +optional
+	RejectEmptyCommit string `json:"rejectEmptyCommit,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion
+
+// GerritProject is the Schema for the gerrit project API
 type GerritProject struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              GerritProjectSpec   `json:"spec,omitempty"`
-	Status            GerritProjectStatus `json:"status,omitempty"`
+
+	Spec   GerritProjectSpec   `json:"spec,omitempty"`
+	Status GerritProjectStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+
+// GerritProjectList contains a list of GerritProject
 type GerritProjectList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GerritProject `json:"items"`
+
+	Items []GerritProject `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&GerritProject{}, &GerritProjectList{})
 }

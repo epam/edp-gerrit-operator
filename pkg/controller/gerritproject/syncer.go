@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 )
@@ -26,8 +26,8 @@ func (r *Reconcile) syncBackendProjects(interval time.Duration) {
 
 func (r *Reconcile) syncBackendProjectsTick() error {
 	var (
-		gerritList        v1alpha1.GerritList
-		gerritProjectList v1alpha1.GerritProjectList
+		gerritList        gerritApi.GerritList
+		gerritProjectList gerritApi.GerritProjectList
 		ctx               = context.Background()
 	)
 
@@ -48,8 +48,8 @@ func (r *Reconcile) syncBackendProjectsTick() error {
 	return nil
 }
 
-func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *v1alpha1.Gerrit,
-	allK8sGerritProjects []v1alpha1.GerritProject) error {
+func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *gerritApi.Gerrit,
+	allK8sGerritProjects []gerritApi.GerritProject) error {
 	cl, err := r.service.GetRestClient(gr)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")
@@ -80,7 +80,7 @@ func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *v1alpha1.Gerrit,
 }
 
 func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInterface,
-	k8sProject *v1alpha1.GerritProject) error {
+	k8sProject *gerritApi.GerritProject) error {
 	branches, err := cl.ListProjectBranches(k8sProject.Spec.Name)
 	if err != nil {
 		return errors.Wrap(err, "unable to list project branches")
@@ -98,15 +98,15 @@ func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInt
 	return nil
 }
 
-func (r *Reconcile) createGerritProject(ctx context.Context, gr *v1alpha1.Gerrit,
-	backendProject *gerritClient.Project) (*v1alpha1.GerritProject, error) {
+func (r *Reconcile) createGerritProject(ctx context.Context, gr *gerritApi.Gerrit,
+	backendProject *gerritClient.Project) (*gerritApi.GerritProject, error) {
 
-	prj := v1alpha1.GerritProject{
+	prj := gerritApi.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      strings.ToLower(fmt.Sprintf("%s-%s", gr.Name, backendProject.SlugifyName())),
 			Namespace: gr.Namespace,
 		},
-		Spec: v1alpha1.GerritProjectSpec{
+		Spec: gerritApi.GerritProjectSpec{
 			Name:              backendProject.Name,
 			Parent:            backendProject.Parent,
 			Description:       backendProject.Description,
@@ -127,8 +127,8 @@ func (r *Reconcile) createGerritProject(ctx context.Context, gr *v1alpha1.Gerrit
 	return &prj, nil
 }
 
-func filterGerritProjectsByGerrit(g *v1alpha1.Gerrit, projects []v1alpha1.GerritProject) map[string]*v1alpha1.GerritProject {
-	result := make(map[string]*v1alpha1.GerritProject)
+func filterGerritProjectsByGerrit(g *gerritApi.Gerrit, projects []gerritApi.GerritProject) map[string]*gerritApi.GerritProject {
+	result := make(map[string]*gerritApi.GerritProject)
 
 	for k, p := range projects {
 		for _, owner := range p.OwnerReferences {

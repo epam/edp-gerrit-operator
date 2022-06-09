@@ -3,11 +3,11 @@ package openshift
 import (
 	"context"
 	"encoding/json"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
-	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
+	"log"
+	"os"
+	"regexp"
+	"strconv"
+
 	appsV1client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	authV1Client "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
 	projectV1Client "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
@@ -20,10 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
-	"log"
-	"os"
-	"regexp"
-	"strconv"
+
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
+	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
 )
 
 // OpenshiftService implements platform.Service interface (OpenShift platform integration)
@@ -104,7 +106,7 @@ func (s OpenshiftService) GetExternalEndpoint(namespace string, name string) (st
 	return route.Spec.Host, routeScheme, nil
 }
 
-func (s OpenshiftService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32, error) {
+func (s OpenshiftService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, error) {
 	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
 		dc, err := s.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
 		if err != nil {
@@ -126,7 +128,7 @@ func (s OpenshiftService) GetDeploymentSSHPort(instance *v1alpha1.Gerrit) (int32
 	return s.K8SService.GetDeploymentSSHPort(instance)
 }
 
-func (s OpenshiftService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, error) {
+func (s OpenshiftService) IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error) {
 	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
 		dc, err := s.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
 		if err != nil {
@@ -138,7 +140,7 @@ func (s OpenshiftService) IsDeploymentReady(instance *v1alpha1.Gerrit) (bool, er
 	return s.K8SService.IsDeploymentReady(instance)
 }
 
-func (s *OpenshiftService) PatchDeploymentEnv(gerrit v1alpha1.Gerrit, env []coreV1Api.EnvVar) error {
+func (s *OpenshiftService) PatchDeploymentEnv(gerrit gerritApi.Gerrit, env []coreV1Api.EnvVar) error {
 	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
 		dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
 		if err != nil {

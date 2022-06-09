@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
@@ -53,13 +53,13 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritGroupMember{}, builder.WithPredicates(pred)).
+		For(&gerritApi.GerritGroupMember{}, builder.WithPredicates(pred)).
 		Complete(r)
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*v1alpha1.GerritGroupMember)
-	no := e.ObjectNew.(*v1alpha1.GerritGroupMember)
+	oo := e.ObjectOld.(*gerritApi.GerritGroupMember)
+	no := e.ObjectNew.(*gerritApi.GerritGroupMember)
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -69,7 +69,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.V(2).Info("Reconciling GerritGroupMember has been started")
 
-	var instance v1alpha1.GerritGroupMember
+	var instance gerritApi.GerritGroupMember
 	if err := r.client.Get(context.TODO(), request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			return
@@ -95,7 +95,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	return
 }
 
-func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritGroupMember) error {
+func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.GerritGroupMember) error {
 	cl, err := helper.GetGerritClient(ctx, r.client, instance, instance.Spec.OwnerName, r.service)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")
@@ -112,7 +112,7 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.Gerri
 	return nil
 }
 
-func (r *Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *v1alpha1.GerritGroupMember) func() error {
+func (r *Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *gerritApi.GerritGroupMember) func() error {
 	return func() error {
 		if err := cl.DeleteUserFromGroup(instance.Spec.GroupID, instance.Spec.AccountID); err != nil {
 			return errors.Wrap(err, "unable to delete user from group")

@@ -1,6 +1,6 @@
 {{- if .Values.gerrit.deploy -}}
 {{- range .Values.global.developers }}
-apiVersion: v2.edp.epam.com/v1alpha1
+apiVersion: v2.edp.epam.com/v1
 kind: GerritGroupMember
 metadata:
   name: {{ regexReplaceAll "@.*" . "" | replace "_" "-" }}-developers

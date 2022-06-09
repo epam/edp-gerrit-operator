@@ -7,21 +7,20 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 )
@@ -33,23 +32,23 @@ type ControllerTestSuite struct {
 	gitClient     *gmock.GitClient
 	gerritClient  *gerritClient.ClientInterfaceMock
 	scheme        *runtime.Scheme
-	rootGerrit    *v1alpha1.Gerrit
-	mergeRequest  *v1alpha1.GerritMergeRequest
+	rootGerrit    *gerritApi.Gerrit
+	mergeRequest  *gerritApi.GerritMergeRequest
 }
 
 func (s *ControllerTestSuite) SetupTest() {
 	s.scheme = runtime.NewScheme()
-	v1alpha1.RegisterTypes(s.scheme)
+	utilruntime.Must(gerritApi.AddToScheme(s.scheme))
 
 	s.gerritService = &gmock.Interface{}
 	s.logger = &helper.Logger{}
 	s.gitClient = &gmock.GitClient{}
 	s.gerritClient = &gerritClient.ClientInterfaceMock{}
 
-	s.rootGerrit = &v1alpha1.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
-	s.mergeRequest = &v1alpha1.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",
+	s.rootGerrit = &gerritApi.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
+	s.mergeRequest = &gerritApi.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",
 		Namespace: s.rootGerrit.Namespace},
-		Spec: v1alpha1.GerritMergeRequestSpec{
+		Spec: gerritApi.GerritMergeRequestSpec{
 			SourceBranch:        "rev123",
 			OwnerName:           s.rootGerrit.Name,
 			ProjectName:         "prjX",
@@ -148,7 +147,7 @@ func (s *ControllerTestSuite) TestReconcileDelete() {
 		k8sClient: fakeClient,
 		service:   s.gerritService,
 		log:       s.logger,
-		getGerritClient: func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error) {
+		getGerritClient: func(ctx context.Context, child *gerritApi.GerritMergeRequest) (GerritClient, error) {
 			return s.gerritClient, nil
 		},
 	}
@@ -179,7 +178,7 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 		k8sClient: fakeClient,
 		service:   s.gerritService,
 		log:       s.logger,
-		getGerritClient: func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error) {
+		getGerritClient: func(ctx context.Context, child *gerritApi.GerritMergeRequest) (GerritClient, error) {
 			return s.gerritClient, nil
 		},
 	}
@@ -195,7 +194,7 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 
 	assert.Equal(s.T(), result.RequeueAfter, time.Duration(0))
 
-	var updatedMergeRequest v1alpha1.GerritMergeRequest
+	var updatedMergeRequest gerritApi.GerritMergeRequest
 	err = rec.k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: checkStatusRequest.Name, Namespace: checkStatusRequest.Namespace},
 		&updatedMergeRequest)
@@ -260,7 +259,7 @@ func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
 		k8sClient: fakeClient,
 		service:   s.gerritService,
 		log:       s.logger,
-		getGerritClient: func(ctx context.Context, child *v1alpha1.GerritMergeRequest) (GerritClient, error) {
+		getGerritClient: func(ctx context.Context, child *gerritApi.GerritMergeRequest) (GerritClient, error) {
 			return s.gerritClient, nil
 		},
 	}
@@ -281,7 +280,7 @@ func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
 
 	assert.Equal(s.T(), result.RequeueAfter, time.Second*helper.DefaultRequeueTime)
 
-	var updatedMergeRequest v1alpha1.GerritMergeRequest
+	var updatedMergeRequest gerritApi.GerritMergeRequest
 	err = rec.k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: checkStatusRequest.Name, Namespace: checkStatusRequest.Namespace},
 		&updatedMergeRequest)

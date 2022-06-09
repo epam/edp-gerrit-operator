@@ -22,7 +22,7 @@ import (
 
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -33,18 +33,18 @@ const namespace = "namespace"
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	projectAccessInstance := v1alpha1.GerritProjectAccess{
+	projectAccessInstance := gerritApi.GerritProjectAccess{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{},
 		},
-		Spec: v1alpha1.GerritProjectAccessSpec{
+		Spec: gerritApi.GerritProjectAccessSpec{
 			ProjectName: "pro1",
-			References: []v1alpha1.Reference{
+			References: []gerritApi.Reference{
 				{
 					Pattern:        "refs/heads/*",
 					PermissionName: "label-Code-Review",
@@ -59,11 +59,11 @@ func TestReconcile_Reconcile(t *testing.T) {
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: projectAccessInstance.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -98,7 +98,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var updateInstance v1alpha1.GerritProjectAccess
+	var updateInstance gerritApi.GerritProjectAccess
 	if err := client.Get(context.Background(), nn, &updateInstance); err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 func TestReconcile_ReconcileFailure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
 	client := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -154,15 +154,15 @@ func TestReconcile_ReconcileFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	projectAccessInstance := v1alpha1.GerritProjectAccess{
+	projectAccessInstance := gerritApi.GerritProjectAccess{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{},
 		},
-		Spec: v1alpha1.GerritProjectAccessSpec{
+		Spec: gerritApi.GerritProjectAccessSpec{
 			ProjectName: "pro1",
-			References: []v1alpha1.Reference{
+			References: []gerritApi.Reference{
 				{
 					Pattern:        "refs/heads/*",
 					PermissionName: "label-Code-Review",
@@ -196,15 +196,15 @@ func TestReconcile_ReconcileFailure(t *testing.T) {
 }
 
 func TestReconcile_IsSpecUpdated(t *testing.T) {
-	projectAccessInstance := v1alpha1.GerritProjectAccess{
+	projectAccessInstance := gerritApi.GerritProjectAccess{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{},
 		},
-		Spec: v1alpha1.GerritProjectAccessSpec{
+		Spec: gerritApi.GerritProjectAccessSpec{
 			ProjectName: "pro1",
-			References: []v1alpha1.Reference{
+			References: []gerritApi.Reference{
 				{
 					Pattern:        "refs/heads/*",
 					PermissionName: "label-Code-Review",
@@ -236,7 +236,7 @@ func TestNewReconcile(t *testing.T) {
 	}
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritGroup{}, &v1alpha1.GerritList{}, &v1alpha1.Gerrit{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
 	_, err = NewReconcile(cl, &sch, logr.Discard())
@@ -250,7 +250,7 @@ func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 
 	ctx := context.Background()
 
-	instance := &v1alpha1.GerritProjectAccess{
+	instance := &gerritApi.GerritProjectAccess{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -268,11 +268,11 @@ func TestReconcileGerrit_Reconcile_UpdateStatusErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &v1alpha1.GerritProjectAccess{})
+	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritProjectAccess{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
 	sw.On("Update").Return(errTest)
-	mc.On("Get", nsn, &v1alpha1.GerritProjectAccess{}).Return(cl)
+	mc.On("Get", nsn, &gerritApi.GerritProjectAccess{}).Return(cl)
 	mc.On("Status").Return(sw)
 
 	logger := helper.Logger{}

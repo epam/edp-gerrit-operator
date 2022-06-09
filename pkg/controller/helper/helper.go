@@ -9,13 +9,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
-	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 )
 
 const (
@@ -115,7 +116,7 @@ func FindCROwnerName(ownerName string) *string {
 	return &own
 }
 
-func GetInstanceOwner(ctx context.Context, k8sClient client.Client, config metav1.Object) (*v1alpha1.Gerrit, error) {
+func GetInstanceOwner(ctx context.Context, k8sClient client.Client, config metav1.Object) (*gerritApi.Gerrit, error) {
 	ows := config.GetOwnerReferences()
 	gerritOwner := GetGerritOwner(ows)
 	if gerritOwner == nil {
@@ -127,7 +128,7 @@ func GetInstanceOwner(ctx context.Context, k8sClient client.Client, config metav
 		Name:      gerritOwner.Name,
 	}
 
-	ownerCr := &v1alpha1.Gerrit{}
+	ownerCr := &gerritApi.Gerrit{}
 	if err := k8sClient.Get(ctx, nsn, ownerCr); err != nil {
 		return nil, errors.Wrap(err, "unable to get gerrit owner")
 	}
@@ -145,9 +146,9 @@ func GetGerritOwner(references []metav1.OwnerReference) *metav1.OwnerReference {
 }
 
 func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *string,
-	namespace string) (*v1alpha1.Gerrit, error) {
+	namespace string) (*gerritApi.Gerrit, error) {
 
-	var list v1alpha1.GerritList
+	var list gerritApi.GerritList
 
 	if ownerName == nil {
 		err := k8sClient.List(ctx, &list, &client.ListOptions{Namespace: namespace})
@@ -162,7 +163,7 @@ func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *
 		return &list.Items[0], nil
 	}
 
-	var gerritInstance v1alpha1.Gerrit
+	var gerritInstance gerritApi.Gerrit
 	if err := k8sClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      *ownerName,

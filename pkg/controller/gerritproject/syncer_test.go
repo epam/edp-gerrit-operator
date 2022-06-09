@@ -15,25 +15,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 func TestSyncBackendProjectsTick(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
-	prj := v1alpha1.GerritProject{
+	prj := gerritApi.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -41,7 +41,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 					UID:  g.UID,
 				},
 			}},
-		Spec: v1alpha1.GerritProjectSpec{Name: "sprj1"},
+		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
@@ -73,7 +73,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var k8sGerritProject v1alpha1.GerritProject
+	var k8sGerritProject gerritApi.GerritProject
 	if err := cl.Get(context.Background(), types.NamespacedName{Name: "ger1-alphabet-google", Namespace: g.Namespace},
 		&k8sGerritProject); err != nil {
 		t.Fatal(err)
@@ -89,18 +89,18 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
-	prj := v1alpha1.GerritProject{
+	prj := gerritApi.GerritProject{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -108,7 +108,7 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 					UID:  g.UID,
 				},
 			}},
-		Spec: v1alpha1.GerritProjectSpec{Name: "sprj1"},
+		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
@@ -147,14 +147,14 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -197,14 +197,14 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 
 func TestSyncBackendProjects(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 

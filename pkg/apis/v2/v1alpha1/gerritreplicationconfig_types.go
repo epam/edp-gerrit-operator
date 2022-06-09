@@ -1,40 +1,34 @@
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig
-// +k8s:openapi-gen=true
 type GerritReplicationConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	SSHUrl    string `json:"ssh_url"`
+	SSHUrl string `json:"ssh_url"`
+
+	// +optional
 	OwnerName string `json:"owner_name,omitempty"`
 }
 
 // GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig
-// +k8s:openapi-gen=true
 type GerritReplicationConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Available       bool      `json:"available,omitempty"`
-	LastTimeUpdated time.Time `json:"lastTimeUpdated,omitempty"`
-	Status          string    `json:"status,omitempty"`
+	// +optional
+	Available bool `json:"available,omitempty"`
+
+	// +optional
+	LastTimeUpdated metav1.Time `json:"lastTimeUpdated,omitempty"`
+
+	// +optional
+	Status string `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion
 
 // GerritReplicationConfig is the Schema for the gerritreplicationconfigs API
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
 type GerritReplicationConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -43,11 +37,15 @@ type GerritReplicationConfig struct {
 	Status GerritReplicationConfigStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // GerritReplicationConfigList contains a list of GerritReplicationConfig
 type GerritReplicationConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GerritReplicationConfig `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&GerritReplicationConfig{}, &GerritReplicationConfigList{})
 }

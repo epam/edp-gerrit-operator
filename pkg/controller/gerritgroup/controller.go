@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
@@ -51,13 +51,13 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.GerritGroup{}, builder.WithPredicates(pred)).
+		For(&gerritApi.GerritGroup{}, builder.WithPredicates(pred)).
 		Complete(r)
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*v1alpha1.GerritGroup)
-	no := e.ObjectNew.(*v1alpha1.GerritGroup)
+	oo := e.ObjectOld.(*gerritApi.GerritGroup)
+	no := e.ObjectNew.(*gerritApi.GerritGroup)
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -67,7 +67,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	log.Info("Reconciling GerritGroup")
 
-	var instance v1alpha1.GerritGroup
+	var instance gerritApi.GerritGroup
 	if err := r.client.Get(ctx, request.NamespacedName, &instance); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -96,7 +96,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	return reconcile.Result{}, nil
 }
 
-func (r *Reconcile) tryToReconcile(ctx context.Context, instance *v1alpha1.GerritGroup) error {
+func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.GerritGroup) error {
 	if !helper.IsInstanceOwnerSet(instance) {
 		ownerReference := helper.FindCROwnerName(instance.Spec.OwnerName)
 

@@ -8,12 +8,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -82,7 +83,7 @@ type ReconcileGerrit struct {
 
 func (r *ReconcileGerrit) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Gerrit{}).
+		For(&gerritApi.Gerrit{}).
 		Complete(r)
 }
 
@@ -90,7 +91,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	log.Info("Reconciling Gerrit")
 
-	instance := &v1alpha1.Gerrit{}
+	instance := &gerritApi.Gerrit{}
 	err := r.client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
@@ -233,9 +234,9 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	return reconcile.Result{RequeueAfter: finalRequeueAfterTimeout}, nil
 }
 
-func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *v1alpha1.Gerrit, status string) error {
+func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *gerritApi.Gerrit, status string) error {
 	instance.Status.Status = status
-	instance.Status.LastTimeUpdated = time.Now()
+	instance.Status.LastTimeUpdated = metav1.Now()
 	err := r.client.Status().Update(ctx, instance)
 	if err != nil {
 		err := r.client.Update(ctx, instance)
@@ -247,10 +248,10 @@ func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *v1alpha1.G
 	return nil
 }
 
-func (r ReconcileGerrit) updateAvailableStatus(ctx context.Context, instance *v1alpha1.Gerrit, value bool) error {
+func (r ReconcileGerrit) updateAvailableStatus(ctx context.Context, instance *gerritApi.Gerrit, value bool) error {
 	if instance.Status.Available != value {
 		instance.Status.Available = value
-		instance.Status.LastTimeUpdated = time.Now()
+		instance.Status.LastTimeUpdated = metav1.Now()
 		err := r.client.Status().Update(ctx, instance)
 		if err != nil {
 			err := r.client.Update(ctx, instance)

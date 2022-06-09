@@ -2,45 +2,88 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// +k8s:openapi-gen=true
+// GerritProjectAccessSpec defines the desired state of GerritProjectAccess
 type GerritProjectAccessSpec struct {
-	OwnerName   string      `json:"ownerName"`
-	ProjectName string      `json:"projectName"`
-	Parent      string      `json:"parent"`
-	References  []Reference `json:"references"`
+	// ProjectName is gerrit project name.
+	ProjectName string `json:"projectName"`
+
+	// OwnerName indicates which gerrit CR should be taken to initialize correct client.
+	// +nullable
+	// +optional
+	OwnerName string `json:"ownerName,omitempty"`
+
+	// Parent is parent project.
+	// +optional
+	Parent string `json:"parent,omitempty"`
+
+	// References contains gerrit references.
+	// +nullable
+	// +optional
+	References []Reference `json:"references,omitempty"`
 }
 
-// +k8s:openapi-gen=true
 type Reference struct {
-	Pattern         string `json:"refPattern"`
-	PermissionName  string `json:"permissionName"`
-	PermissionLabel string `json:"permissionLabel"`
-	GroupName       string `json:"groupName"`
-	Action          string `json:"action"`
-	Force           bool   `json:"force"`
-	Min             int    `json:"min"`
-	Max             int    `json:"max"`
+	// Patter is reference pattern, example: refs/heads/*.
+	// +optional
+	Pattern string `json:"refPattern,omitempty"`
+
+	// +optional
+	PermissionName string `json:"permissionName,omitempty"`
+
+	// +optional
+	PermissionLabel string `json:"permissionLabel,omitempty"`
+
+	// +optional
+	GroupName string `json:"groupName,omitempty"`
+
+	// +optional
+	Action string `json:"action,omitempty"`
+
+	// Force indicates whether the force flag is set.
+	// +optional
+	Force bool `json:"force,omitempty"`
+
+	// Min is the min value of the permission range.
+	// +optional
+	Min int `json:"min,omitempty"`
+
+	// Max is the max value of the permission range.
+	// +optional
+	Max int `json:"max,omitempty"`
 }
 
-// +k8s:openapi-gen=true
+// GerritProjectAccessStatus defines the observed state of GerritProjectAccess
 type GerritProjectAccessStatus struct {
-	Created bool   `json:"created"`
-	Value   string `json:"value"`
+	// +optional
+	Created bool `json:"created,omitempty"`
+
+	// +optional
+	Value string `json:"value,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion
+
+// GerritProjectAccess is the Schema for the gerrit project access API
 type GerritProjectAccess struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              GerritProjectAccessSpec   `json:"spec,omitempty"`
-	Status            GerritProjectAccessStatus `json:"status,omitempty"`
+
+	Spec   GerritProjectAccessSpec   `json:"spec,omitempty"`
+	Status GerritProjectAccessStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+
+// GerritProjectAccessList contains a list of GerritProjectAccess
 type GerritProjectAccessList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GerritProjectAccess `json:"items"`
+
+	Items []GerritProjectAccess `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&GerritProjectAccess{}, &GerritProjectAccessList{})
 }

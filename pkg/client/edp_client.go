@@ -1,15 +1,16 @@
 package client
 
 import (
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
+
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 )
 
-var SchemeGroupVersion = schema.GroupVersion{Group: "v2.edp.epam.com", Version: "v1alpha1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: "v2.edp.epam.com", Version: "v1"}
 
 type EdpV1Client struct {
 	crClient *rest.RESTClient
@@ -43,8 +44,8 @@ func createCrdClient(cfg *rest.Config) error {
 
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&v1alpha1.Gerrit{},
-		&v1alpha1.GerritList{},
+		&gerritApi.Gerrit{},
+		&gerritApi.GerritList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

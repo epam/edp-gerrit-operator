@@ -16,27 +16,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 )
 
 func TestTryToDelete(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	instance := v1alpha1.GerritGroupMember{
+	instance := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -69,21 +69,21 @@ func TestTryToDelete(t *testing.T) {
 
 func TestGetGerritClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	instance := v1alpha1.GerritGroupMember{
+	instance := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -103,10 +103,10 @@ func TestGetGerritClient(t *testing.T) {
 
 func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	instance := v1alpha1.GerritGroupMember{
+	instance := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
@@ -116,11 +116,11 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -142,10 +142,10 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 
 func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	instance := v1alpha1.GerritGroupMember{
+	instance := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
@@ -169,21 +169,21 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 
 func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	instance := v1alpha1.GerritGroupMember{
+	instance := gerritApi.GerritGroupMember{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
 	}
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
@@ -206,14 +206,14 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 
 func TestGetGerritInstance(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v1alpha1.RegisterTypes(scheme)
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 
-	g := v1alpha1.Gerrit{
+	g := gerritApi.Gerrit{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1alpha1",
+			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 

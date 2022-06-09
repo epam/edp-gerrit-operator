@@ -15,7 +15,7 @@ import (
 	"gopkg.in/resty.v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -32,12 +32,12 @@ const (
 var log = ctrl.Log.WithName("client_gerrit")
 
 type Client struct {
-	instance  *v1alpha1.Gerrit //TODO: remove this
+	instance  *gerritApi.Gerrit //TODO: remove this
 	resty     *resty.Client
 	sshClient ssh.SSHClientInterface
 }
 
-func NewClient(instance *v1alpha1.Gerrit, resty *resty.Client, sshClient ssh.SSHClientInterface) Client {
+func NewClient(instance *gerritApi.Gerrit, resty *resty.Client, sshClient ssh.SSHClientInterface) Client {
 	return Client{
 		instance: instance,
 		resty: resty.SetHeaders(map[string]string{
@@ -52,7 +52,7 @@ func (gc *Client) Resty() *resty.Client {
 }
 
 // InitNewRestClient performs initialization of Gerrit connection
-func (gc *Client) InitNewRestClient(instance *v1alpha1.Gerrit, url string, user string, password string) error {
+func (gc *Client) InitNewRestClient(instance *gerritApi.Gerrit, url string, user string, password string) error {
 	gc.resty = resty.SetHostURL(url).SetBasicAuth(user, password).SetDisableWarn(true)
 	gc.instance = instance
 	return nil
@@ -119,7 +119,7 @@ func (gc Client) GetUser(username string) (*int, error) {
 	return &status, nil
 }
 
-func (gc Client) InitAdminUser(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (v1alpha1.Gerrit, error) {
+func (gc Client) InitAdminUser(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (gerritApi.Gerrit, error) {
 	addInitialAdminUserScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to read add-initial-admin-user.sh script")
@@ -256,7 +256,7 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 	return uuid, nil
 }
 
-func (gc *Client) InitAllProjects(instance v1alpha1.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
+func (gc *Client) InitAllProjects(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
 	podName string, gerritAdminPublicKey string) error {
 	initAllProjectsScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
 	if err != nil {
