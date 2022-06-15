@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1alpha1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

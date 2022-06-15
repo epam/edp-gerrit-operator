@@ -14,12 +14,11 @@ replace (
 require (
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
 	github.com/epam/edp-common v0.0.0-20211206180607-3e1ca60d6e4a
-	github.com/epam/edp-component-operator v0.1.1-0.20211129100139-b5b7659f98f6
-	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20211130130836-077d03455c24
-	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20211130125231-d444d239995b
+	github.com/epam/edp-component-operator v0.1.1-0.20220520092339-3063cc593800
+	github.com/epam/edp-jenkins-operator/v2 v2.3.0-130.0.20220609195512-7b966ce769a8
+	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20220607092017-8aa0376f96c8
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-logr/logr v0.4.0
-	github.com/go-openapi/spec v0.19.5
 	github.com/google/uuid v1.1.2
 	github.com/gosimple/slug v1.10.0
 	github.com/jarcoal/httpmock v1.0.8
@@ -31,7 +30,6 @@ require (
 	k8s.io/api v0.21.0-rc.0
 	k8s.io/apimachinery v0.21.0-rc.0
 	k8s.io/client-go v0.20.2
-	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	sigs.k8s.io/controller-runtime v0.8.3
 )
 
@@ -62,11 +60,12 @@ require (
 	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.3 // indirect
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
+	github.com/go-openapi/spec v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/google/go-cmp v0.5.2 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/gosimple/unidecode v1.0.0 // indirect
@@ -112,6 +111,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.20.2 // indirect
 	k8s.io/component-base v0.20.2 // indirect
 	k8s.io/klog/v2 v2.8.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.1 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
