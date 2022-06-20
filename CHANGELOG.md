@@ -3,6 +3,18 @@
 
 ### Features
 
+- Switch CRDs to v1 version [EPMDEDP-9218](https://jiraeu.epam.com/browse/EPMDEDP-9218)
+
+### Routine
+
+- Update current development version [EPMDEDP-8832](https://jiraeu.epam.com/browse/EPMDEDP-8832)
+- Update chart annotation [EPMDEDP-9515](https://jiraeu.epam.com/browse/EPMDEDP-9515)
+
+
+<a name="v2.11.0"></a>
+## [v2.11.0] - 2022-05-25
+### Features
+
 - Manage Gerrit access [EPMDEDP-7502](https://jiraeu.epam.com/browse/EPMDEDP-7502)
 - Implement Developers group creation in go code [EPMDEDP-7502](https://jiraeu.epam.com/browse/EPMDEDP-7502)
 - implement gerrit merge request CR [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
@@ -44,9 +56,19 @@
 - Populate chart with Artifacthub annotations [EPMDEDP-8049](https://jiraeu.epam.com/browse/EPMDEDP-8049)
 - Update gerrit URL baseline link [EPMDEDP-8204](https://jiraeu.epam.com/browse/EPMDEDP-8204)
 - Update changelog [EPMDEDP-8227](https://jiraeu.epam.com/browse/EPMDEDP-8227)
-- Update current development version [EPMDEDP-8832](https://jiraeu.epam.com/browse/EPMDEDP-8832)
 - Update base docker image to alpine 3.15.4 [EPMDEDP-8853](https://jiraeu.epam.com/browse/EPMDEDP-8853)
 - Update changelog [EPMDEDP-9185](https://jiraeu.epam.com/browse/EPMDEDP-9185)
+
+### BREAKING CHANGE:
+
+
+Respective GerritGroupMember Custom Resources must be created to replace existing users[] mapping. Consult release upgrade instruction
+
+Update gerrit config according to groups.
+
+* Implement Developers group creation;
+* Assign users to admins and developers groups using cr GerritGroupMember;
+* Align permission for groups.
 
 
 <a name="v2.10.0"></a>
@@ -105,7 +127,8 @@
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...HEAD
+[v2.11.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...v2.11.0
 [v2.10.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.9.0...v2.10.0
 [v2.9.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.8.0...v2.9.0
 [v2.8.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.7.2...v2.8.0
