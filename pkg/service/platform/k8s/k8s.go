@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	appsV1Client "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
-	extensionsV1Client "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+	networkingClient "k8s.io/client-go/kubernetes/typed/networking/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
@@ -44,15 +44,15 @@ var log = ctrl.Log.WithName("platform")
 
 // K8SService implements platform.Service interface (k8s platform integration)
 type K8SService struct {
-	Scheme             *runtime.Scheme
-	CoreClient         *coreV1Client.CoreV1Client
-	appsV1Client       *appsV1Client.AppsV1Client
-	extensionsV1Client extensionsV1Client.ExtensionsV1beta1Client
-	client             k8sclient.Client
+	Scheme           *runtime.Scheme
+	CoreClient       *coreV1Client.CoreV1Client
+	appsV1Client     *appsV1Client.AppsV1Client
+	networkingClient networkingClient.NetworkingV1Interface
+	client           k8sclient.Client
 }
 
 func (s *K8SService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
-	i, err := s.extensionsV1Client.Ingresses(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	i, err := s.networkingClient.Ingresses(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil && k8sErrors.IsNotFound(err) {
 		return "", "", errors.New(fmt.Sprintf("Ingress %v in namespace %v not found", name, namespace))
 	} else if err != nil {
@@ -123,11 +123,11 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	}
 	s.appsV1Client = appsClient
 
-	extensionsClient, err := extensionsV1Client.NewForConfig(config)
+	netClient, err := networkingClient.NewForConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "Failed to init extensions V1 client for K8S")
 	}
-	s.extensionsV1Client = *extensionsClient
+	s.networkingClient = netClient
 
 	cl, err := k8sclient.New(config, k8sclient.Options{
 		Scheme: s.Scheme,
