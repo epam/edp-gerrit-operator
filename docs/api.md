@@ -1055,13 +1055,6 @@ GerritSpec defines the desired state of Gerrit
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b><a href="#gerritspeckeycloakspec">keycloakSpec</a></b></td>
         <td>object</td>
         <td>
@@ -1069,40 +1062,12 @@ GerritSpec defines the desired state of Gerrit
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>type</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>version</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b><a href="#gerritspecimagepullsecretsindex">imagePullSecrets</a></b></td>
-        <td>[]object</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>sshPort</b></td>
         <td>integer</td>
         <td>
           <br/>
           <br/>
             <i>Format</i>: int32<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#gerritspecvolumesindex">volumes</a></b></td>
-        <td>[]object</td>
-        <td>
-          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1141,74 +1106,6 @@ GerritSpec defines the desired state of Gerrit
         <td>false</td>
       </tr><tr>
         <td><b>url</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Gerrit.spec.imagePullSecrets[index]
-<sup><sup>[↩ Parent](#gerritspec)</sup></sup>
-
-
-
-LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### Gerrit.spec.volumes[index]
-<sup><sup>[↩ Parent](#gerritspec)</sup></sup>
-
-
-
-
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>capacity</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>storage_class</b></td>
         <td>string</td>
         <td>
           <br/>
@@ -2345,7 +2242,7 @@ Gerrit is the Schema for the gerrits API
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b><a href="#gerritspecimagepullsecretsindex-1">imagePullSecrets</a></b></td>
+        <td><b><a href="#gerritspecimagepullsecretsindex">imagePullSecrets</a></b></td>
         <td>[]object</td>
         <td>
           <br/>
@@ -2361,7 +2258,7 @@ Gerrit is the Schema for the gerrits API
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#gerritspecvolumesindex-1">volumes</a></b></td>
+        <td><b><a href="#gerritspecvolumesindex">volumes</a></b></td>
         <td>[]object</td>
         <td>
           <br/>

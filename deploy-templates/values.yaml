@@ -36,7 +36,6 @@ resources:
 gerrit:
   deploy: true
   name: "gerrit"
-  image: "openfrontier/gerrit"
   sshPort: "30022"
   port: "8080"
   version: "3.3.2"

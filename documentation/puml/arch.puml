@@ -11,32 +11,13 @@ package com.epam.edp.gerrit {
       -- metadata --
         String name
       -- spec --
-        String image
-        String type
-        String version
-        []LocalObjectReference imagePullSecrets
-        []GerritVolumes volumes
         KeycloakSpec keycloakSpec
-        []GerritUsers users
         Integer sshPort
       -- status --
         Boolean available
         Date lastTimeUpdated
         String status
         String externalUrl
-    }
-
-    Gerrit "1" --* "1..*" GerritVolumes : internal structure
-    class GerritVolumes {
-        String name
-        String storageClass
-        String capacity
-    }
-
-    Gerrit "1" --* "0..*" GerritUsers : internal structure
-    class GerritUsers {
-        String username
-        []String groups
     }
 
     Gerrit "1" --* "1" KeycloakSpec : internal structure

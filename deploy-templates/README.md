@@ -27,7 +27,6 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.annotations | object | `{}` |  |
 | gerrit.basePath | string | `""` |  |
 | gerrit.deploy | bool | `true` |  |
-| gerrit.image | string | `"openfrontier/gerrit"` |  |
 | gerrit.imagePullPolicy | string | `"IfNotPresent"` |  |
 | gerrit.imagePullSecrets | string | `nil` |  |
 | gerrit.ingress.annotations | object | `{}` |  |

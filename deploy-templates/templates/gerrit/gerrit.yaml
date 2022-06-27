@@ -4,20 +4,7 @@ kind: Gerrit
 metadata:
   name: {{.Values.gerrit.name}}
 spec:
-  image: {{.Values.gerrit.image}}
-  {{- if .Values.gerrit.imagePullSecrets}}
-  imagePullSecrets:
-    {{- range .Values.gerrit.imagePullSecrets }}
-    - {{. -}}
-    {{- end -}}
-  {{end}}
   keycloakSpec:
     enabled: true
   sshPort: {{.Values.gerrit.sshPort}}
-  type: Gerrit
-  version: {{.Values.gerrit.version}}
-  volumes:
-    - capacity: {{.Values.gerrit.storage.size}}
-      name: data
-      storage_class: {{.Values.gerrit.storage.class}}
 {{end}}

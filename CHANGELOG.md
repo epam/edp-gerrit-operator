@@ -3,6 +3,7 @@
 
 ### Features
 
+- Switch to Ingress v1 [EPMDEDP-8286](https://jiraeu.epam.com/browse/EPMDEDP-8286)
 - Switch CRDs to v1 version [EPMDEDP-9218](https://jiraeu.epam.com/browse/EPMDEDP-9218)
 
 ### Routine
