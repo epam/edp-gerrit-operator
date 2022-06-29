@@ -17,7 +17,7 @@ tolerations: []
 affinity: {}
 image:
   name: epamedp/gerrit-operator
-  # if not defined then .Chart.AppVersion is used
+  # -- if not defined then .Chart.AppVersion is used
   version:
 imagePullPolicy: "IfNotPresent"
 
@@ -36,11 +36,15 @@ resources:
 gerrit:
   deploy: true
   name: "gerrit"
-  sshPort: "30022"
-  port: "8080"
+  # -- Define gerrit docker image name
+  image: "openfrontier/gerrit"
+  # -- Define gerrit docker image tag
   version: "3.3.2"
+  # -- If defined, a imagePullPolicy applied for gerrit deployment
   imagePullPolicy: "IfNotPresent"
   imagePullSecrets:
+  sshPort: "30022"
+  port: "8080"
   storage:
     size: 1Gi
     class: gp2
