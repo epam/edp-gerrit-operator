@@ -274,7 +274,7 @@ linters-settings:
 
   gofumpt:
     # Select the Go version to target. The default is `1.15`.
-    lang-version: "1.15"
+    lang-version: "1.18"
 
     # Choose whether or not to use the extra rules that are disabled
     # by default
@@ -378,7 +378,7 @@ linters-settings:
 
   gosimple:
     # Select the Go version to target. The default is '1.13'.
-    go: "1.15"
+    go: "1.17"
     # https://staticcheck.io/docs/options#checks
     checks: [ "all" ]
 
@@ -569,13 +569,13 @@ linters-settings:
 
   staticcheck:
     # Select the Go version to target. The default is '1.13'.
-    go: "1.15"
+    go: "1.17"
     # https://staticcheck.io/docs/options#checks
     checks: [ "all" ]
 
   stylecheck:
     # Select the Go version to target. The default is '1.13'.
-    go: "1.15"
+    go: "1.17"
     # https://staticcheck.io/docs/options#checks
     checks: [ "all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022" ]
     # https://staticcheck.io/docs/options#dot_import_whitelist
@@ -635,7 +635,7 @@ linters-settings:
 
   unused:
     # Select the Go version to target. The default is '1.13'.
-    go: "1.15"
+    go: "1.18"
 
   varnamelen:
     # The longest distance, in source lines, that is being considered a "small scope." (defaults to 5)
