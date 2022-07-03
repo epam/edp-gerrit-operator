@@ -294,6 +294,7 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 		return instance, errors.Wrapf(err, "Failed to init Gerrit SSH client")
 	}
 	ciUserSecretName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 	projectCreatorSecretKeyName := createSecretName(instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%s-%s-%s", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, password)
 
@@ -328,9 +329,8 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 		return instance, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
 	}
 
-	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 	if err := s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
-		"username": []byte(ciUserSshSecretName),
+		"username": []byte(spec.GerritDefaultCiUserUser),
 		rsaID:      privateKey,
 		rsaIDFile:  publicKey,
 	}); err != nil {
@@ -343,7 +343,7 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 	}
 
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
-	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, instance.Name+"-ciuser"+spec.SshKeyPostfix)
+	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, ciUserSshSecretName)
 	projectCreatorUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorSshKeySuffix)
 	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 
