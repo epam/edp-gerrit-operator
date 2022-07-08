@@ -4,7 +4,6 @@ kind: GitServer
 metadata:
   name: {{.Values.gitServer.name}}
 spec:
-  createCodeReviewPipeline: false
   gitHost: 'gerrit.{{ .Values.global.edpName }}'
   gitUser: {{.Values.gitServer.user}}
   httpsPort: {{.Values.gitServer.httpsPort}}
