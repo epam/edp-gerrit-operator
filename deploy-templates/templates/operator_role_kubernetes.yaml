@@ -8,14 +8,6 @@ metadata:
   name: edp-{{ .Values.name }}
 rules:
 - apiGroups:
-    - 'rbac.authorization.k8s.io'
-  resources:
-    - podsecuritypolicies
-  verbs:
-    - update
-    - get
-    - list
-- apiGroups:
     - '*'
   resources:
     - gerrits
