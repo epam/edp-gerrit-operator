@@ -89,7 +89,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 		return reconcile.Result{RequeueAfter: requeueTime}, nil
 	}
 
-	instance.Status.Value = helper.StatusOK
+	helper.SetSuccessStatus(&instance)
 
 	return
 }
