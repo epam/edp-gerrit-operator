@@ -3,7 +3,6 @@ package gerritgroupmember
 import (
 	"context"
 	"reflect"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -25,7 +24,6 @@ import (
 
 const (
 	finalizerName = "gerritgroupmember.gerrit.finalizer.name"
-	requeueTime   = 10 * time.Second
 )
 
 type Reconcile struct {
@@ -87,6 +85,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
 		reqLogger.Error(err, "unable to reconcile GerritGroupMember")
 		instance.Status.Value = err.Error()
+		requeueTime := helper.SetFailureCount(&instance)
 		return reconcile.Result{RequeueAfter: requeueTime}, nil
 	}
 

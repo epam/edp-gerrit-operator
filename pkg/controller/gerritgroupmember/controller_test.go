@@ -246,6 +246,9 @@ func TestReconcile_UpdateErr(t *testing.T) {
 				{APIVersion: "test"},
 			},
 		},
+		Status: gerritApi.GerritGroupMemberStatus{
+			FailureCount: 1,
+		},
 	}
 
 	nsn := types.NamespacedName{
@@ -272,8 +275,9 @@ func TestReconcile_UpdateErr(t *testing.T) {
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
+	requeueTime := helper.SetFailureCount(instance)
 	rs, err := rg.Reconcile(ctx, req)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{RequeueAfter: requeueTime}, rs)
 }

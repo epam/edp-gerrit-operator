@@ -51,6 +51,11 @@ spec:
           status:
             description: GerritGroupMemberStatus defines the observed state of GerritGroupMember
             properties:
+              failureCount:
+                description: Preserves Number of Failures during reconciliation phase.
+                  Used for exponential back-off calculation
+                format: int64
+                type: integer
               value:
                 type: string
             type: object

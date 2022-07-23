@@ -138,6 +138,15 @@ GerritGroupMemberStatus defines the observed state of GerritGroupMember
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>failureCount</b></td>
+        <td>integer</td>
+        <td>
+          Preserves Number of Failures during reconciliation phase. Used for exponential back-off calculation<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>

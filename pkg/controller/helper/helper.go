@@ -24,7 +24,6 @@ const (
 	watchNamespaceEnvVar   = "WATCH_NAMESPACE"
 	debugModeEnvVar        = "DEBUG_MODE"
 	inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-	StatusOK               = "OK"
 	DefaultRequeueTime     = 30
 )
 

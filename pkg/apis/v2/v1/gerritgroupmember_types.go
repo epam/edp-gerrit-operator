@@ -17,6 +17,26 @@ type GerritGroupMemberSpec struct {
 type GerritGroupMemberStatus struct {
 	// +optional
 	Value string `json:"value,omitempty"`
+
+	// Preserves Number of Failures during reconciliation phase. Used for exponential back-off calculation
+	// +optional
+	FailureCount int64 `json:"failureCount,omitempty"`
+}
+
+func (in *GerritGroupMember) GetFailureCount() int64 {
+	return in.Status.FailureCount
+}
+
+func (in *GerritGroupMember) SetFailureCount(count int64) {
+	in.Status.FailureCount = count
+}
+
+func (in *GerritGroupMember) GetStatus() string {
+	return in.Status.Value
+}
+
+func (in *GerritGroupMember) SetStatus(value string) {
+	in.Status.Value = value
 }
 
 // +kubebuilder:object:root=true
