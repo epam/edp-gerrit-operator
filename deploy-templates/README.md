@@ -27,7 +27,7 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.annotations | object | `{}` |  |
 | gerrit.basePath | string | `""` |  |
 | gerrit.deploy | bool | `true` |  |
-| gerrit.image | string | `"openfrontier/gerrit"` | Define gerrit docker image name |
+| gerrit.image | string | `"epamedp/edp-gerrit"` | Define gerrit docker image name |
 | gerrit.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied for gerrit deployment |
 | gerrit.imagePullSecrets | string | `nil` |  |
 | gerrit.ingress.annotations | object | `{}` |  |
@@ -43,7 +43,7 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.storage.class | string | `"gp2"` |  |
 | gerrit.storage.size | string | `"1Gi"` |  |
 | gerrit.tolerations | list | `[]` |  |
-| gerrit.version | string | `"3.3.2"` | Define gerrit docker image tag |
+| gerrit.version | string | `"0.1.0-SNAPSHOT.2"` | Define gerrit docker image tag |
 | gitServer.httpsPort | int | `443` |  |
 | gitServer.name | string | `"gerrit"` |  |
 | gitServer.nameSshKeySecret | string | `"gerrit-ciuser-sshkey"` |  |

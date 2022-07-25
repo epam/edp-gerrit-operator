@@ -37,9 +37,9 @@ gerrit:
   deploy: true
   name: "gerrit"
   # -- Define gerrit docker image name
-  image: "openfrontier/gerrit"
+  image: "epamedp/edp-gerrit"
   # -- Define gerrit docker image tag
-  version: "3.3.2"
+  version: "0.1.0-SNAPSHOT.2"
   # -- If defined, a imagePullPolicy applied for gerrit deployment
   imagePullPolicy: "IfNotPresent"
   imagePullSecrets:
