@@ -53,7 +53,7 @@ A Helm chart for EDP Gerrit Operator
 | global.developers[1] | string | `"stub_user_two@example.com"` |  |
 | global.dnsWildCard | string | `"example.com"` |  |
 | global.edpName | string | `""` |  |
-| global.openshift.deploymentType | string | `"deploymentConfigs"` |  |
+| global.openshift.deploymentType | string | `"deployments"` |  |
 | global.platform | string | `"openshift"` |  |
 | image.name | string | `"epamedp/gerrit-operator"` |  |
 | image.version | string | `nil` | if not defined then .Chart.AppVersion is used |

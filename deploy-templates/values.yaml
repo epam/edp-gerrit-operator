@@ -8,7 +8,7 @@ global:
     - "stub_user_one@example.com"
     - "stub_user_two@example.com"
   openshift:
-    deploymentType: "deploymentConfigs"
+    deploymentType: "deployments"
 
 name: gerrit-operator
 annotations: {}
