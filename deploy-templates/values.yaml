@@ -39,7 +39,7 @@ gerrit:
   # -- Define gerrit docker image name
   image: "epamedp/edp-gerrit"
   # -- Define gerrit docker image tag
-  version: "0.1.0-SNAPSHOT.2"
+  version: "3.6.1-SNAPSHOT.2"
   # -- If defined, a imagePullPolicy applied for gerrit deployment
   imagePullPolicy: "IfNotPresent"
   imagePullSecrets:
