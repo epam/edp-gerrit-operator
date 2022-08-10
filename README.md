@@ -46,8 +46,8 @@ In order to install the EDP Gerrit Operator, follow the steps below:
     - global.dnsWildCard                     # a cluster DNS wildcard name;
     - global.admins                          # Administrators of your tenant separated by comma (,) (eg --set 'global.admins={test@example.com}');
     - global.openshift.deploymentType        # Wich type of kind will be deployed to Openshift (values: deployments/deploymentConfigs);
-    - image.name                             # EDP image. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator);
-    - image.version                          # EDP tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags);
+    - image.repository                       # EDP image. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator);
+    - image.tag                              # EDP tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags);
     - gerrit.deploy                          # Flag to enable/disable Gerrit deploy;
     - gerrit.name                            # Gerrit name;
     - gerrit.image                           # Gerrit image, e.g. openfrontier/gerrit;

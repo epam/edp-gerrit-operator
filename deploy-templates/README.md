@@ -55,8 +55,8 @@ A Helm chart for EDP Gerrit Operator
 | global.edpName | string | `""` |  |
 | global.openshift.deploymentType | string | `"deployments"` |  |
 | global.platform | string | `"openshift"` |  |
-| image.name | string | `"epamedp/gerrit-operator"` |  |
-| image.version | string | `nil` | if not defined then .Chart.AppVersion is used |
+| image.repository | string | `"epamedp/gerrit-operator"` |  |
+| image.tag | string | `nil` | if not defined then .Chart.AppVersion is used |
 | imagePullPolicy | string | `"IfNotPresent"` |  |
 | name | string | `"gerrit-operator"` |  |
 | nodeSelector | object | `{}` |  |

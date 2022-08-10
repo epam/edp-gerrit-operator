@@ -16,9 +16,9 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 image:
-  name: epamedp/gerrit-operator
+  repository: epamedp/gerrit-operator
   # -- if not defined then .Chart.AppVersion is used
-  version:
+  tag:
 imagePullPolicy: "IfNotPresent"
 
 # Define interval for synchronizing Gerrit Projects with GerritProject CustomResources
