@@ -1,29 +1,38 @@
 global:
+  # -- namespace or a project name (in case of OpenShift)
   edpName: ""
+  # -- platform type that can be "kubernetes" or "openshift"
   platform: "openshift"
-  dnsWildCard: "example.com"
+  # -- a cluster DNS wildcard name
+  dnsWildCard:
+  # -- Administrators of your tenant
   admins:
     - "stub_user_one@example.com"
+  # -- Developers of your tenant
   developers:
     - "stub_user_one@example.com"
     - "stub_user_two@example.com"
   openshift:
+    # -- Wich type of kind will be deployed to Openshift (values: deployments/deploymentConfigs)
     deploymentType: "deployments"
 
+# -- component name
 name: gerrit-operator
 annotations: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
 image:
+  # -- EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator)
   repository: epamedp/gerrit-operator
   # -- if not defined then .Chart.AppVersion is used
+  # -- EDP gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags)
   tag:
 imagePullPolicy: "IfNotPresent"
 
-# Define interval for synchronizing Gerrit Projects with GerritProject CustomResources
-# Default: 5 minutes
-# Format: golang time.Duration-formatted string
+# --  Define interval for synchronizing Gerrit Projects with GerritProject CustomResources
+# --  Default: 5 minutes
+# --  Format: golang time.Duration-formatted string
 projectSyncInterval: 1h
 
 resources:
@@ -34,7 +43,9 @@ resources:
     memory: 64Mi
 
 gerrit:
+  # --  Flag to enable/disable Gerrit deploy
   deploy: true
+  # --  Gerrit name
   name: "gerrit"
   # -- Define gerrit docker image name
   image: "epamedp/edp-gerrit"
@@ -42,12 +53,18 @@ gerrit:
   version: "3.6.1"
   # -- If defined, a imagePullPolicy applied for gerrit deployment
   imagePullPolicy: "IfNotPresent"
+  # --  Secrets to pull from private Docker registry;
   imagePullSecrets:
+  # -- SSH port
   sshPort: "30022"
+  # -- HTTP port
   port: "8080"
   storage:
+    # --  Size for Gerrit data volume
     size: 1Gi
+    # --  Storageclass for Gerrit data volume
     class: gp2
+  # --  Base path for Nexus URL
   basePath: ""
   annotations: {}
   nodeSelector: {}
@@ -55,10 +72,10 @@ gerrit:
   affinity: {}
   ingress:
     annotations: {}
-    # pathType is only for k8s >= 1.1=
+    # --  pathType is only for k8s >= 1.1=
     pathType: Prefix
-    # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
-    # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
+    # --  For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
+    # --  See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
     # ingressClassName: nginx
     tls: []
     #  - secretName: chart-example-tls
@@ -73,7 +90,11 @@ gerrit:
       memory: 512Mi
 
 gitServer:
+  # -- GitServer CR name
   name: "gerrit"
+  # -- Git user to connect
   user: "jenkins"
+  # -- HTTPS port
   httpsPort: 443
+  # -- Name of secret with credentials to Git server
   nameSshKeySecret: "gerrit-ciuser-sshkey"

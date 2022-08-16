@@ -25,42 +25,41 @@ A Helm chart for EDP Gerrit Operator
 | annotations | object | `{}` |  |
 | gerrit.affinity | object | `{}` |  |
 | gerrit.annotations | object | `{}` |  |
-| gerrit.basePath | string | `""` |  |
-| gerrit.deploy | bool | `true` |  |
+| gerrit.basePath | string | `""` | Base path for Nexus URL |
+| gerrit.deploy | bool | `true` | Flag to enable/disable Gerrit deploy |
 | gerrit.image | string | `"epamedp/edp-gerrit"` | Define gerrit docker image name |
 | gerrit.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied for gerrit deployment |
-| gerrit.imagePullSecrets | string | `nil` |  |
+| gerrit.imagePullSecrets | string | `nil` | Secrets to pull from private Docker registry; |
 | gerrit.ingress.annotations | object | `{}` |  |
-| gerrit.ingress.pathType | string | `"Prefix"` |  |
-| gerrit.ingress.tls | list | `[]` |  |
-| gerrit.name | string | `"gerrit"` |  |
+| gerrit.ingress.pathType | string | `"Prefix"` | pathType is only for k8s >= 1.1= |
+| gerrit.ingress.tls | list | `[]` | See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress ingressClassName: nginx |
+| gerrit.name | string | `"gerrit"` | Gerrit name |
 | gerrit.nodeSelector | object | `{}` |  |
-| gerrit.port | string | `"8080"` |  |
+| gerrit.port | string | `"8080"` | HTTP port |
 | gerrit.resources.limits.memory | string | `"2Gi"` |  |
 | gerrit.resources.requests.cpu | string | `"100m"` |  |
 | gerrit.resources.requests.memory | string | `"512Mi"` |  |
-| gerrit.sshPort | string | `"30022"` |  |
-| gerrit.storage.class | string | `"gp2"` |  |
-| gerrit.storage.size | string | `"1Gi"` |  |
+| gerrit.sshPort | string | `"30022"` | SSH port |
+| gerrit.storage.class | string | `"gp2"` | Storageclass for Gerrit data volume |
+| gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
 | gerrit.version | string | `"3.6.1"` | Define gerrit docker image tag |
-| gitServer.httpsPort | int | `443` |  |
-| gitServer.name | string | `"gerrit"` |  |
-| gitServer.nameSshKeySecret | string | `"gerrit-ciuser-sshkey"` |  |
-| gitServer.user | string | `"jenkins"` |  |
-| global.admins[0] | string | `"stub_user_one@example.com"` |  |
-| global.developers[0] | string | `"stub_user_one@example.com"` |  |
-| global.developers[1] | string | `"stub_user_two@example.com"` |  |
-| global.dnsWildCard | string | `"example.com"` |  |
-| global.edpName | string | `""` |  |
-| global.openshift.deploymentType | string | `"deployments"` |  |
-| global.platform | string | `"openshift"` |  |
-| image.repository | string | `"epamedp/gerrit-operator"` |  |
-| image.tag | string | `nil` | if not defined then .Chart.AppVersion is used |
+| gitServer.httpsPort | int | `443` | HTTPS port |
+| gitServer.name | string | `"gerrit"` | GitServer CR name |
+| gitServer.nameSshKeySecret | string | `"gerrit-ciuser-sshkey"` | Name of secret with credentials to Git server |
+| gitServer.user | string | `"jenkins"` | Git user to connect |
+| global.admins | list | `["stub_user_one@example.com"]` | Administrators of your tenant |
+| global.developers | list | `["stub_user_one@example.com","stub_user_two@example.com"]` | Developers of your tenant |
+| global.dnsWildCard | string | `nil` | a cluster DNS wildcard name |
+| global.edpName | string | `""` | namespace or a project name (in case of OpenShift) |
+| global.openshift.deploymentType | string | `"deployments"` | Wich type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
+| global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |
+| image.repository | string | `"epamedp/gerrit-operator"` | EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
+| image.tag | string | `nil` | EDP gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |
 | imagePullPolicy | string | `"IfNotPresent"` |  |
-| name | string | `"gerrit-operator"` |  |
+| name | string | `"gerrit-operator"` | component name |
 | nodeSelector | object | `{}` |  |
-| projectSyncInterval | string | `"1h"` |  |
+| projectSyncInterval | string | `"1h"` | Format: golang time.Duration-formatted string |
 | resources.limits.memory | string | `"192Mi"` |  |
 | resources.requests.cpu | string | `"50m"` |  |
 | resources.requests.memory | string | `"64Mi"` |  |

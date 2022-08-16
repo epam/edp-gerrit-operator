@@ -25,52 +25,31 @@ In order to install the EDP Gerrit Operator, follow the steps below:
 
 1. To add the Helm EPAMEDP Charts for local client, run "helm repo add":
      ```bash
-     helm repo add epamedp https://chartmuseum.demo.edp-epam.com/
+     helm repo add epamedp https://epam.github.io/edp-helm-charts/stable
      ```
 2. Choose available Helm chart version:
      ```bash
-     helm search repo epamedp/gerrit-operator
+     helm search repo epamedp/gerrit-operator -l
      NAME                     CHART VERSION   APP VERSION     DESCRIPTION
-     epamedp/gerrit-operator  v2.4.0                          Helm chart for Golang application/service deplo...
+     epamedp/gerrit-operator  2.11.0          2.11.0          A Helm chart for EDP Gerrit Operator
+     epamedp/gerrit-operator  2.10.0          2.10.0          A Helm chart for EDP Gerrit Operator
      ```
 
     _**NOTE:** It is highly recommended to use the latest released version._
 
-3. Deploy operator:
+3. Full chart parameters available in [deploy-templates/README.md](deploy-templates/README.md).
 
-    Full available chart parameters list:
-    ```
-    - <chart_version>                        # Helm chart version;
-    - global.edpName                         # a namespace or a project name (in case of OpenShift);
-    - global.platform                        # a platform type that can be "kubernetes" or "openshift";
-    - global.dnsWildCard                     # a cluster DNS wildcard name;
-    - global.admins                          # Administrators of your tenant separated by comma (,) (eg --set 'global.admins={test@example.com}');
-    - global.openshift.deploymentType        # Wich type of kind will be deployed to Openshift (values: deployments/deploymentConfigs);
-    - image.repository                       # EDP image. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator);
-    - image.tag                              # EDP tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags);
-    - gerrit.deploy                          # Flag to enable/disable Gerrit deploy;
-    - gerrit.name                            # Gerrit name;
-    - gerrit.image                           # Gerrit image, e.g. openfrontier/gerrit;
-    - gerrit.imagePullSecrets                # Secrets to pull from private Docker registry;
-    - gerrit.version                         # Gerrit version, e.g. 3.2.5.1;
-    - gerrit.sshPort                         # SSH port;
-    - gitServer.name                         # GitServer CR name;
-    - gitServer.user                         # Git user to connect;
-    - gitServer.httpsPort                    # HTTPS port;
-    - gitServer.nameSshKeySecret             # Name of secret with credentials to Git server;
-    - gerrit.storage.class                   # Storageclass for Gerrit data volume;
-    - gerrit.storage.size                    # Size for Gerrit data volume;
-    ```
-
-4. Install operator in the <edp_cicd_project> namespace with the helm command; find below the installation command example:
+4. Install operator in the <edp-project> namespace with the helm command; find below the installation command example:
     ```bash
-    helm install gerrit-operator epamedp/gerrit-operator --version <chart_version> --namespace <edp_cicd_project> --set name=gerrit-operator --set global.edpName=<edp_cicd_project> --set global.platform=<platform_type> --set global.dnsWildCard=<cluster_DNS_wildcard>
+    helm install gerrit-operator epamedp/gerrit-operator --version <chart_version> --namespace <edp-project> --set name=gerrit-operator --set global.edpName=<edp-project> --set global.platform=<platform_type> --set global.dnsWildCard=<cluster_DNS_wildcard>
     ```
-5. Check the <edp_cicd_project> namespace that should contain Deployment with your operator in a running status.
+5. Check the <edp-project> namespace that should contain Deployment with your operator in a running status.
 
 ## Local Development
 
-In order to develop the operator, first set up a local environment. For details, please refer to the [Local Development](documentation/local-development.md) page.
+In order to develop the operator, first set up a local environment. For details, please refer to the [Local Development](https://epam.github.io/edp-install/developer-guide/local-development/) page.
+
+Development versions are also available, please refer to the [snapshot helm chart repository](https://epam.github.io/edp-helm-charts/snapshot/) page.
 
 ### Related Articles
 
