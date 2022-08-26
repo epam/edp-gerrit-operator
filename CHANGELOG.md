@@ -1,15 +1,49 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.12.0"></a>
+## [v2.12.0] - 2022-08-23
 ### Features
 
+- Switch to use V1 apis of EDP components [EPMDEDP-10082](https://jiraeu.epam.com/browse/EPMDEDP-10082)
+- Download required tools for Makefile targets [EPMDEDP-10105](https://jiraeu.epam.com/browse/EPMDEDP-10105)
+- Use exponential back-off in retries for GerritGroupMemeber reconciliation [EPMDEDP-10341](https://jiraeu.epam.com/browse/EPMDEDP-10341)
 - Switch to Ingress v1 [EPMDEDP-8286](https://jiraeu.epam.com/browse/EPMDEDP-8286)
 - Switch CRDs to v1 version [EPMDEDP-9218](https://jiraeu.epam.com/browse/EPMDEDP-9218)
 
+### Bug Fixes
+
+- Set proper gerrit image value [EPMDEDP-10120](https://jiraeu.epam.com/browse/EPMDEDP-10120)
+
+### Code Refactoring
+
+- Deprecate unused Spec components for Gerrit v1 [EPMDEDP-10120](https://jiraeu.epam.com/browse/EPMDEDP-10120)
+- Remove createCodeReviewPipeline from CR [EPMDEDP-10156](https://jiraeu.epam.com/browse/EPMDEDP-10156)
+- Ensure having consisten secret name during gerrit configuration [EPMDEDP-10190](https://jiraeu.epam.com/browse/EPMDEDP-10190)
+- Remove unused psp creation [EPMDEDP-10228](https://jiraeu.epam.com/browse/EPMDEDP-10228)
+- Properly update status for GerritGroupMember CR [EPMDEDP-10341](https://jiraeu.epam.com/browse/EPMDEDP-10341)
+- Use repository and tag for image reference in chart [EPMDEDP-10389](https://jiraeu.epam.com/browse/EPMDEDP-10389)
+
 ### Routine
 
+- Upgrade go version to 1.18 [EPMDEDP-10110](https://jiraeu.epam.com/browse/EPMDEDP-10110)
+- Fix Jira Ticket pattern for changelog generator [EPMDEDP-10159](https://jiraeu.epam.com/browse/EPMDEDP-10159)
+- Update alpine base image to 3.16.2 version [EPMDEDP-10274](https://jiraeu.epam.com/browse/EPMDEDP-10274)
+- Update alpine base image version [EPMDEDP-10280](https://jiraeu.epam.com/browse/EPMDEDP-10280)
+- Upgrade gerrit to version 3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
+- Update gerrit to version v3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
+- Change 'go get' to 'go install' for git-chglog [EPMDEDP-10337](https://jiraeu.epam.com/browse/EPMDEDP-10337)
+- Use deployments as default deploymentType for OpenShift [EPMDEDP-10344](https://jiraeu.epam.com/browse/EPMDEDP-10344)
+- Update Gerrit to 3.6.1 release version [EPMDEDP-10374](https://jiraeu.epam.com/browse/EPMDEDP-10374)
+- Remove VERSION file [EPMDEDP-10387](https://jiraeu.epam.com/browse/EPMDEDP-10387)
+- Add gcflags for go build artifact [EPMDEDP-10411](https://jiraeu.epam.com/browse/EPMDEDP-10411)
 - Update current development version [EPMDEDP-8832](https://jiraeu.epam.com/browse/EPMDEDP-8832)
 - Update chart annotation [EPMDEDP-9515](https://jiraeu.epam.com/browse/EPMDEDP-9515)
+
+### Documentation
+
+- Align README.md [EPMDEDP-10274](https://jiraeu.epam.com/browse/EPMDEDP-10274)
 
 
 <a name="v2.11.0"></a>
@@ -128,7 +162,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...HEAD
+[v2.12.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...v2.12.0
 [v2.11.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...v2.11.0
 [v2.10.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.9.0...v2.10.0
 [v2.9.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.8.0...v2.9.0
