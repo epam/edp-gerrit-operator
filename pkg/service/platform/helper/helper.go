@@ -16,28 +16,28 @@ import (
 const (
 	DefaultConfigFilesAbsolutePath = "/usr/local/"
 
-	//LocalConfigsRelativePath - default directory for configs
+
 	LocalConfigsRelativePath = "configs"
 
-	//DefaultScriptsDirectory
+
 	DefaultTemplatesDirectory = "templates"
 
-	//DefaultTemplatesDirectory
+
 	DefaultScriptsDirectory = "scripts"
 
-	//LocalTemplatesRelativePath - default directory for templates
+
 	LocalTemplatesRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultTemplatesDirectory
 
-	//LocalScriptsRelativePath - scripts
+
 	LocalScriptsRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultScriptsDirectory
 
-	//JenkinsPluginConfigFileName
+
 	JenkinsPluginConfigFileName = "config-gerrit-plugin.tmpl"
 
-	//RouteHTTPSScheme
+
 	RouteHTTPSScheme = "https"
 
-	//RouteHTTPScheme
+
 	RouteHTTPScheme = "http"
 
 	inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
@@ -102,7 +102,7 @@ func RunningInCluster() bool {
 	return !os.IsNotExist(err)
 }
 
-// GenerateLabels returns initialized map using name parameter
+// GenerateLabels returns initialized map using name parameter.
 func GenerateLabels(name string) map[string]string {
 	return map[string]string{
 		"app": name,

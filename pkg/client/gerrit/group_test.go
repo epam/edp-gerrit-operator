@@ -5,10 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/jarcoal/httpmock"
 )
 
 const gid = "123"
@@ -42,7 +41,7 @@ func TestClient_AddUserToGroup(t *testing.T) {
 	}
 }
 
-//Deleted test for an unused func
+// Deleted test for an unused func
 
 func TestClient_DeleteUserFromGroup(t *testing.T) {
 	restyClient := CreateMockResty()

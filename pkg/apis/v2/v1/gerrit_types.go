@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GerritSpec defines the desired state of Gerrit
+// GerritSpec defines the desired state of Gerrit.
 type GerritSpec struct {
 	KeycloakSpec KeycloakSpec `json:"keycloakSpec"`
 
@@ -22,7 +22,7 @@ type KeycloakSpec struct {
 	Realm string `json:"realm,omitempty"`
 }
 
-// GerritStatus defines the observed state of Gerrit
+// GerritStatus defines the observed state of Gerrit.
 type GerritStatus struct {
 	ExternalUrl string `json:"externalUrl"`
 
@@ -40,7 +40,7 @@ type GerritStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
-// Gerrit is the Schema for the gerrits API
+// Gerrit is the Schema for the gerrits API.
 type Gerrit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -51,7 +51,7 @@ type Gerrit struct {
 
 // +kubebuilder:object:root=true
 
-// GerritList contains a list of Gerrit
+// GerritList contains a list of Gerrit.
 type GerritList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

@@ -5,15 +5,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 
 	"github.com/dchest/uniuri"
-	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
@@ -23,6 +21,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
@@ -46,7 +47,7 @@ const (
 	admin                            = "-admin"
 )
 
-// Interface expresses behaviour of the Gerrit EDP Component
+// Interface expresses behaviour of the Gerrit EDP Component.
 type Interface interface {
 	IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error)
 	Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, bool, error)
@@ -73,7 +74,7 @@ func IsErrUserNotFound(err error) bool {
 	return ok
 }
 
-// ComponentService implements gerrit.Interface
+// ComponentService implements gerrit.Interface.
 type ComponentService struct {
 	// Providing Gerrit EDP component implementation through the interface (platform abstract)
 	PlatformService      platform.PlatformService
@@ -83,7 +84,7 @@ type ComponentService struct {
 	runningInClusterFunc func() bool
 }
 
-// NewComponentService returns a new instance of a gerrit.Service type
+// NewComponentService returns a new instance of a gerrit.Service type.
 func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runtime.Scheme) Interface {
 	return ComponentService{
 		PlatformService:      ps,
@@ -102,12 +103,12 @@ func (s ComponentService) runningInCluster() bool {
 	return false
 }
 
-// IsDeploymentReady check if DC for Gerrit is ready
+// IsDeploymentReady check if DC for Gerrit is ready.
 func (s ComponentService) IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error) {
 	return s.PlatformService.IsDeploymentReady(instance)
 }
 
-// Configure contains logic related to self configuration of the Gerrit EDP Component
+// Configure contains logic related to self configuration of the Gerrit EDP Component.
 func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, bool, error) {
 	gerritUrl, err := s.GetGerritSSHUrl(instance)
 	if err != nil {
@@ -282,7 +283,7 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 	return instance, false, nil
 }
 
-// ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components
+// ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components.
 func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
 	vLog := log.WithValues("gerrit", instance.Name)
 	vLog.Info("start exposing configuration")
@@ -451,7 +452,7 @@ func getIcon() (*string, error) {
 		return nil, err
 	}
 	reader := bufio.NewReader(f)
-	content, err := ioutil.ReadAll(reader)
+	content, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +460,7 @@ func getIcon() (*string, error) {
 	return &encoded, nil
 }
 
-// Integrate applies actions required for the integration with the other EDP Components
+// Integrate applies actions required for the integration with the other EDP Components.
 func (s ComponentService) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
 	h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 	if err != nil {
@@ -722,7 +723,7 @@ func (s ComponentService) updateDeploymentConfigPort(sshPort, sshPortService int
 	return false, nil
 }
 
-//setAnnotation add key:value to current resource annotation
+// setAnnotation add key:value to current resource annotation.
 func (s ComponentService) setAnnotation(instance *gerritApi.Gerrit, key string, value string) {
 	if len(instance.Annotations) == 0 {
 		instance.ObjectMeta.Annotations = map[string]string{

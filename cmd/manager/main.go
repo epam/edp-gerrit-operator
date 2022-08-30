@@ -4,22 +4,24 @@ import (
 	"flag"
 	"os"
 
-	buildInfo "github.com/epam/edp-common/pkg/config"
-	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1"
-	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	buildInfo "github.com/epam/edp-common/pkg/config"
+	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1"
+	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritAlpha "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1alpha1"
@@ -39,6 +41,7 @@ var (
 )
 
 const (
+	serverPort         = 9443
 	gerritOperatorLock = "edp-gerrit-operator-lock"
 	gitWorkDirEnv      = "GIT_WORK_DIR"
 	gitWorkDirDefault  = "/tmp/git_tmp"
@@ -121,7 +124,7 @@ func initManager(metricsAddr, probeAddr string, enableLeaderElection bool) (ctrl
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		HealthProbeBindAddress: probeAddr,
-		Port:                   9443,
+		Port:                   serverPort,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       gerritOperatorLock,
 		MapperProvider: func(c *rest.Config) (meta.RESTMapper, error) {

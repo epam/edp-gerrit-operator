@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	common "github.com/epam/edp-common/pkg/mock"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -18,6 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	common "github.com/epam/edp-common/pkg/mock"
 
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"

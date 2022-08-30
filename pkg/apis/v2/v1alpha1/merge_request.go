@@ -10,7 +10,7 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion
 
-// GerritMergeRequest is the Schema for the gerrit merge request API
+// GerritMergeRequest is the Schema for the gerrit merge request API.
 type GerritMergeRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -19,7 +19,7 @@ type GerritMergeRequest struct {
 	Status GerritMergeRequestStatus `json:"status,omitempty"`
 }
 
-// GerritMergeRequestSpec defines the desired state of GerritMergeRequest
+// GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
 type GerritMergeRequestSpec struct {
 	// OwnerName indicates which gerrit CR should be taken to initialize correct client.
 	// +nullable
@@ -51,7 +51,7 @@ type GerritMergeRequestSpec struct {
 	AdditionalArguments []string `json:"additionalArguments,omitempty"`
 }
 
-// GerritMergeRequestStatus defines the observed state of GerritMergeRequest
+// GerritMergeRequestStatus defines the observed state of GerritMergeRequest.
 type GerritMergeRequestStatus struct {
 	// +optional
 	Value string `json:"value,omitempty"`
@@ -63,7 +63,7 @@ type GerritMergeRequestStatus struct {
 
 // +kubebuilder:object:root=true
 
-// GerritMergeRequestList contains a list of GerritMergeRequest
+// GerritMergeRequestList contains a list of GerritMergeRequest.
 type GerritMergeRequestList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

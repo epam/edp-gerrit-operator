@@ -22,7 +22,7 @@ const (
 	Test       = "test"
 )
 
-// PlatformService defines common behaviour of the services for the supported platforms
+// PlatformService defines common behaviour of the services for the supported platforms.
 type PlatformService interface {
 	GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error)
 	GetExternalEndpoint(namespace string, name string) (string, string, error)
@@ -42,7 +42,7 @@ type PlatformService interface {
 	CreateEDPComponentIfNotExist(gerrit gerritApi.Gerrit, url string, icon string) error
 }
 
-// NewService creates a new instance of the platform.Service type using scheme parameter provided
+// NewService creates a new instance of the platform.Service type using scheme parameter provided.
 func NewService(platformType string, scheme *runtime.Scheme) (PlatformService, error) {
 	config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),

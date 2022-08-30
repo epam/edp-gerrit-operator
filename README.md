@@ -18,6 +18,7 @@ _**NOTE:** Operator is platform-independent, that is why there is a unified inst
 1. Linux machine or Windows Subsystem for Linux instance with [Helm 3](https://helm.sh/docs/intro/install/) installed;
 2. Cluster admin access to the cluster;
 3. EDP project/namespace is deployed by following the [Install EDP](https://epam.github.io/edp-install/operator-guide/install-edp/) instruction.
+4. Make sure Git [`FSMonitor`](https://www.git-scm.com/docs/git-fsmonitor--daemon) feature is turned off. This is due to [limitations](https://github.com/go-git/go-git/issues/299) of `go-git`.
 
 ## Installation
 

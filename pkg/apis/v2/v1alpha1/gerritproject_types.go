@@ -2,7 +2,7 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// GerritProjectStatus defines the observed state of GerritProject
+// GerritProjectStatus defines the observed state of GerritProject.
 type GerritProjectStatus struct {
 	// +optional
 	Value string `json:"value,omitempty"`
@@ -12,7 +12,7 @@ type GerritProjectStatus struct {
 	Branches []string `json:"branches,omitempty"`
 }
 
-// GerritProjectSpec defines the desired state of GerritProject
+// GerritProjectSpec defines the desired state of GerritProject.
 type GerritProjectSpec struct {
 	Name string `json:"name"`
 
@@ -48,7 +48,7 @@ type GerritProjectSpec struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion
 
-// GerritProject is the Schema for the gerrit project API
+// GerritProject is the Schema for the gerrit project API.
 type GerritProject struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -59,7 +59,7 @@ type GerritProject struct {
 
 // +kubebuilder:object:root=true
 
-// GerritProjectList contains a list of GerritProject
+// GerritProjectList contains a list of GerritProject.
 type GerritProjectList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

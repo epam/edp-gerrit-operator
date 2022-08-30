@@ -6,9 +6,8 @@ import (
 	"path"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/go-git/go-git/v5"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

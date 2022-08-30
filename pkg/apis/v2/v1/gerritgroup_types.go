@@ -2,7 +2,7 @@ package v1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// GerritGroupSpec defines the desired state of GerritGroup
+// GerritGroupSpec defines the desired state of GerritGroup.
 type GerritGroupSpec struct {
 	Name string `json:"name"`
 
@@ -16,7 +16,7 @@ type GerritGroupSpec struct {
 	VisibleToAll bool `json:"visibleToAll,omitempty"`
 }
 
-// GerritGroupStatus defines the observed state of GerritGroup
+// GerritGroupStatus defines the observed state of GerritGroup.
 type GerritGroupStatus struct {
 	// +optional
 	ID string `json:"id,omitempty"`
@@ -32,7 +32,7 @@ type GerritGroupStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
-// GerritGroup is the Schema for the gerrit group API
+// GerritGroup is the Schema for the gerrit group API.
 type GerritGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -43,7 +43,7 @@ type GerritGroup struct {
 
 // +kubebuilder:object:root=true
 
-// GerritGroupList contains a list of GerritGroup
+// GerritGroupList contains a list of GerritGroup.
 type GerritGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

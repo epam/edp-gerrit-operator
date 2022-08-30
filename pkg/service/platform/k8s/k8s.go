@@ -8,9 +8,6 @@ import (
 	"regexp"
 	"strconv"
 
-	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1"
-	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +26,10 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1"
+	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
+
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
@@ -42,7 +43,7 @@ const (
 
 var log = ctrl.Log.WithName("platform")
 
-// K8SService implements platform.Service interface (k8s platform integration)
+// K8SService implements platform.Service interface (k8s platform integration).
 type K8SService struct {
 	Scheme           *runtime.Scheme
 	CoreClient       *coreV1Client.CoreV1Client
@@ -107,7 +108,7 @@ func (s *K8SService) PatchDeploymentEnv(gerrit gerritApi.Gerrit, env []coreV1Api
 	return nil
 }
 
-// Init process with K8SService instance initialization actions
+// Init process with K8SService instance initialization actions.
 func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	s.Scheme = scheme
 
@@ -166,7 +167,7 @@ func (service K8SService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int3
 	return 0, nil
 }
 
-// GenerateKeycloakSettings generates a set of environment var
+// GenerateKeycloakSettings generates a set of environment var.
 func (s *K8SService) GenerateKeycloakSettings(instance *gerritApi.Gerrit) (*[]coreV1Api.EnvVar, error) {
 	identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
 	realm, err := s.getKeycloakRealm(instance)
@@ -274,7 +275,7 @@ func (s K8SService) getKeycloakRootUrl(instance *gerritApi.Gerrit) (*string, err
 	return &keycloakUrl, nil
 }
 
-// GetSecret return data field of Secret
+// GetSecret return data field of Secret.
 func (service K8SService) GetSecretData(namespace string, name string) (map[string][]byte, error) {
 	log.Info("getting secret data", nameKey, name)
 	secret, err := service.CoreClient.Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
@@ -287,7 +288,7 @@ func (service K8SService) GetSecretData(namespace string, name string) (map[stri
 	return secret.Data, nil
 }
 
-// GetPods returns Pod list according to the filter
+// GetPods returns Pod list according to the filter.
 func (s *K8SService) GetPods(namespace string, filter metav1.ListOptions) (*coreV1Api.PodList, error) {
 	PodList, err := s.CoreClient.Pods(namespace).List(context.TODO(), filter)
 	if err != nil {
@@ -297,7 +298,7 @@ func (s *K8SService) GetPods(namespace string, filter metav1.ListOptions) (*core
 	return PodList, nil
 }
 
-// ExecInPod executes command in pod
+// ExecInPod executes command in pod.
 func (s *K8SService) ExecInPod(namespace string, podName string, command []string) (string, string, error) {
 	pod, err := s.CoreClient.Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
@@ -343,7 +344,7 @@ func (s *K8SService) ExecInPod(namespace string, podName string, command []strin
 	return stdout.String(), stderr.String(), nil
 }
 
-// CreateSecret creates a new Secret Resource for a Gerrit EDP Component
+// CreateSecret creates a new Secret Resource for a Gerrit EDP Component.
 func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, data map[string][]byte) error {
 	vLog := log.WithValues(nameKey, secretName)
 	vLog.Info("creating secret")
@@ -368,7 +369,7 @@ func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, d
 	return nil
 }
 
-// GetSecret returns data section of an existing Secret resource of a Gerrit EDP Component
+// GetSecret returns data section of an existing Secret resource of a Gerrit EDP Component.
 func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte, error) {
 	secret, err := s.CoreClient.Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
@@ -381,7 +382,7 @@ func (s *K8SService) GetSecret(namespace string, name string) (map[string][]byte
 	return secret.Data, nil
 }
 
-// GetService returns existing Service resource of a Gerrit EDP Component
+// GetService returns existing Service resource of a Gerrit EDP Component.
 func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Service, error) {
 	service, err := s.CoreClient.Services(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
@@ -394,7 +395,7 @@ func (s *K8SService) GetService(namespace string, name string) (*coreV1Api.Servi
 	return service, nil
 }
 
-// UpdateService updates target port of a Gerrit EDP Component
+// UpdateService updates target port of a Gerrit EDP Component.
 func (s *K8SService) UpdateService(svc coreV1Api.Service, nodePort int32) error {
 	ports := svc.Spec.Ports
 	updatedPorts, err := updatePort(ports, "ssh", nodePort)

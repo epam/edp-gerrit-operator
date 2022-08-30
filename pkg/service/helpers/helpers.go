@@ -17,13 +17,13 @@ const (
 	keyBitSize = 4096
 )
 
-// LogErrorAndReturn prints error message to the log and returns err parameter
+// LogErrorAndReturn prints error message to the log and returns err parameter.
 func LogErrorAndReturn(err error) error {
 	log.Printf("[ERROR] %v", err)
 	return err
 }
 
-// GeneratePrivateKey generates private key
+// GeneratePrivateKey generates private key.
 func generatePrivateKey() (*rsa.PrivateKey, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, keyBitSize)
 	if err != nil {
@@ -38,7 +38,7 @@ func generatePrivateKey() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-// GeneratePublicKey convert *rsa.PublicKey to ssh.PublicKey
+// GeneratePublicKey convert *rsa.PublicKey to ssh.PublicKey.
 func generatePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
 	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
 	if err != nil {
@@ -50,7 +50,7 @@ func generatePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
 	return publicKeyBytes, nil
 }
 
-// EncodePrivateKey encodes private key to PEM format
+// EncodePrivateKey encodes private key to PEM format.
 func encodePrivateKey(privateKey *rsa.PrivateKey) []byte {
 	asnDEREncoding := x509.MarshalPKCS1PrivateKey(privateKey)
 

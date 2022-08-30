@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig
+// GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig.
 type GerritReplicationConfigSpec struct {
 	SSHUrl string `json:"ssh_url"`
 
@@ -12,7 +12,7 @@ type GerritReplicationConfigSpec struct {
 	OwnerName string `json:"owner_name,omitempty"`
 }
 
-// GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig
+// GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig.
 type GerritReplicationConfigStatus struct {
 	// +optional
 	Available bool `json:"available,omitempty"`
@@ -28,7 +28,7 @@ type GerritReplicationConfigStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion
 
-// GerritReplicationConfig is the Schema for the gerritreplicationconfigs API
+// GerritReplicationConfig is the Schema for the gerritreplicationconfigs API.
 type GerritReplicationConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -39,7 +39,7 @@ type GerritReplicationConfig struct {
 
 // +kubebuilder:object:root=true
 
-// GerritReplicationConfigList contains a list of GerritReplicationConfig
+// GerritReplicationConfigList contains a list of GerritReplicationConfig.
 type GerritReplicationConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

@@ -21,40 +21,40 @@ import (
 )
 
 const (
-	// StatusInstall = installing
+	// StatusInstall = installing.
 	StatusInstall = "installing"
 
-	// StatusFailed = failed
+	// StatusFailed = failed.
 	StatusFailed = "failed"
 
-	// StatusCreated = created
+	// StatusCreated = created.
 	StatusCreated = "created"
 
-	// StatusConfiguring = configuring
+	// StatusConfiguring = configuring.
 	StatusConfiguring = "configuring"
 
-	// StatusConfigured = configured
+	// StatusConfigured = configured.
 	StatusConfigured = "configured"
 
-	// StatusExposeStart = exposing config
+	// StatusExposeStart = exposing config.
 	StatusExposeStart = "exposing config"
 
-	// StatusExposeFinish = config exposed
+	// StatusExposeFinish = config exposed.
 	StatusExposeFinish = "config exposed"
 
-	// StatusIntegrationStart = integration started
+	// StatusIntegrationStart = integration started.
 	StatusIntegrationStart = "integration started"
 
-	// StatusReady = ready
+	// StatusReady = ready.
 	StatusReady = "ready"
 
-	// RequeueTime10 = 10
+	// RequeueTime10 = 10.
 	RequeueTime10 = 10 * time.Second
 
-	// requeueTime30 = 30
+	// requeueTime30 = 30.
 	requeueTime30 = 30 * time.Second
 
-	// requeueTime60 = 60
+	// requeueTime60 = 60.
 	requeueTime60 = 60 * time.Second
 
 	status = "status"

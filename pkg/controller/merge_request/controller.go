@@ -197,28 +197,28 @@ func (r *Reconcile) tryReconcile(ctx context.Context, instance *gerritApi.Gerrit
 
 func (r *Reconcile) createChange(ctx context.Context,
 	instance *gerritApi.GerritMergeRequest) (status *gerritApi.GerritMergeRequestStatus, retErr error) {
-	//init git client
+	// init git client
 	gitClient, err := r.getGitClient(ctx, instance, r.gitWorkDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to init git client")
 	}
-	//clone project
+	// clone project
 	projectPath, err := gitClient.Clone(instance.Spec.ProjectName)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to clone repo")
 	}
-	//clear cloned project
+	// clear cloned project
 	defer func() {
 		if err := os.RemoveAll(projectPath); err != nil {
 			retErr = err
 		}
 	}()
-	//generate change id for commit or merge
+	// generate change id for commit or merge
 	changeID, err := gitClient.GenerateChangeID()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to generate change id")
 	}
-	//perform merge or commit files from config map
+	// perform merge or commit files from config map
 	if instance.Spec.SourceBranch != "" {
 		if err := mergeBranches(instance, gitClient, changeID); err != nil {
 			return nil, errors.Wrap(err, "unable to perform merge")
@@ -228,7 +228,7 @@ func (r *Reconcile) createChange(ctx context.Context,
 			return nil, errors.Wrap(err, "unable to commit files")
 		}
 	}
-	//push changes for review
+	// push changes for review
 	refSpec := fmt.Sprintf("HEAD:refs/for/%s", instance.TargetBranch())
 	pushMessage, err := gitClient.Push(instance.Spec.ProjectName, "origin", refSpec)
 	if err != nil {

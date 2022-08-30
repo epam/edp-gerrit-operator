@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -51,7 +50,7 @@ func (gc *Client) Resty() *resty.Client {
 	return gc.resty
 }
 
-// InitNewRestClient performs initialization of Gerrit connection
+// InitNewRestClient performs initialization of Gerrit connection.
 func (gc *Client) InitNewRestClient(instance *gerritApi.Gerrit, url string, user string, password string) error {
 	gc.resty = resty.SetHostURL(url).SetBasicAuth(user, password).SetDisableWarn(true)
 	gc.instance = instance
@@ -67,7 +66,7 @@ func (gc *Client) InitNewSshClient(userName string, privateKey []byte, host stri
 	return nil
 }
 
-// CheckCredentials checks whether provided creds are correct
+// CheckCredentials checks whether provided creds are correct.
 func (gc Client) CheckCredentials() (int, error) {
 	resp, err := gc.resty.R().
 		SetHeader(acceptHeader, applicationJson).
@@ -79,7 +78,7 @@ func (gc Client) CheckCredentials() (int, error) {
 	return resp.StatusCode(), nil
 }
 
-// CheckGroup checks gerrit group
+// CheckGroup checks gerrit group.
 func (gc Client) CheckGroup(groupName string) (*int, error) {
 	vLog := log.WithValues("group name", groupName)
 	vLog.Info("checking group...")
@@ -105,7 +104,7 @@ func (gc Client) CheckGroup(groupName string) (*int, error) {
 	return &status, nil
 }
 
-//GetUser checks gerrit user
+// GetUser checks gerrit user.
 func (gc Client) GetUser(username string) (*int, error) {
 	resp, err := gc.resty.R().
 		SetHeader(acceptHeader, applicationJson).
@@ -120,7 +119,7 @@ func (gc Client) GetUser(username string) (*int, error) {
 }
 
 func (gc Client) InitAdminUser(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (gerritApi.Gerrit, error) {
-	addInitialAdminUserScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
+	addInitialAdminUserScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to read add-initial-admin-user.sh script")
 	}
@@ -258,12 +257,12 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 
 func (gc *Client) InitAllProjects(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
 	podName string, gerritAdminPublicKey string) error {
-	initAllProjectsScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
+	initAllProjectsScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
 	}
 
-	gerritConfig, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", GerritScriptsPath)))
+	gerritConfig, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", GerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
 	}
@@ -315,7 +314,7 @@ func decodeGerritResponse(body string, v interface{}) error {
 	if len(body) < minBodyLength {
 		return errors.New("wrong gerrit body format")
 	}
-	//gerrit has prefix )]}' in all responses so we need to truncate it
+	// gerrit has prefix )]}' in all responses so we need to truncate it
 	if err := json.Unmarshal([]byte(body[minBodyLength:]), v); err != nil {
 		return errors.Wrap(err, "unable to decode gerrit response")
 	}

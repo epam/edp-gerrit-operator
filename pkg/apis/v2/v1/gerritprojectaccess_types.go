@@ -2,7 +2,7 @@ package v1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// GerritProjectAccessSpec defines the desired state of GerritProjectAccess
+// GerritProjectAccessSpec defines the desired state of GerritProjectAccess.
 type GerritProjectAccessSpec struct {
 	// ProjectName is gerrit project name.
 	ProjectName string `json:"projectName"`
@@ -52,7 +52,7 @@ type Reference struct {
 	Max int `json:"max,omitempty"`
 }
 
-// GerritProjectAccessStatus defines the observed state of GerritProjectAccess
+// GerritProjectAccessStatus defines the observed state of GerritProjectAccess.
 type GerritProjectAccessStatus struct {
 	// +optional
 	Created bool `json:"created,omitempty"`
@@ -65,7 +65,7 @@ type GerritProjectAccessStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 
-// GerritProjectAccess is the Schema for the gerrit project access API
+// GerritProjectAccess is the Schema for the gerrit project access API.
 type GerritProjectAccess struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -76,7 +76,7 @@ type GerritProjectAccess struct {
 
 // +kubebuilder:object:root=true
 
-// GerritProjectAccessList contains a list of GerritProjectAccess
+// GerritProjectAccessList contains a list of GerritProjectAccess.
 type GerritProjectAccessList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

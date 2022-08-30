@@ -28,7 +28,7 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
 )
 
-// OpenshiftService implements platform.Service interface (OpenShift platform integration)
+// OpenshiftService implements platform.Service interface (OpenShift platform integration).
 type OpenshiftService struct {
 	k8s.K8SService
 
@@ -45,7 +45,7 @@ const (
 	deploymentConfigsDeploymentType = "deploymentConfigs"
 )
 
-// Init process with OpenshiftService instance initialization actions
+// Init process with OpenshiftService instance initialization actions.
 func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 	if err := s.K8SService.Init(config, scheme); err != nil {
 		return helpers.LogErrorAndReturn(err)

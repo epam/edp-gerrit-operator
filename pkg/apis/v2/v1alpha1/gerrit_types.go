@@ -8,7 +8,7 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// GerritSpec defines the desired state of Gerrit
+// GerritSpec defines the desired state of Gerrit.
 type GerritVolumes struct {
 	Name     string `json:"name"`
 	Capacity string `json:"capacity"`
@@ -35,7 +35,7 @@ type GerritSpec struct {
 	SshPort int32 `json:"sshPort,omitempty"`
 }
 
-// GerritStatus defines the observed state of Gerrit
+// GerritStatus defines the observed state of Gerrit.
 type GerritStatus struct {
 	ExternalUrl string `json:"externalUrl"`
 
@@ -63,7 +63,7 @@ type KeycloakSpec struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion
 
-// Gerrit is the Schema for the gerrits API
+// Gerrit is the Schema for the gerrits API.
 type Gerrit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -73,7 +73,7 @@ type Gerrit struct {
 
 // +kubebuilder:object:root=true
 
-// GerritList contains a list of Gerrit
+// GerritList contains a list of Gerrit.
 type GerritList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

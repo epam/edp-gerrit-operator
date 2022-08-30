@@ -2,7 +2,6 @@ package gerrit
 
 import (
 	"fmt"
-
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -49,7 +48,7 @@ type GroupMember struct {
 	Username string `json:"username"`
 }
 
-//Deleted unused func
+// Deleted unused func
 //func (gc *Client) getUserGroups() (map[string][]string, error) {}
 
 func (gc *Client) DeleteUserFromGroup(groupName, username string) error {
