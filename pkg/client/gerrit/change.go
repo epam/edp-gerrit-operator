@@ -11,7 +11,7 @@ type Change struct {
 	Status string `json:"status"`
 }
 
-func (gc Client) ChangeAbandon(changeID string) error {
+func (gc *Client) ChangeAbandon(changeID string) error {
 	rsp, err := gc.resty.R().Post(fmt.Sprintf("changes/%s/abandon", changeID))
 	if err = parseRestyResponse(rsp, err); err != nil {
 		return errors.Wrap(err, "unable to abandon change")
@@ -20,7 +20,7 @@ func (gc Client) ChangeAbandon(changeID string) error {
 	return nil
 }
 
-func (gc Client) ChangeGet(changeID string) (*Change, error) {
+func (gc *Client) ChangeGet(changeID string) (*Change, error) {
 	rsp, err := gc.resty.R().Get(fmt.Sprintf("changes/%s", changeID))
 	if err = parseRestyResponse(rsp, err); err != nil {
 		return nil, errors.Wrap(err, "unable to get change")

@@ -47,15 +47,6 @@ const (
 	gitWorkDirDefault  = "/tmp/git_tmp"
 )
 
-func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(gerritAlpha.AddToScheme(scheme))
-	utilruntime.Must(edpCompApi.AddToScheme(scheme))
-	utilruntime.Must(jenkinsApi.AddToScheme(scheme))
-	utilruntime.Must(keycloakApi.AddToScheme(scheme))
-}
-
 func main() {
 	var (
 		metricsAddr          string
@@ -83,7 +74,14 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	printBuildInfo()
+	logBuildInfo(setupLog)
+
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(gerritApi.AddToScheme(scheme))
+	utilruntime.Must(gerritAlpha.AddToScheme(scheme))
+	utilruntime.Must(edpCompApi.AddToScheme(scheme))
+	utilruntime.Must(jenkinsApi.AddToScheme(scheme))
+	utilruntime.Must(keycloakApi.AddToScheme(scheme))
 
 	mgr, err := initManager(metricsAddr, probeAddr, enableLeaderElection)
 	if err != nil {
@@ -91,23 +89,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := initControllers(mgr, ctrl.Log.WithName("controllers")); err != nil {
+	if err = initControllers(mgr, ctrl.Log.WithName("controllers")); err != nil {
 		setupLog.Error(err, "error during controllers init")
 		os.Exit(1)
 	}
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+	if err = mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+	if err = mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+
+	err = mgr.Start(ctrl.SetupSignalHandler())
+	if err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
@@ -120,6 +120,7 @@ func initManager(metricsAddr, probeAddr string, enableLeaderElection bool) (ctrl
 	}
 
 	cfg := ctrl.GetConfigOrDie()
+
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -212,38 +213,48 @@ func prepareMergeRequestReconciler(mgr ctrl.Manager, ctrlLog logr.Logger) error 
 	if err != nil {
 		return nil
 	}
+
 	gerritServiceOption, err := mergerequest.PrepareGerritServiceOption(mgr.GetClient(), helper.GetPlatformTypeEnv(),
 		mgr.GetScheme())
 	if err != nil {
 		return err
 	}
+
 	mergeRequestReconcilerOpts := []mergerequest.OptionFunc{
 		workDirectoryOption,
 		gerritServiceOption,
 	}
+
 	mergeRequestReconciler := mergerequest.NewReconcile(mgr.GetClient(), ctrlLog, mergeRequestReconcilerOpts...)
-	if err = mergeRequestReconciler.SetupWithManager(mgr); err != nil {
+
+	err = mergeRequestReconciler.SetupWithManager(mgr)
+	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func prepareGerritProjectReconciler(manager ctrl.Manager, ctrlLog logr.Logger) error {
 	syncInterval := gerritproject.SyncInterval()
+
 	gerritProjectReconciler, err := gerritproject.NewReconcile(manager.GetClient(), manager.GetScheme(), ctrlLog)
 	if err != nil {
 		return err
 	}
-	if err = gerritProjectReconciler.SetupWithManager(manager, syncInterval); err != nil {
+
+	err = gerritProjectReconciler.SetupWithManager(manager, syncInterval)
+	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func printBuildInfo() {
+func logBuildInfo(logger logr.Logger) {
 	v := buildInfo.Get()
 
-	setupLog.Info("Starting the Gerrit Operator",
+	logger.Info("Starting the Gerrit Operator",
 		"version", v.Version,
 		"git-commit", v.GitCommit,
 		"git-tag", v.GitTag,

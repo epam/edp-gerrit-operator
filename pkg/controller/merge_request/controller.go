@@ -71,7 +71,6 @@ type MRConfigMapFile struct {
 
 func NewReconcile(k8sClient client.Client, log logr.Logger,
 	opts ...OptionFunc) helper.Controller {
-
 	r := &Reconcile{
 		k8sClient: k8sClient,
 		log:       log,
@@ -80,6 +79,7 @@ func NewReconcile(k8sClient client.Client, log logr.Logger,
 	for i := range opts {
 		opts[i](r)
 	}
+
 	return r
 }
 
@@ -89,6 +89,7 @@ func PrepareWorkDirectoryOption(gitWorkDirectory string) (OptionFunc, error) {
 	if err := os.RemoveAll(gitWorkDirectory); err != nil {
 		return nil, errors.Wrap(err, "unable to clean git work dir")
 	}
+
 	return func(r *Reconcile) {
 		r.gitWorkDir = gitWorkDirectory
 	}, nil
@@ -124,8 +125,15 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*gerritApi.GerritMergeRequest)
-	no := e.ObjectNew.(*gerritApi.GerritMergeRequest)
+	oo, ok := e.ObjectOld.(*gerritApi.GerritMergeRequest)
+	if !ok {
+		return false
+	}
+
+	no, ok := e.ObjectNew.(*gerritApi.GerritMergeRequest)
+	if !ok {
+		return false
+	}
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -141,6 +149,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 			reqLogger.Info("instance not found")
 			return
 		}
+
 		return reconcile.Result{}, errors.Wrap(err, "unable to get GerritMergeRequest instance")
 	}
 
@@ -148,6 +157,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 		instance.Status.Value = err.Error()
 		result.RequeueAfter =
 			time.Second * helper.DefaultRequeueTime
+
 		reqLogger.Error(err, "an error has occurred while handling GerritMergeRequest", "name",
 			request.Name)
 	} else if requeue {
@@ -159,6 +169,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	}
 
 	reqLogger.Info("Reconciling done")
+
 	return
 }
 
@@ -202,34 +213,42 @@ func (r *Reconcile) createChange(ctx context.Context,
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to init git client")
 	}
+
 	// clone project
 	projectPath, err := gitClient.Clone(instance.Spec.ProjectName)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to clone repo")
 	}
+
 	// clear cloned project
 	defer func() {
-		if err := os.RemoveAll(projectPath); err != nil {
-			retErr = err
+		if remErr := os.RemoveAll(projectPath); remErr != nil {
+			retErr = remErr
 		}
 	}()
+
 	// generate change id for commit or merge
 	changeID, err := gitClient.GenerateChangeID()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to generate change id")
 	}
+
 	// perform merge or commit files from config map
 	if instance.Spec.SourceBranch != "" {
-		if err := mergeBranches(instance, gitClient, changeID); err != nil {
+		err = mergeBranches(instance, gitClient, changeID)
+		if err != nil {
 			return nil, errors.Wrap(err, "unable to perform merge")
 		}
 	} else {
-		if err := r.commitFiles(ctx, instance, gitClient, changeID); err != nil {
+		err = r.commitFiles(ctx, instance, gitClient, changeID)
+		if err != nil {
 			return nil, errors.Wrap(err, "unable to commit files")
 		}
 	}
+
 	// push changes for review
 	refSpec := fmt.Sprintf("HEAD:refs/for/%s", instance.TargetBranch())
+
 	pushMessage, err := gitClient.Push(instance.Spec.ProjectName, "origin", refSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to push repo")
@@ -266,11 +285,13 @@ func (r *Reconcile) commitFiles(ctx context.Context, instance *gerritApi.GerritM
 		if err := gitClient.SetFileContents(instance.Spec.ProjectName, mrFile.Path, mrFile.Contents); err != nil {
 			return errors.Wrap(err, "unable to set file contents")
 		}
+
 		addFiles = append(addFiles, mrFile.Path)
 	}
 
 	gitUser := &git.User{Name: instance.Spec.AuthorName, Email: instance.Spec.AuthorEmail}
 	message := commitMessage(instance.CommitMessage(), changeID)
+
 	if err := gitClient.Commit(instance.Spec.ProjectName, message, addFiles, gitUser); err != nil {
 		return errors.Wrap(err, "unable to commit changes")
 	}
@@ -281,6 +302,7 @@ func (r *Reconcile) commitFiles(ctx context.Context, instance *gerritApi.GerritM
 func mergeBranches(instance *gerritApi.GerritMergeRequest, gitClient GitClient, changeID string) error {
 	projectName := instance.Spec.ProjectName
 	gitUser := &git.User{Name: instance.Spec.AuthorName, Email: instance.Spec.AuthorEmail}
+
 	if err := gitClient.SetProjectUser(projectName, gitUser); err != nil {
 		return errors.Wrap(err, "unable to set project author")
 	}
@@ -322,7 +344,7 @@ func (r *Reconcile) getChangeStatus(ctx context.Context, instance *gerritApi.Ger
 
 func extractMrURL(pushMessage string) string {
 	return regexp.MustCompile(
-		`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`).
+		`https?://(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)`).
 		FindString(pushMessage)
 }
 

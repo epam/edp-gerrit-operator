@@ -118,7 +118,6 @@ func TestClient_SetProjectParent(t *testing.T) {
 	if err := cl.SetProjectParent("test", "parent"); err != nil {
 		t.Fatal(err)
 	}
-
 }
 
 func TestGenerateSetAccessRequest(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -22,9 +23,7 @@ func TestClient_Clone_Failure(t *testing.T) {
 }
 
 func TestClient_SetProjectUser(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("test-user-repo", t)
 
@@ -34,9 +33,7 @@ func TestClient_SetProjectUser(t *testing.T) {
 }
 
 func TestClient_SetProjectUserFailure(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("test-user-repo", t)
 
@@ -47,7 +44,7 @@ func TestClient_SetProjectUserFailure(t *testing.T) {
 }
 
 func createFakeProject(name string, t *testing.T) {
-	err := os.MkdirAll(projectsDir, 0777)
+	err := os.MkdirAll(projectsDir, 0o777)
 	assert.NoError(t, err)
 
 	cloneRepo := path.Join(tmpDir, name)
@@ -88,9 +85,7 @@ func createFakeProject(name string, t *testing.T) {
 }
 
 func TestClient_Clone(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("test-clone", t)
 
@@ -104,9 +99,7 @@ func TestClient_Clone(t *testing.T) {
 }
 
 func TestClient_Merge(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	projectName := "test-merge"
 
@@ -142,9 +135,7 @@ func TestClient_GenerateChangeID(t *testing.T) {
 }
 
 func TestClient_SetFileContents(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("demo", t)
 
@@ -157,9 +148,7 @@ func TestClient_SetFileContents(t *testing.T) {
 }
 
 func TestClient_Commit(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("demo", t)
 
@@ -181,9 +170,7 @@ func TestClient_Commit(t *testing.T) {
 }
 
 func TestClient_CheckoutBranch(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("demo", t)
 
@@ -204,12 +191,16 @@ func TestClient_CheckoutBranch(t *testing.T) {
 }
 
 func TestClient_Push(t *testing.T) {
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
+	defer removeAllWithErrCapture(t, tmpDir)
 
 	createFakeProject("demo", t)
+
 	cl := New(tmpDir, tmpDir, "admin", "admin")
 	_, err := cl.Push("demo", "origin", "HEAD:refs/for/master")
 	assert.EqualError(t, err, "unable to create new remote: unable to get origin remote: remote not found")
+}
+
+func removeAllWithErrCapture(t *testing.T, p string) {
+	err := os.RemoveAll(p)
+	require.NoError(t, err)
 }

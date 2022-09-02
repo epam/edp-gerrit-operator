@@ -29,17 +29,16 @@ type SSHClient struct {
 }
 
 func (client *SSHClient) RunCommand(cmd *SSHCommand) ([]byte, error) {
-	var session *ssh.Session
-	var connection *ssh.Client
-	var err error
-
-	if session, connection, err = client.NewSession(); err != nil {
+	session, connection, err := client.NewSession()
+	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		if deferErr := session.Close(); deferErr != nil {
 			err = deferErr
 		}
+
 		if deferErr := connection.Close(); deferErr != nil {
 			err = deferErr
 		}
@@ -47,21 +46,23 @@ func (client *SSHClient) RunCommand(cmd *SSHCommand) ([]byte, error) {
 
 	commandOutput, err := session.Output(cmd.Path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to exec cmd %q on the remote host, %w", cmd.Path, err)
 	}
 
 	return commandOutput, err
 }
 
 func (client *SSHClient) NewSession() (*ssh.Session, *ssh.Client, error) {
-	connection, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", client.Host, client.Port), client.Config)
+	addr := fmt.Sprintf("%s:%d", client.Host, client.Port)
+
+	connection, err := ssh.Dial("tcp", addr, client.Config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to dial: %s", err)
+		return nil, nil, fmt.Errorf("failed to create client connection to the SSH server: %s, %w", addr, err)
 	}
 
 	session, err := connection.NewSession()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create session: %s", err)
+		return nil, nil, fmt.Errorf("failed to create a new session for a ssh client, %w", err)
 	}
 
 	return session, connection, nil

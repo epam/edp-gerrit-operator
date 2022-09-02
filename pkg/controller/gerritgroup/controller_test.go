@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,6 +25,7 @@ import (
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
@@ -153,10 +155,10 @@ func TestReconcileGerrit_Reconcile_ListErr(t *testing.T) {
 	sw := &mocks.StatusWriter{}
 	mc := mocks.Client{}
 	ctx := context.Background()
+	list := gerritApi.GerritList{}
+	listOpts := client.ListOptions{Namespace: namespace}
 
 	instance := createGerritGroupByOwner(nil)
-	var list gerritApi.GerritList
-	listOpts := client.ListOptions{Namespace: namespace}
 
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
@@ -190,9 +192,9 @@ func TestReconcileGerrit_Reconcile_ListEmpty(t *testing.T) {
 	sw := &mocks.StatusWriter{}
 	mc := mocks.Client{}
 	ctx := context.Background()
+	list := gerritApi.GerritList{}
 
 	instance := createGerritGroupByOwner(nil)
-	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{})
@@ -226,11 +228,11 @@ func TestReconcileGerrit_Reconcile_GetRestClientErr(t *testing.T) {
 	sw := &mocks.StatusWriter{}
 	mc := mocks.Client{}
 	ctx := context.Background()
+	list := gerritApi.GerritList{}
 	gServiceMock := gmock.Interface{}
-	gClientMock := gerrit.ClientInterfaceMock{}
+	gClientMock := gerritClientMocks.ClientInterface{}
 
 	instance := createGerritGroupByOwner(nil)
-	var list gerritApi.GerritList
 	gerritInstance := createGerrit()
 
 	s := runtime.NewScheme()
@@ -270,14 +272,14 @@ func TestReconcileGerrit_Reconcile_CreateGroupErr(t *testing.T) {
 	sw := &mocks.StatusWriter{}
 	mc := mocks.Client{}
 	ctx := context.Background()
+	list := gerritApi.GerritList{}
 	gServiceMock := gmock.Interface{}
-	gClientMock := gerrit.ClientInterfaceMock{}
+	gClientMock := gerritClientMocks.ClientInterface{}
 
 	instance := createGerritGroupByOwner(nil)
-	var list gerritApi.GerritList
 	gerritInstance := createGerrit()
-	Group := &gerrit.Group{}
 
+	group := &gerrit.Group{}
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
@@ -285,7 +287,7 @@ func TestReconcileGerrit_Reconcile_CreateGroupErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	gClientMock.On("CreateGroup", instance.Spec.Name, instance.Spec.Description,
-		instance.Spec.VisibleToAll).Return(Group, errTest)
+		instance.Spec.VisibleToAll).Return(group, errTest)
 	gServiceMock.On("GetRestClient", gerritInstance).Return(&gClientMock, nil)
 	mc.On("Get", nsn, &gerritApi.GerritGroup{}).Return(cl)
 	sw.On("Update").Return(nil)
@@ -314,11 +316,11 @@ func TestReconcileGerrit_Reconcile_CreateGroup(t *testing.T) {
 	sw := &mocks.StatusWriter{}
 	mc := mocks.Client{}
 	ctx := context.Background()
-
+	list := gerritApi.GerritList{}
 	gServiceMock := gmock.Interface{}
-	gClientMock := gerrit.ClientInterfaceMock{}
+	gClientMock := gerritClientMocks.ClientInterface{}
+
 	instance := createGerritGroupByOwner(nil)
-	var list gerritApi.GerritList
 
 	gerritInstance := &gerritApi.Gerrit{
 		TypeMeta: metav1.TypeMeta{
@@ -358,8 +360,8 @@ func TestReconcileGerrit_Reconcile_CreateGroup(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+	assert.NoError(t, err)
 	assert.NoError(t, log.LastError())
-	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{}, rs)
 }
 
@@ -375,13 +377,13 @@ func Test_isSpecUpdatedFalse(t *testing.T) {
 
 func TestNewReconcile(t *testing.T) {
 	err := os.Setenv("PLATFORM_TYPE", platform.Test)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
+
 	_, err = NewReconcile(cl, &sch, logr.Discard())
 	assert.NoError(t, err)
 }

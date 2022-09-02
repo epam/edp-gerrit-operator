@@ -11,30 +11,26 @@ const (
 	contentType = "Content-Type"
 )
 
-type ErrAlreadyExists string
+type AlreadyExistsError string
 
-func (e ErrAlreadyExists) Error() string {
+func (e AlreadyExistsError) Error() string {
 	return string(e)
 }
 
 func IsErrAlreadyExists(err error) bool {
-	switch errors.Cause(err).(type) {
-	case ErrAlreadyExists:
-		return true
-	}
-
-	return false
+	var existsError AlreadyExistsError
+	return errors.As(err, &existsError)
 }
 
-type ErrDoesNotExist string
+type DoesNotExistError string
 
-func (e ErrDoesNotExist) Error() string {
+func (e DoesNotExistError) Error() string {
 	return string(e)
 }
 
 func IsErrDoesNotExist(err error) bool {
-	_, ok := errors.Cause(err).(ErrDoesNotExist)
-	return ok
+	var notExistsError DoesNotExistError
+	return errors.As(err, &notExistsError)
 }
 
 type Group struct {
@@ -47,9 +43,6 @@ type GroupMember struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 }
-
-// Deleted unused func
-//func (gc *Client) getUserGroups() (map[string][]string, error) {}
 
 func (gc *Client) DeleteUserFromGroup(groupName, username string) error {
 	resp, err := gc.resty.R().
@@ -124,7 +117,7 @@ func (gc *Client) CreateGroup(name, description string, visibleToAll bool) (*Gro
 
 	if resp.IsError() {
 		if resp.StatusCode() == http.StatusConflict {
-			return nil, ErrAlreadyExists("already exists")
+			return nil, AlreadyExistsError("already exists")
 		}
 
 		return nil, errors.Errorf("status: %s, body: %s", resp.Status(), resp.String())

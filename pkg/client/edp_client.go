@@ -1,7 +1,7 @@
 package client
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -20,19 +20,23 @@ func NewForConfig(config *rest.Config) (*EdpV1Client, error) {
 	if err := createCrdClient(config); err != nil {
 		return nil, err
 	}
+
 	crClient, err := rest.RESTClientFor(config)
 	if err != nil {
 		return nil, err
 	}
+
 	return &EdpV1Client{crClient: crClient}, nil
 }
 
 func createCrdClient(cfg *rest.Config) error {
 	scheme := runtime.NewScheme()
 	SchemeBuilder := runtime.NewSchemeBuilder(addKnownTypes)
+
 	if err := SchemeBuilder.AddToScheme(scheme); err != nil {
 		return err
 	}
+
 	config := cfg
 	config.GroupVersion = &SchemeGroupVersion
 	config.APIPath = "/apis"
@@ -48,6 +52,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&gerritApi.GerritList{},
 	)
 
-	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
+	metaV1.AddToGroupVersion(scheme, SchemeGroupVersion)
+
 	return nil
 }

@@ -36,10 +36,10 @@ type Client struct {
 	sshClient ssh.SSHClientInterface
 }
 
-func NewClient(instance *gerritApi.Gerrit, resty *resty.Client, sshClient ssh.SSHClientInterface) Client {
+func NewClient(instance *gerritApi.Gerrit, restyClient *resty.Client, sshClient ssh.SSHClientInterface) Client {
 	return Client{
 		instance: instance,
-		resty: resty.SetHeaders(map[string]string{
+		resty: restyClient.SetHeaders(map[string]string{
 			acceptHeader: applicationJson,
 		}),
 		sshClient: sshClient,
@@ -51,9 +51,10 @@ func (gc *Client) Resty() *resty.Client {
 }
 
 // InitNewRestClient performs initialization of Gerrit connection.
-func (gc *Client) InitNewRestClient(instance *gerritApi.Gerrit, url string, user string, password string) error {
+func (gc *Client) InitNewRestClient(instance *gerritApi.Gerrit, url, user, password string) error {
 	gc.resty = resty.SetHostURL(url).SetBasicAuth(user, password).SetDisableWarn(true)
 	gc.instance = instance
+
 	return nil
 }
 
@@ -62,12 +63,14 @@ func (gc *Client) InitNewSshClient(userName string, privateKey []byte, host stri
 	if err != nil {
 		return errors.Wrap(err, "err while initializing new ssh client")
 	}
+
 	gc.sshClient = &client
+
 	return nil
 }
 
 // CheckCredentials checks whether provided creds are correct.
-func (gc Client) CheckCredentials() (int, error) {
+func (gc *Client) CheckCredentials() (int, error) {
 	resp, err := gc.resty.R().
 		SetHeader(acceptHeader, applicationJson).
 		Get("config/server/summary")
@@ -79,14 +82,17 @@ func (gc Client) CheckCredentials() (int, error) {
 }
 
 // CheckGroup checks gerrit group.
-func (gc Client) CheckGroup(groupName string) (*int, error) {
+func (gc *Client) CheckGroup(groupName string) (*int, error) {
 	vLog := log.WithValues("group name", groupName)
 	vLog.Info("checking group...")
+
 	statusNotFound := http.StatusNotFound
+
 	uuid, err := gc.getGroupUuid(groupName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit group uuid")
 	}
+
 	if uuid == "" {
 		vLog.Info("group wasn't found")
 		return &statusNotFound, nil
@@ -105,7 +111,7 @@ func (gc Client) CheckGroup(groupName string) (*int, error) {
 }
 
 // GetUser checks gerrit user.
-func (gc Client) GetUser(username string) (*int, error) {
+func (gc *Client) GetUser(username string) (*int, error) {
 	resp, err := gc.resty.R().
 		SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("accounts/%v", username))
@@ -118,25 +124,25 @@ func (gc Client) GetUser(username string) (*int, error) {
 	return &status, nil
 }
 
-func (gc Client) InitAdminUser(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (gerritApi.Gerrit, error) {
-	addInitialAdminUserScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
+func (gc *Client) InitAdminUser(instance *gerritApi.Gerrit, k8sService platform.PlatformService, gerritScriptsPath, podName, gerritAdminPublicKey string) (*gerritApi.Gerrit, error) {
+	addInitialAdminUserScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", gerritScriptsPath)))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to read add-initial-admin-user.sh script")
 	}
 
-	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
 		[]string{path, containerFlag, "mkdir -p /tmp/scripts && touch /tmp/scripts/add-initial-admin-user.sh && chmod +x /tmp/scripts/add-initial-admin-user.sh"})
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create add-initial-admin-user.sh script inside gerrit pod")
 	}
 
-	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
 		[]string{path, containerFlag, fmt.Sprintf("echo \"%v\" > /tmp/scripts/add-initial-admin-user.sh", string(addInitialAdminUserScript))})
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to add content to add-initial-admin-user.sh script inside gerrit pod")
 	}
 
-	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
 		[]string{path, containerFlag, fmt.Sprintf("sh /tmp/scripts/add-initial-admin-user.sh \"%v\"", gerritAdminPublicKey)})
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to execute add-initial-admin-user.sh script inside gerrit pod")
@@ -145,7 +151,7 @@ func (gc Client) InitAdminUser(instance gerritApi.Gerrit, platform platform.Plat
 	return instance, nil
 }
 
-func (gc *Client) ChangePassword(username string, password string) error {
+func (gc *Client) ChangePassword(username, password string) error {
 	cmd := &ssh.SSHCommand{
 		Path:   fmt.Sprintf("gerrit set-account --http-password \"%v\" \"%v\"", password, username),
 		Env:    []string{},
@@ -158,6 +164,7 @@ func (gc *Client) ChangePassword(username string, password string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Changing %v password failed. %v", username, bytes.NewBuffer(out).String())
 	}
+
 	return nil
 }
 
@@ -174,11 +181,13 @@ func (gc *Client) ReloadPlugin(plugin string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Reloading %v plugin failed", plugin)
 	}
+
 	return nil
 }
 
-func (gc *Client) CreateUser(username string, password string, fullname string, publicKey string) error {
+func (gc *Client) CreateUser(username, password, fullName, publicKey string) error {
 	log.Info("creating user", "name", username)
+
 	userStatus, err := gc.GetUser(username)
 	if err != nil {
 		return errors.Wrapf(err, "Getting %v user failed", username)
@@ -187,7 +196,7 @@ func (gc *Client) CreateUser(username string, password string, fullname string, 
 	if *userStatus == http.StatusNotFound {
 		cmd := &ssh.SSHCommand{
 			Path: fmt.Sprintf("gerrit create-account --full-name \"%v\" --http-password \"%v\" --ssh-key \"%v\" \"%v\"",
-				fullname, password, publicKey, username),
+				fullName, password, publicKey, username),
 			Env:    []string{},
 			Stdin:  os.Stdin,
 			Stdout: os.Stdout,
@@ -198,8 +207,10 @@ func (gc *Client) CreateUser(username string, password string, fullname string, 
 		if err != nil {
 			return errors.Wrapf(err, "Creating %v user failed", username)
 		}
+
 		return nil
 	}
+
 	return nil
 }
 
@@ -227,11 +238,12 @@ func (gc *Client) AddUserToGroups(userName string, groupNames []string) error {
 			}
 		}
 	}
+
 	return nil
 }
 
 func (gc *Client) getGroupUuid(groupName string) (string, error) {
-	var re = regexp.MustCompile(fmt.Sprintf(`%v\t[A-Za-z0-9_]{40}`, groupName))
+	re := regexp.MustCompile(fmt.Sprintf(`%v\t[A-Za-z0-9_]{40}`, groupName))
 	cmd := &ssh.SSHCommand{
 		Path:   "gerrit ls-groups -v",
 		Env:    []string{},
@@ -246,23 +258,25 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 	}
 
 	groups := bytes.NewBuffer(out).String()
+
 	group := re.FindStringSubmatch(groups)
 	if group == nil {
 		return "", err
 	}
+
 	uuid := strings.Split(group[0], "\t")[1]
 
 	return uuid, nil
 }
 
-func (gc *Client) InitAllProjects(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
+func (gc *Client) InitAllProjects(instance *gerritApi.Gerrit, k8sService platform.PlatformService, gerritScriptsPath string,
 	podName string, gerritAdminPublicKey string) error {
-	initAllProjectsScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
+	initAllProjectsScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", gerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
 	}
 
-	gerritConfig, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", GerritScriptsPath)))
+	gerritConfig, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", gerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
 	}
@@ -287,19 +301,19 @@ func (gc *Client) InitAllProjects(instance gerritApi.Gerrit, platform platform.P
 		return errors.Wrapf(err, "Failed to get %s group ID", spec.GerritReadOnlyGroupName)
 	}
 
-	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
 		[]string{path, containerFlag, "mkdir -p /tmp/scripts && touch /tmp/scripts/init-all-projects.sh && chmod +x /tmp/scripts/init-all-projects.sh"})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create init-all-projects.sh script inside gerrit pod")
 	}
 
-	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
 		[]string{path, containerFlag, fmt.Sprintf("echo \"%v\" > /tmp/scripts/init-all-projects.sh", string(initAllProjectsScript))})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create init-all-projects.sh script inside gerrit pod")
 	}
 
-	_, _, err = platform.ExecInPod(instance.Namespace, podName,
+	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
 		[]string{path, containerFlag,
 			fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\" \"%v\" \"%v\"",
 				string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid, developersGroupUuid, readOnlyGroupUuid)})

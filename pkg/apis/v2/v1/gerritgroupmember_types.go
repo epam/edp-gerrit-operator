@@ -23,6 +23,19 @@ type GerritGroupMemberStatus struct {
 	FailureCount int64 `json:"failureCount,omitempty"`
 }
 
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+
+// GerritGroupMember is the Schema for the gerrit group member API.
+type GerritGroupMember struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   GerritGroupMemberSpec   `json:"spec,omitempty"`
+	Status GerritGroupMemberStatus `json:"status,omitempty"`
+}
+
 func (in *GerritGroupMember) GetFailureCount() int64 {
 	return in.Status.FailureCount
 }
@@ -37,19 +50,6 @@ func (in *GerritGroupMember) GetStatus() string {
 
 func (in *GerritGroupMember) SetStatus(value string) {
 	in.Status.Value = value
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:storageversion
-
-// GerritGroupMember is the Schema for the gerrit group member API.
-type GerritGroupMember struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   GerritGroupMemberSpec   `json:"spec,omitempty"`
-	Status GerritGroupMemberStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -15,6 +15,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	testifyMock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/resty.v1"
 
 	platformMock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
@@ -27,8 +28,10 @@ const uuid = "Bxfh1wAg_qyZQNdy5VKc7gNZgoLFm67YHbWhFvvk"
 
 func CreateMockResty() *resty.Client {
 	restyClient := resty.New()
+
 	httpmock.DeactivateAndReset()
 	httpmock.ActivateNonDefault(restyClient.GetClient())
+
 	return restyClient
 }
 
@@ -39,26 +42,31 @@ func TestClient_Resty(t *testing.T) {
 		resty:     rs,
 		sshClient: &ssh.SSHClient{},
 	}
+
 	assert.Equal(t, rs, cl.Resty())
 }
 
 func TestClient_InitNewSshClient(t *testing.T) {
 	cl := Client{}
+
 	pk, err := rsa.GenerateKey(rand.Reader, 128)
-	assert.NoError(t, err)
-	privkeyBytes := x509.MarshalPKCS1PrivateKey(pk)
+	require.NoError(t, err)
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(pk)
 	pkey := pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
-			Bytes: privkeyBytes,
+			Bytes: privateKeyBytes,
 		},
 	)
+
 	err = cl.InitNewSshClient("user", pkey, "testhost", int32(80))
 	assert.NoError(t, err)
 }
 
 func TestClient_InitNewSshClient_Err(t *testing.T) {
 	cl := Client{}
+
 	err := cl.InitNewSshClient("user", []byte{}, "testhost", int32(80))
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "err while initializing new ssh client"))
@@ -66,6 +74,7 @@ func TestClient_InitNewSshClient_Err(t *testing.T) {
 
 func TestClient_InitNewRestClient(t *testing.T) {
 	cl := Client{}
+
 	err := cl.InitNewRestClient(&gerritApi.Gerrit{}, "", "", "")
 	assert.NoError(t, err)
 }
@@ -76,6 +85,7 @@ func TestClient_CheckCredentials(t *testing.T) {
 	cl := Client{
 		resty: restyClient,
 	}
+
 	httpmock.RegisterResponder("GET", "//%2Fconfig%2Fserver%2Fsummary/config/server/summary", httpmock.NewStringResponder(200, ""))
 
 	credentials, err := cl.CheckCredentials()
@@ -102,6 +112,7 @@ func TestClient_CheckGroup(t *testing.T) {
 		sshClient: &sshCl,
 		resty:     restyClient,
 	}
+
 	httpmock.RegisterResponder("GET", "//%2Fgroups%2F"+uuid+"/groups/"+uuid,
 		httpmock.NewStringResponder(200, ""))
 
@@ -129,6 +140,7 @@ func TestClient_CheckGroup_EmptyUUID(t *testing.T) {
 		sshClient: &sshCl,
 		resty:     restyClient,
 	}
+
 	httpmock.RegisterResponder("GET", "//%2Fgroups%2F"+uuid+"/groups/"+uuid,
 		httpmock.NewStringResponder(200, ""))
 
@@ -448,6 +460,7 @@ func TestClient_AddUserToGroups(t *testing.T) {
 		sshClient: &sshCl,
 		resty:     restyClient,
 	}
+
 	httpmock.RegisterResponder("GET", "//%2Fgroups%2F"+uuid+"/groups/"+uuid,
 		httpmock.NewStringResponder(200, ""))
 
@@ -461,8 +474,8 @@ func TestClient_AddUserToGroups(t *testing.T) {
 		Stderr: os.Stderr,
 	}
 	sshCl.On("RunCommand", cmd).Return(out, nil)
-	err := cl.AddUserToGroups(name, groups)
 
+	err := cl.AddUserToGroups(name, groups)
 	assert.NoError(t, err)
 }
 
@@ -485,6 +498,7 @@ func TestClient_AddUserToGroups_RunCommandErr(t *testing.T) {
 		sshClient: &sshCl,
 		resty:     restyClient,
 	}
+
 	httpmock.RegisterResponder("GET", "//%2Fgroups%2F"+uuid+"/groups/"+uuid,
 		httpmock.NewStringResponder(200, ""))
 
@@ -499,13 +513,14 @@ func TestClient_AddUserToGroups_RunCommandErr(t *testing.T) {
 	}
 	errTest := errors.New("test")
 	sshCl.On("RunCommand", cmd).Return(out, errTest)
-	err := cl.AddUserToGroups(name, groups)
 
+	err := cl.AddUserToGroups(name, groups)
 	assert.Error(t, err)
 }
 
 func TestNewClient(t *testing.T) {
 	cl := NewClient(nil, resty.New(), nil)
+
 	accept, ok := cl.resty.Header[acceptHeader]
 	if !ok || len(accept) == 0 {
 		t.Fatal("no acceptHeader header set")
@@ -521,7 +536,7 @@ func TestClient_InitAllProjects(t *testing.T) {
 	}
 	ps := platformMock.PlatformService{}
 
-	assert.NoError(t, os.MkdirAll("/tmp/test", 0777))
+	assert.NoError(t, os.MkdirAll("/tmp/test", 0o777))
 
 	fp, err := os.Create("/tmp/test/init-all-projects.sh")
 	assert.NoError(t, err)
@@ -541,11 +556,9 @@ func TestClient_InitAllProjects(t *testing.T) {
 
 	sshClient.On("RunCommand", testifyMock.Anything).
 		Return([]byte(`Continuous Integration Tools\t25`), nil)
-	ps.On("ExecInPod", "", "",
-		testifyMock.Anything).
-		Return("", "", nil)
+	ps.On("ExecInPod", "", "", testifyMock.Anything).
+		Return(nil, nil, nil)
 
-	err = gc.InitAllProjects(gerritApi.Gerrit{}, &ps, "/tmp/test", "", "")
+	err = gc.InitAllProjects(&gerritApi.Gerrit{}, &ps, "/tmp/test", "", "")
 	assert.NoError(t, err)
-
 }

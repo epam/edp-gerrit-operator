@@ -71,11 +71,11 @@ type GerritMergeRequestList struct {
 	Items []GerritMergeRequest `json:"items"`
 }
 
-func (in GerritMergeRequest) OwnerName() string {
+func (in *GerritMergeRequest) OwnerName() string {
 	return in.Spec.OwnerName
 }
 
-func (in GerritMergeRequest) TargetBranch() string {
+func (in *GerritMergeRequest) TargetBranch() string {
 	if in.Spec.TargetBranch == "" {
 		return "master"
 	}
@@ -83,7 +83,7 @@ func (in GerritMergeRequest) TargetBranch() string {
 	return in.Spec.TargetBranch
 }
 
-func (in GerritMergeRequest) CommitMessage() string {
+func (in *GerritMergeRequest) CommitMessage() string {
 	if in.Spec.CommitMessage == "" && in.Spec.SourceBranch != "" {
 		return fmt.Sprintf("merge %s to %s", in.Spec.SourceBranch, in.TargetBranch())
 	} else if in.Spec.CommitMessage == "" && in.Spec.ChangesConfigMap != "" {

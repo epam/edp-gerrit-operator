@@ -179,7 +179,7 @@ func (c *Client) CheckoutBranch(projectName, branch string) error {
 	return nil
 }
 
-func (c *Client) Push(projectName string, remote string, refSpecs ...string) (pushOutput string, retErr error) {
+func (c *Client) Push(projectName, remote string, refSpecs ...string) (pushOutput string, retErr error) {
 	projectPath := c.projectPath(projectName)
 
 	r, err := git.PlainOpen(projectPath)
@@ -188,6 +188,7 @@ func (c *Client) Push(projectName string, remote string, refSpecs ...string) (pu
 	}
 
 	unsecureRemoteName := fmt.Sprintf("unsecure_%s", remote)
+
 	_, err = c.createRemoteWithCredential(r, remote, unsecureRemoteName)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to create new remote")
@@ -244,5 +245,6 @@ func (c *Client) GenerateChangeID() (string, error) {
 	if _, err := h.Write([]byte(time.Now().Format(time.RFC3339))); err != nil {
 		return "", errors.Wrap(err, "unable to write hash")
 	}
+
 	return fmt.Sprintf("I%x", h.Sum(nil)), nil
 }

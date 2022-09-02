@@ -10,8 +10,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/stretchr/testify/require"
+	appsV1 "k8s.io/api/apps/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,18 +37,19 @@ var nsn = types.NamespacedName{
 
 func createClient(instance *gerritApi.Gerrit) client.Client {
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{})
+
 	return fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 }
 
 func createGerritByStatus(status string) *gerritApi.Gerrit {
 	return &gerritApi.Gerrit{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			Kind:       "Gerrit",
 			APIVersion: "apps/v1",
 		},
 		Spec: gerritApi.GerritSpec{},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
@@ -135,8 +137,8 @@ func TestReconcileGerrit_Reconcile_UpdateEmptyStatusErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+	assert.NoError(t, err)
 	assert.Equal(t, errTest, log.LastError())
-	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -145,7 +147,7 @@ func TestReconcileGerrit_Reconcile_EmptyClient(t *testing.T) {
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 
 	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
@@ -250,8 +252,8 @@ func TestReconcileGerrit_Reconcile_UpdateCreatedStatus(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+	assert.NoError(t, err)
 	assert.Equal(t, errTest, log.LastError())
-	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -460,8 +462,8 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeStartErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+	assert.NoError(t, err)
 	assert.Equal(t, errTest, log.LastError())
-	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -495,8 +497,8 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeFinishErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, errTest, log.LastError())
 	assert.Equal(t, errTest, err)
+	assert.Equal(t, errTest, log.LastError())
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -565,8 +567,8 @@ func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T)
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+	assert.NoError(t, err)
 	assert.Equal(t, errTest, log.LastError())
-	assert.Equal(t, nil, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -640,20 +642,20 @@ func TestReconcileGerrit_Reconcile_Valid(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{}, rs)
 }
 
 func TestNewReconcileGerrit(t *testing.T) {
 	err := os.Setenv("PLATFORM_TYPE", platform.Test)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
+
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
+
 	_, err = NewReconcileGerrit(cl, &sch, logr.Discard())
 	assert.NoError(t, err)
-
 }

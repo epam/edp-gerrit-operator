@@ -36,7 +36,7 @@ type reference struct {
 	Permissions map[string]permission `json:"permissions"`
 }
 
-func (gc Client) AddAccessRights(projectName string, permissions []AccessInfo) error {
+func (gc *Client) AddAccessRights(projectName string, permissions []AccessInfo) error {
 	accessInfo := generateSetAccessRequest(permissions, true, false)
 	addRequest := map[string]map[string]reference{"add": accessInfo}
 
@@ -46,7 +46,7 @@ func (gc Client) AddAccessRights(projectName string, permissions []AccessInfo) e
 	return parseRestyResponse(rsp, err)
 }
 
-func (gc Client) UpdateAccessRights(projectName string, permissions []AccessInfo) error {
+func (gc *Client) UpdateAccessRights(projectName string, permissions []AccessInfo) error {
 	accessInfo := generateSetAccessRequest(permissions, false, true)
 	addRequest := map[string]map[string]reference{"add": accessInfo, "remove": accessInfo}
 
@@ -56,7 +56,7 @@ func (gc Client) UpdateAccessRights(projectName string, permissions []AccessInfo
 	return parseRestyResponse(rsp, err)
 }
 
-func (gc Client) DeleteAccessRights(projectName string, permissions []AccessInfo) error {
+func (gc *Client) DeleteAccessRights(projectName string, permissions []AccessInfo) error {
 	accessInfo := generateSetAccessRequest(permissions, false, false)
 	addRequest := map[string]map[string]reference{"remove": accessInfo}
 
@@ -66,7 +66,7 @@ func (gc Client) DeleteAccessRights(projectName string, permissions []AccessInfo
 	return parseRestyResponse(rsp, err)
 }
 
-func generateSetAccessRequest(permissions []AccessInfo, added bool, modified bool) map[string]reference {
+func generateSetAccessRequest(permissions []AccessInfo, added, modified bool) map[string]reference {
 	refs := make(map[string]reference)
 
 	for _, perm := range permissions {
@@ -100,7 +100,7 @@ func generateSetAccessRequest(permissions []AccessInfo, added bool, modified boo
 	return refs
 }
 
-func (gc Client) SetProjectParent(projectName, parentName string) error {
+func (gc *Client) SetProjectParent(projectName, parentName string) error {
 	rsp, err := gc.resty.R().SetBody(map[string]string{
 		"parent": parentName,
 	}).SetHeader(contentType, applicationJson).

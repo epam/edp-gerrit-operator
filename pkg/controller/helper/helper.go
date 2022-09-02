@@ -33,6 +33,7 @@ func GetWatchNamespace() (string, error) {
 	if !found {
 		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
 	}
+
 	return ns, nil
 }
 
@@ -47,6 +48,7 @@ func GetDebugMode() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return b, nil
 }
 
@@ -66,6 +68,7 @@ func GetPlatformTypeEnv() string {
 	if !found {
 		panic("Environment variable PLATFORM_TYPE is not defined")
 	}
+
 	return platformType
 }
 
@@ -74,6 +77,7 @@ func GetExecutableFilePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return filepath.Dir(executableFilePath), nil
 }
 
@@ -82,10 +86,11 @@ func FileExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+
 	return !info.IsDir()
 }
 
-func SetOwnerReference(child metav1.Object, parentType metav1.TypeMeta, parentObject metav1.ObjectMeta) {
+func SetOwnerReference(child metav1.Object, parentType metav1.TypeMeta, parentObject *metav1.ObjectMeta) {
 	var listOwnReference []metav1.OwnerReference
 
 	ownRef := metav1.OwnerReference{
@@ -108,16 +113,19 @@ func IsInstanceOwnerSet(config metav1.Object) bool {
 }
 
 func FindCROwnerName(ownerName string) *string {
-	if len(ownerName) == 0 {
+	if ownerName == "" {
 		return nil
 	}
+
 	own := strings.ToLower(ownerName)
+
 	return &own
 }
 
 func GetInstanceOwner(ctx context.Context, k8sClient client.Client, config metav1.Object) (*gerritApi.Gerrit, error) {
 	ows := config.GetOwnerReferences()
 	gerritOwner := GetGerritOwner(ows)
+
 	if gerritOwner == nil {
 		return nil, coreerrors.New("gerrit replication config cr does not have gerrit cr owner references")
 	}
@@ -141,12 +149,12 @@ func GetGerritOwner(references []metav1.OwnerReference) *metav1.OwnerReference {
 			return &el
 		}
 	}
+
 	return nil
 }
 
 func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *string,
 	namespace string) (*gerritApi.Gerrit, error) {
-
 	var list gerritApi.GerritList
 
 	if ownerName == nil {
@@ -179,6 +187,7 @@ func ContainsString(slice []string, s string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -187,8 +196,10 @@ func RemoveString(slice []string, s string) (result []string) {
 		if item == s {
 			continue
 		}
+
 		result = append(result, item)
 	}
+
 	return
 }
 
@@ -202,7 +213,7 @@ func GetGerritClient(ctx context.Context, cl client.Client, instance client.Obje
 			return nil, errors.Wrap(err, "unable to get gerrit instance")
 		}
 
-		SetOwnerReference(instance, gerritInstance.TypeMeta, gerritInstance.ObjectMeta)
+		SetOwnerReference(instance, gerritInstance.TypeMeta, &gerritInstance.ObjectMeta)
 
 		if err := cl.Update(ctx, instance); err != nil {
 			return nil, errors.Wrap(err, "unable to update instance owner refs")
@@ -224,7 +235,6 @@ func GetGerritClient(ctx context.Context, cl client.Client, instance client.Obje
 
 func TryToDelete(ctx context.Context, k8sClient client.Client, instance client.Object, finalizerName string,
 	deleteFunc func() error) error {
-
 	if instance.GetDeletionTimestamp().IsZero() {
 		finalizers := instance.GetFinalizers()
 		if !ContainsString(finalizers, finalizerName) {

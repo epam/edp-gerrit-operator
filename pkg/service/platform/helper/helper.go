@@ -16,27 +16,19 @@ import (
 const (
 	DefaultConfigFilesAbsolutePath = "/usr/local/"
 
-
 	LocalConfigsRelativePath = "configs"
-
 
 	DefaultTemplatesDirectory = "templates"
 
-
 	DefaultScriptsDirectory = "scripts"
-
 
 	LocalTemplatesRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultTemplatesDirectory
 
-
 	LocalScriptsRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultScriptsDirectory
-
 
 	JenkinsPluginConfigFileName = "config-gerrit-plugin.tmpl"
 
-
 	RouteHTTPSScheme = "https"
-
 
 	RouteHTTPScheme = "http"
 
@@ -57,6 +49,7 @@ func InitNewJenkinsPluginInfo() JenkinsPluginData {
 
 func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
 	var ScriptContext bytes.Buffer
+
 	executableFilePath, err := GetExecutableFilePath()
 	if err != nil {
 		return bytes.Buffer{}, errors.Wrapf(err, "Unable to get executable file path")
@@ -72,7 +65,9 @@ func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
 		errMsg := fmt.Sprintf("Template file not found in path specificed! Path: %s", templateAbsolutePath)
 		return bytes.Buffer{}, errors.New(errMsg)
 	}
+
 	t := template.Must(template.New(JenkinsPluginConfigFileName).ParseFiles(templateAbsolutePath))
+
 	err = t.Execute(&ScriptContext, data)
 	if err != nil {
 		return bytes.Buffer{}, errors.Wrapf(err, "Couldn't parse template %v", JenkinsPluginConfigFileName)
@@ -86,6 +81,7 @@ func fileExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+
 	return !info.IsDir()
 }
 
@@ -94,6 +90,7 @@ func GetExecutableFilePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return filepath.Dir(executableFilePath), nil
 }
 
@@ -110,35 +107,40 @@ func GenerateLabels(name string) map[string]string {
 }
 
 func SelectContainer(containers []coreV1Api.Container, name string) (coreV1Api.Container, error) {
-	for _, c := range containers {
-		if c.Name == name {
-			return c, nil
+	for i := 0; i < len(containers); i++ {
+		if containers[i].Name == name {
+			return containers[i], nil
 		}
 	}
 
 	return coreV1Api.Container{}, errors.New("No matching container in spec found!")
 }
 
-func UpdateEnv(existing []coreV1Api.EnvVar, env []coreV1Api.EnvVar) []coreV1Api.EnvVar {
-	var out []coreV1Api.EnvVar
-	var covered []string
+func UpdateEnv(existing, env []coreV1Api.EnvVar) []coreV1Api.EnvVar {
+	out := make([]coreV1Api.EnvVar, 0)
+	covered := make([]string, 0)
 
 	for _, e := range existing {
 		newer, ok := findEnv(env, e.Name)
 		if ok {
 			covered = append(covered, e.Name)
 			out = append(out, newer)
+
 			continue
 		}
+
 		out = append(out, e)
 	}
+
 	for _, e := range env {
 		if helpers.IsStringInSlice(e.Name, covered) {
 			continue
 		}
+
 		covered = append(covered, e.Name)
 		out = append(out, e)
 	}
+
 	return out
 }
 
@@ -148,5 +150,6 @@ func findEnv(env []coreV1Api.EnvVar, name string) (coreV1Api.EnvVar, bool) {
 			return e, true
 		}
 	}
+
 	return coreV1Api.EnvVar{}, false
 }

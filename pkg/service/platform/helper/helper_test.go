@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	coreV1Api "k8s.io/api/core/v1"
 )
 
@@ -16,20 +17,17 @@ func TestFileExists(t *testing.T) {
 	}
 
 	fp, err := os.Create("/tmp/test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := fp.Close(); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
+	err = fp.Close()
+	require.NoError(t, err)
 
 	if !fileExists("/tmp/test") {
 		t.Fatal("file exists")
 	}
 
-	if err := os.Remove("/tmp/test"); err != nil {
-		t.Fatal(err)
-	}
+	err = os.Remove("/tmp/test")
+	assert.NoError(t, err)
 }
 
 func TestGetExecutableFilePath(t *testing.T) {
@@ -67,8 +65,10 @@ func Test_findEnv_True(t *testing.T) {
 
 func TestSelectContainerErr(t *testing.T) {
 	var containers []coreV1Api.Container
-	name := "name"
-	_, err := SelectContainer(containers, name)
+
+	containerName := "name"
+
+	_, err := SelectContainer(containers, containerName)
 	assert.Error(t, err)
 }
 

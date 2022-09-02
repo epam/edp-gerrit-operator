@@ -15,8 +15,8 @@ import (
 	securityV1Client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	templateV1Client "github.com/openshift/client-go/template/clientset/versioned/typed/template/v1"
 	coreV1Api "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -55,12 +55,14 @@ func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) err
 	if err != nil {
 		return helpers.LogErrorAndReturn(err)
 	}
+
 	s.templateClient = templateClient
 
 	projectClient, err := projectV1Client.NewForConfig(config)
 	if err != nil {
 		return helpers.LogErrorAndReturn(err)
 	}
+
 	s.projectClient = projectClient
 
 	securityClient, err := securityV1Client.NewForConfig(config)
@@ -69,46 +71,55 @@ func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) err
 	}
 
 	s.securityClient = securityClient
+
 	appClient, err := appsV1client.NewForConfig(config)
 	if err != nil {
 		return helpers.LogErrorAndReturn(err)
 	}
 
 	s.appClient = appClient
+
 	routeClient, err := routeV1Client.NewForConfig(config)
 	if err != nil {
 		return helpers.LogErrorAndReturn(err)
 	}
+
 	s.routeClient = routeClient
 
 	authClient, err := authV1Client.NewForConfig(config)
 	if err != nil {
 		return helpers.LogErrorAndReturn(err)
 	}
+
 	s.authClient = authClient
 
 	return nil
 }
 
-func (s OpenshiftService) GetExternalEndpoint(namespace string, name string) (string, string, error) {
-	route, err := s.routeClient.Routes(namespace).Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil && k8serrors.IsNotFound(err) {
+func (s *OpenshiftService) GetExternalEndpoint(namespace, name string) (host, scheme string, err error) {
+	ctx := context.Background()
+
+	route, err := s.routeClient.Routes(namespace).Get(ctx, name, metaV1.GetOptions{})
+	if err != nil && k8sErrors.IsNotFound(err) {
 		log.Printf("Route %v in namespace %v not found", name, namespace)
 		return "", "", err
 	} else if err != nil {
 		return "", "", err
 	}
 
-	var routeScheme = platformHelper.RouteHTTPScheme
+	host = route.Spec.Host
+	scheme = platformHelper.RouteHTTPScheme
+
 	if route.Spec.TLS.Termination != "" {
-		routeScheme = platformHelper.RouteHTTPSScheme
+		scheme = platformHelper.RouteHTTPSScheme
 	}
-	return route.Spec.Host, routeScheme, nil
+
+	return
 }
 
-func (s OpenshiftService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, error) {
+func (s *OpenshiftService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, error) {
 	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
-		dc, err := s.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
+		dc, err := s.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metaV1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -119,30 +130,33 @@ func (s OpenshiftService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int3
 				if err != nil {
 					return 0, err
 				}
+
 				return p, nil
 			}
 		}
 
 		return 0, nil
 	}
+
 	return s.K8SService.GetDeploymentSSHPort(instance)
 }
 
-func (s OpenshiftService) IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error) {
+func (s *OpenshiftService) IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error) {
 	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
-		dc, err := s.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metav1.GetOptions{})
+		dc, err := s.appClient.DeploymentConfigs(instance.Namespace).Get(context.TODO(), instance.Name, metaV1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 
 		return dc.Status.UpdatedReplicas == 1 && dc.Status.AvailableReplicas == 1, nil
 	}
+
 	return s.K8SService.IsDeploymentReady(instance)
 }
 
-func (s *OpenshiftService) PatchDeploymentEnv(gerrit gerritApi.Gerrit, env []coreV1Api.EnvVar) error {
+func (s *OpenshiftService) PatchDeploymentEnv(gerrit *gerritApi.Gerrit, env []coreV1Api.EnvVar) error {
 	if os.Getenv(deploymentTypeEnvName) == deploymentConfigsDeploymentType {
-		dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metav1.GetOptions{})
+		dc, err := s.appClient.DeploymentConfigs(gerrit.Namespace).Get(context.TODO(), gerrit.Name, metaV1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -165,26 +179,30 @@ func (s *OpenshiftService) PatchDeploymentEnv(gerrit gerritApi.Gerrit, env []cor
 			return err
 		}
 
-		_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(context.TODO(), dc.Name, types.StrategicMergePatchType, jsonDc, metav1.PatchOptions{})
+		_, err = s.appClient.DeploymentConfigs(dc.Namespace).Patch(context.TODO(), dc.Name, types.StrategicMergePatchType, jsonDc, metaV1.PatchOptions{})
 		if err != nil {
 			return err
 		}
+
 		return nil
 	}
+
 	return s.K8SService.PatchDeploymentEnv(gerrit, env)
 }
 
 func getPort(value string) (int32, error) {
-	re := regexp.MustCompile(`[0-9]+`)
+	re := regexp.MustCompile(`\d+`)
 	if re.MatchString(value) {
 		ports := re.FindStringSubmatch(value)
 		if len(ports) != 1 {
 			return 0, nil
 		}
+
 		portNumber, err := strconv.ParseInt(ports[0], k8s.Base, k8s.BitSize)
 		if err != nil {
 			return 0, err
 		}
+
 		return int32(portNumber), nil
 	}
 

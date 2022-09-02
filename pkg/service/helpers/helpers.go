@@ -63,18 +63,20 @@ func encodePrivateKey(privateKey *rsa.PrivateKey) []byte {
 	return pem.EncodeToMemory(&block)
 }
 
-func GenerateKeyPairs() ([]byte, []byte, error) {
-	privateKey, err := generatePrivateKey()
+func GenerateKeyPairs() (privateKey, publicKey []byte, err error) {
+	pk, err := generatePrivateKey()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	publicKey, err := generatePublicKey(privateKey)
+	privateKey = encodePrivateKey(pk)
+
+	publicKey, err = generatePublicKey(pk)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return encodePrivateKey(privateKey), publicKey, nil
+	return
 }
 
 func IsStringInSlice(str string, list []string) bool {
@@ -83,6 +85,7 @@ func IsStringInSlice(str string, list []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 

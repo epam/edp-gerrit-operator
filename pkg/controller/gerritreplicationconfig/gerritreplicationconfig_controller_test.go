@@ -14,10 +14,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
+	"github.com/stretchr/testify/require"
+	appsV1 "k8s.io/api/apps/v1"
 	coreV1Api "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -29,7 +29,7 @@ import (
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	pmocks "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
-	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
@@ -45,7 +45,7 @@ var nsn = types.NamespacedName{
 
 func createGerritReplicationConfig(status string) *gerritApi.GerritReplicationConfig {
 	return &gerritApi.GerritReplicationConfig{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace},
 		Status: gerritApi.GerritReplicationConfigStatus{
@@ -55,11 +55,11 @@ func createGerritReplicationConfig(status string) *gerritApi.GerritReplicationCo
 
 func createGerritByStatus(status string) *gerritApi.Gerrit {
 	return &gerritApi.Gerrit{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			Kind:       "Gerrit",
 			APIVersion: "apps/v1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
@@ -73,7 +73,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetUnregisteredErr(t *testin
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritGroup{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritGroup{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -94,7 +94,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetErr(t *testing.T) {
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
 	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -119,7 +119,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetGerritInstanceErr(t *test
 	instance := createGerritReplicationConfig("")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
 	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
 
 	log := &common.Logger{}
@@ -150,7 +150,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateAfterSetOwnerErr(t *te
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	mc.On("Update").Return(errTest)
@@ -186,7 +186,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetInstanceOwnerErr(t *testi
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	sw.On("Update").Return(nil)
@@ -224,7 +224,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_Valid(t *testing.T) {
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	sw.On("Update").Return(nil)
@@ -261,10 +261,10 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusConfiguringUpdateErr(t
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{},
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{},
 		&gerritApi.Gerrit{}, &gerritApi.GerritList{})
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
+	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 	errTest := errors.New("test")
 
 	sw.On("Update").Return(errTest).Once()
@@ -285,9 +285,11 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusConfiguringUpdateErr(t
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
+
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, errTest, log.LastError())
 	assert.NoError(t, err)
+
+	assert.Equal(t, errTest, log.LastError())
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -303,10 +305,10 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusUpdate(t *testing.T) {
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
 		&gerritApi.GerritList{})
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
+	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 	errTest := errors.New("test")
 
 	sw.On("Update").Return(nil)
@@ -344,10 +346,10 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateStatusReadyErr(t *test
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
 		&gerritApi.GerritList{})
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
+	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
 	errTest := errors.New("test")
 
 	sw.On("Update").Return(errTest).Once()
@@ -388,7 +390,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_configureReplicationErr(t *t
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
 		&gerritApi.GerritList{})
 
 	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
@@ -404,7 +406,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_configureReplicationErr(t *t
 	mc.On("Status").Return(sw)
 	mc.On("List", &list).Return(cl)
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(&coreV1Api.PodList{}, errTest)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(&coreV1Api.PodList{}, errTest)
 
 	rg := ReconcileGerritReplicationConfig{
 		client:           &mc,
@@ -436,7 +438,7 @@ func Test_configureReplication_GetGerritSSHUrlErr(t *testing.T) {
 
 	errTest := errors.New("test")
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("", errTest)
 
 	rg := ReconcileGerritReplicationConfig{
@@ -464,7 +466,7 @@ func Test_configureReplication_GetServicePortErr(t *testing.T) {
 
 	errTest := errors.New("test")
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(0), errTest)
 
@@ -493,7 +495,7 @@ func Test_configureReplication_FirstGetSecretErr(t *testing.T) {
 
 	errTest := errors.New("test")
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(0), nil)
 	platformMock.On("GetSecret", gerritInstance.Namespace, gerritInstance.Name+"-admin").Return(nil, errTest)
@@ -523,7 +525,7 @@ func Test_configureReplication_SecondGetSecretErr(t *testing.T) {
 
 	errTest := errors.New("test")
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(0), nil)
 	platformMock.On("GetSecret", gerritInstance.Namespace, gerritInstance.Name+"-admin").Return(nil, nil)
@@ -554,7 +556,7 @@ func Test_configureReplication_saveSshReplicationKeyErr(t *testing.T) {
 
 	errTest := errors.New("test")
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(0), nil)
 	platformMock.On("GetSecret", gerritInstance.Namespace, gerritInstance.Name+"-admin").Return(nil, nil)
@@ -564,7 +566,7 @@ func Test_configureReplication_saveSshReplicationKeyErr(t *testing.T) {
 	tr := []string{"/bin/sh", "-c",
 		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
 
-	platformMock.On("ExecInPod", namespace, "", tr).Return("", "", errTest)
+	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, errTest)
 
 	rg := ReconcileGerritReplicationConfig{
 		platform:         &platformMock,
@@ -589,7 +591,7 @@ func Test_configureReplication_InitNewSshClientErr(t *testing.T) {
 		},
 	}
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(0), nil)
 	platformMock.On("GetSecret", gerritInstance.Namespace, gerritInstance.Name+"-admin").Return(nil, nil)
@@ -599,7 +601,7 @@ func Test_configureReplication_InitNewSshClientErr(t *testing.T) {
 	tr := []string{"/bin/sh", "-c",
 		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
 
-	platformMock.On("ExecInPod", namespace, "", tr).Return("", "", nil)
+	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, nil)
 
 	rg := ReconcileGerritReplicationConfig{
 		platform:         &platformMock,
@@ -625,9 +627,8 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 	}
 
 	pk, err := rsa.GenerateKey(rand.Reader, 128)
-	if err != nil {
-		assert.NoError(t, err)
-	}
+	require.NoError(t, err)
+
 	privkeyBytes := x509.MarshalPKCS1PrivateKey(pk)
 	privkeyPem := pem.EncodeToMemory(
 		&pem.Block{
@@ -642,7 +643,7 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 
 	errTest := errors.New("test")
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("testurl", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(80), nil)
 	platformMock.On("GetSecret", gerritInstance.Namespace, gerritInstance.Name+"-admin").Return(keys, nil)
@@ -652,12 +653,12 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 	tr := []string{"/bin/sh", "-c",
 		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
 
-	platformMock.On("ExecInPod", namespace, "", tr).Return("", "", nil)
+	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, nil)
 
 	tr2 := []string{"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)}
-	platformMock.On("ExecInPod", namespace, "", tr2).Return("", "", errTest)
+	platformMock.On("ExecInPod", namespace, "", tr2).Return(nil, nil, errTest)
 
 	rg := ReconcileGerritReplicationConfig{
 		platform:         &platformMock,
@@ -683,9 +684,8 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 	}
 
 	pk, err := rsa.GenerateKey(rand.Reader, 128)
-	if err != nil {
-		assert.NoError(t, err)
-	}
+	require.NoError(t, err)
+
 	privkeyBytes := x509.MarshalPKCS1PrivateKey(pk)
 	privkeyPem := pem.EncodeToMemory(
 		&pem.Block{
@@ -698,7 +698,7 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 		"id_rsa": privkeyPem,
 	}
 
-	platformMock.On("GetPods", namespace, v1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
+	platformMock.On("GetPods", namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%v", name)}).Return(pl, nil)
 	gServiceMock.On("GetGerritSSHUrl", gerritInstance).Return("testurl", nil)
 	gServiceMock.On("GetServicePort", gerritInstance).Return(int32(80), nil)
 	platformMock.On("GetSecret", gerritInstance.Namespace, gerritInstance.Name+"-admin").Return(keys, nil)
@@ -708,12 +708,12 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 	tr := []string{"/bin/sh", "-c",
 		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
 
-	platformMock.On("ExecInPod", namespace, "", tr).Return("", "", nil)
+	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, nil)
 
 	tr2 := []string{"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)}
-	platformMock.On("ExecInPod", namespace, "", tr2).Return("", "", nil)
+	platformMock.On("ExecInPod", namespace, "", tr2).Return(nil, nil, nil)
 
 	rg := ReconcileGerritReplicationConfig{
 		platform:         &platformMock,
@@ -726,7 +726,7 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 }
 
 func Test_reloadReplicationPluginErr(t *testing.T) {
-	gclient := gerritClient.ClientInterfaceMock{}
+	gclient := gerritClientMocks.ClientInterface{}
 
 	errTest := errors.New("test")
 
@@ -742,7 +742,7 @@ func Test_reloadReplicationPluginErr(t *testing.T) {
 }
 
 func Test_reloadReplicationPlugin(t *testing.T) {
-	gclient := gerritClient.ClientInterfaceMock{}
+	gclient := gerritClientMocks.ClientInterface{}
 
 	gclient.On("ReloadPlugin", "replication").Return(nil)
 
@@ -757,13 +757,14 @@ func Test_reloadReplicationPlugin(t *testing.T) {
 
 func TestReconcileGerritReplicationConfig_Reconcile(t *testing.T) {
 	err := os.Setenv("PLATFORM_TYPE", platform.Test)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	fClient := fake.NewClientBuilder().Build()
 	sc := &runtime.Scheme{}
+
 	_, err = NewReconcileGerritReplicationConfig(fClient, sc, logr.Discard())
 	assert.NoError(t, err)
+
 	err = os.Unsetenv("PLATFORM_TYPE")
 	assert.NoError(t, err)
 }
@@ -783,7 +784,7 @@ func Test_createSshConfigErr(t *testing.T) {
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")}
 
-	platformMock.On("ExecInPod", "", "", tr).Return("", "", errTest)
+	platformMock.On("ExecInPod", "", "", tr).Return(nil, nil, errTest)
 
 	err := rg.createSshConfig("", "")
 
@@ -803,7 +804,7 @@ func Test_createSshConfig(t *testing.T) {
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")}
 
-	platformMock.On("ExecInPod", "", "", tr).Return("", "", nil)
+	platformMock.On("ExecInPod", "", "", tr).Return(nil, nil, nil)
 
 	err := rg.createSshConfig("", "")
 
@@ -823,9 +824,9 @@ func Test_updateSshConfig(t *testing.T) {
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")}
 
-	platformMock.On("ExecInPod", name, "", tr).Return("", "", nil)
+	platformMock.On("ExecInPod", name, "", tr).Return(nil, nil, nil)
 
-	config := gerritApi.GerritReplicationConfig{
+	config := &gerritApi.GerritReplicationConfig{
 		Spec: gerritApi.GerritReplicationConfigSpec{SSHUrl: "@:"},
 	}
 

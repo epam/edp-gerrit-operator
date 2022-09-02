@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,7 +26,7 @@ import (
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
@@ -55,23 +55,19 @@ type Interface interface {
 	Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
 	GetGerritSSHUrl(instance *gerritApi.Gerrit) (string, error)
 	GetServicePort(instance *gerritApi.Gerrit) (int32, error)
-	GetRestClient(gerritInstance *gerritApi.Gerrit) (gerrit.ClientInterface, error)
+	GetRestClient(gerritInstance *gerritApi.Gerrit) (gerritClient.ClientInterface, error)
 	GetGitClient(ctx context.Context, child Child, workDir string) (*git.Client, error)
 }
 
-type ErrUserNotFound string
+type UserNotFoundError string
 
-func (e ErrUserNotFound) Error() string {
+func (e UserNotFoundError) Error() string {
 	return string(e)
 }
 
 func IsErrUserNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	_, ok := errors.Cause(err).(ErrUserNotFound)
-	return ok
+	var notFoundError UserNotFoundError
+	return errors.As(err, &notFoundError)
 }
 
 // ComponentService implements gerrit.Interface.
@@ -80,7 +76,7 @@ type ComponentService struct {
 	PlatformService      platform.PlatformService
 	client               client.Client
 	k8sScheme            *runtime.Scheme
-	gerritClient         gerrit.ClientInterface
+	gerritClient         gerritClient.ClientInterface
 	runningInClusterFunc func() bool
 }
 
@@ -91,7 +87,7 @@ func NewComponentService(ps platform.PlatformService, kc client.Client, ks *runt
 		client:               kc,
 		k8sScheme:            ks,
 		runningInClusterFunc: platformHelper.RunningInCluster,
-		gerritClient:         &gerrit.Client{},
+		gerritClient:         &gerritClient.Client{},
 	}
 }
 
@@ -114,6 +110,7 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Unable to get Gerrit SSH URL")
 	}
+
 	executableFilePath, err := platformHelper.GetExecutableFilePath()
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Unable to get executable file path")
@@ -124,10 +121,11 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 		GerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
-	if err := s.PlatformService.CreateSecret(instance, instance.Name+"-admin-password", map[string][]byte{
+	err = s.PlatformService.CreateSecret(instance, instance.Name+"-admin-password", map[string][]byte{
 		user:     []byte(spec.GerritDefaultAdminUser),
 		password: []byte(uniuri.New()),
-	}); err != nil {
+	})
+	if err != nil {
 		return instance, false, errors.Wrapf(err, "Failed to create admin Secret %s for Gerrit", instance.Name+"-admin-password")
 	}
 
@@ -146,7 +144,7 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 		return instance, false, errors.Wrapf(err, "Unable to get Gerrit service")
 	}
 
-	err = s.PlatformService.UpdateService(*service, sshPortService)
+	err = s.PlatformService.UpdateService(service, sshPortService)
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "Unable to update Gerrit service")
 	}
@@ -170,7 +168,7 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 		return instance, false, errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %s/%s", instance.Namespace, instance.Name)
 	}
 
-	podList, err := s.PlatformService.GetPods(instance.Namespace, metav1.ListOptions{LabelSelector: "app=" + instance.Name})
+	podList, err := s.PlatformService.GetPods(instance.Namespace, &metaV1.ListOptions{LabelSelector: "app=" + instance.Name})
 	if err != nil || len(podList.Items) != 1 {
 		return instance, false, errors.Wrapf(err, "Unable to determine Gerrit pod name: %v", len(podList.Items))
 	}
@@ -196,24 +194,28 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 	}
 
 	if status == http.StatusUnauthorized {
+		// apparently we are trying to retry with default password
 		err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, spec.GerritDefaultAdminPassword)
 		if err != nil {
 			return instance, false, errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 		}
+
 		status, err = s.gerritClient.CheckCredentials()
 		if (status != http.StatusUnauthorized && status >= http.StatusBadRequest && status <= http.StatusHTTPVersionNotSupported) || err != nil {
 			return instance, false, errors.Wrapf(err, "Failed to check credentials in Gerrit")
 		}
 
 		if status == http.StatusUnauthorized {
-			instance, err := s.gerritClient.InitAdminUser(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
+			var adminInstance *gerritApi.Gerrit
+
+			adminInstance, err = s.gerritClient.InitAdminUser(instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
 				string(gerritAdminPublicKey))
 			if err != nil {
-				return &instance, false, errors.Wrapf(err, "Failed to initialize Gerrit Admin User")
+				return adminInstance, false, errors.Wrapf(err, "Failed to initialize Gerrit Admin User")
 			}
 		}
 
-		err := s.setGerritAdminUserPassword(*instance, gerritUrl, gerritAdminPassword, gerritApiUrl, sshPortService)
+		err = s.setGerritAdminUserPassword(instance, gerritUrl, gerritAdminPassword, gerritApiUrl, sshPortService)
 		if err != nil {
 			return instance, false, err
 		}
@@ -239,13 +241,13 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 	if err != nil {
 		return instance, false, err
 	}
+
 	projectBootstrappersStatus, err := s.gerritClient.CheckGroup(spec.GerritProjectBootstrappersGroupName)
 	if err != nil {
 		return instance, false, err
 	}
 
 	if *ciToolsStatus == http.StatusNotFound || *projectBootstrappersStatus == http.StatusNotFound {
-
 		err = s.gerritClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys[rsaID], gerritUrl, sshPortService)
 		if err != nil {
 			return instance, false, err
@@ -269,11 +271,12 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 			return instance, false, err
 		}
 
-		if _, err := s.gerritClient.CreateGroup(spec.GerritReadOnlyGroupName, "", true); err != nil {
+		_, err = s.gerritClient.CreateGroup(spec.GerritReadOnlyGroupName, "", true)
+		if err != nil {
 			return instance, false, err
 		}
 
-		err = s.gerritClient.InitAllProjects(*instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
+		err = s.gerritClient.InitAllProjects(instance, s.PlatformService, GerritScriptsPath, podList.Items[0].Name,
 			string(gerritAdminPublicKey))
 		if err != nil {
 			return instance, false, errors.Wrapf(err, "Failed to initialize Gerrit All-Projects project")
@@ -285,34 +288,41 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components.
 func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
+	ctx := context.Background()
 	vLog := log.WithValues("gerrit", instance.Name)
 	vLog.Info("start exposing configuration")
-	if err := s.initRestClient(instance); err != nil {
+
+	err := s.initRestClient(instance)
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to init Gerrit REST client")
 	}
 
-	if err := s.initSSHClient(instance); err != nil {
+	err = s.initSSHClient(instance)
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to init Gerrit SSH client")
 	}
+
 	ciUserSecretName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 	projectCreatorSecretKeyName := createSecretName(instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%s-%s-%s", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, password)
 
-	if err := s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
+	err = s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
 		user:     []byte(spec.GerritDefaultCiUserUser),
 		password: []byte(uniuri.New()),
-	}); err != nil {
+	})
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
 	}
 
 	ciUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUserSuffix)
 	s.setAnnotation(instance, ciUserAnnotationKey, ciUserSecretName)
 
-	if err := s.PlatformService.CreateSecret(instance, projectCreatorSecretPasswordName, map[string][]byte{
+	err = s.PlatformService.CreateSecret(instance, projectCreatorSecretPasswordName, map[string][]byte{
 		user:     []byte(spec.GerritDefaultProjectCreatorUser),
 		password: []byte(uniuri.New()),
-	}); err != nil {
+	})
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create project-creator Secret %v for Gerrit", projectCreatorSecretPasswordName)
 	}
 
@@ -330,11 +340,12 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 		return instance, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
 	}
 
-	if err := s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
+	err = s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
 		"username": []byte(spec.GerritDefaultCiUserUser),
 		rsaID:      privateKey,
 		rsaIDFile:  publicKey,
-	}); err != nil {
+	})
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
 
@@ -345,11 +356,13 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
 	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, ciUserSshSecretName)
+
 	projectCreatorUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorSshKeySuffix)
 	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 
-	if err := s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials[password]),
-		"CI Jenkins", string(publicKey)); err != nil {
+	err = s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials[password]),
+		"CI Jenkins", string(publicKey))
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", spec.GerritDefaultCiUserUser)
 	}
 
@@ -365,8 +378,9 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 			instance.Namespace, instance.Name)
 	}
 
-	if err := s.gerritClient.CreateUser(spec.GerritDefaultProjectCreatorUser, string(projectCreatorCredentials[password]),
-		"Project Creator", string(projectCreatorKeys[rsaIDFile])); err != nil {
+	err = s.gerritClient.CreateUser(spec.GerritDefaultProjectCreatorUser, string(projectCreatorCredentials[password]),
+		"Project Creator", string(projectCreatorKeys[rsaIDFile]))
+	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create project-creator user %v in Gerrit", spec.GerritDefaultProjectCreatorUser)
 	}
 
@@ -376,20 +390,24 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 		spec.GerritDefaultProjectCreatorUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup},
 	}
 
-	for _, user := range reflect.ValueOf(userGroups).MapKeys() {
-		if err := s.gerritClient.AddUserToGroups(reflect.Value.String(user), userGroups[reflect.Value.String(user)]); err != nil {
-			return instance, errors.Wrapf(err, "Failed to add user %v to groups %v",
-				reflect.Value.String(user), userGroups[reflect.Value.String(user)])
-		}
+	for _, userValue := range reflect.ValueOf(userGroups).MapKeys() {
+		userStrValue := userValue.String()
 
+		err = s.gerritClient.AddUserToGroups(userStrValue, userGroups[userStrValue])
+		if err != nil {
+			return instance, errors.Wrapf(err, "Failed to add user %v to groups %v", userStrValue, userGroups[userStrValue])
+		}
 	}
 
-	if err := s.client.Update(context.TODO(), instance); err != nil {
+	err = s.client.Update(ctx, instance)
+	if err != nil {
 		return nil, errors.Wrap(err, "couldn't update project")
 	}
 
 	if instance.Spec.KeycloakSpec.Enabled {
-		secret, err := uuid.NewUUID()
+		var secret uuid.UUID
+
+		secret, err = uuid.NewUUID()
 		if err != nil {
 			return instance, errors.Wrap(err, "Failed to generate secret for Gerrit in Keycloack")
 		}
@@ -400,6 +418,7 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 		}
 
 		identityServiceSecretName := createSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
+
 		err = s.PlatformService.CreateSecret(instance, identityServiceSecretName, identityServiceClientCredentials)
 		if err != nil {
 			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to create secret %v", identityServiceSecretName))
@@ -407,37 +426,46 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
 		s.setAnnotation(instance, annotationKey, createSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
-		if err := s.client.Update(context.TODO(), instance); err != nil {
+
+		err = s.client.Update(ctx, instance)
+		if err != nil {
 			return nil, errors.Wrap(err, "couldn't update annotations")
 		}
 	}
-	if err := s.createEDPComponent(*instance); err != nil {
+
+	err = s.createEDPComponent(instance)
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to create EDP component")
 	}
 
 	return instance, err
 }
 
-func (s ComponentService) createEDPComponent(gerrit gerritApi.Gerrit) error {
-	vLog := log.WithValues("name", gerrit.Name)
+func (s ComponentService) createEDPComponent(gerritObj *gerritApi.Gerrit) error {
+	vLog := log.WithValues("name", gerritObj.Name)
 	vLog.Info("creating EDP component")
-	url, err := s.getUrl(gerrit)
+
+	url, err := s.getUrl(gerritObj)
 	if err != nil {
 		return err
 	}
+
 	icon, err := getIcon()
 	if err != nil {
 		return err
 	}
-	return s.PlatformService.CreateEDPComponentIfNotExist(gerrit, *url, *icon)
+
+	return s.PlatformService.CreateEDPComponentIfNotExist(gerritObj, *url, *icon)
 }
 
-func (s ComponentService) getUrl(gerrit gerritApi.Gerrit) (*string, error) {
-	h, sc, err := s.PlatformService.GetExternalEndpoint(gerrit.Namespace, gerrit.Name)
+func (s ComponentService) getUrl(gerritObj *gerritApi.Gerrit) (*string, error) {
+	h, sc, err := s.PlatformService.GetExternalEndpoint(gerritObj.Namespace, gerritObj.Name)
 	if err != nil {
 		return nil, err
 	}
+
 	url := fmt.Sprintf("%v://%v", sc, h)
+
 	return &url, nil
 }
 
@@ -446,17 +474,23 @@ func getIcon() (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	fp := fmt.Sprintf("%v/%v", p, gerritIcon)
+
 	f, err := os.Open(fp)
 	if err != nil {
 		return nil, err
 	}
+
 	reader := bufio.NewReader(f)
+
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}
+
 	encoded := base64.StdEncoding.EncodeToString(content)
+
 	return &encoded, nil
 }
 
@@ -470,24 +504,28 @@ func (s ComponentService) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 	externalUrl := fmt.Sprintf("%v://%v", sc, h)
 
 	if instance.Spec.KeycloakSpec.Enabled {
-		client, err := s.getKeycloakClient(instance)
+		var keycloakClient *keycloakApi.KeycloakClient
+
+		keycloakClient, err = s.getKeycloakClient(instance)
 		if err != nil {
 			return instance, err
 		}
 
-		if client == nil {
-			err = s.createKeycloakClient(*instance, externalUrl)
+		if keycloakClient == nil {
+			err = s.createKeycloakClient(instance, externalUrl)
 			if err != nil {
 				return instance, err
 			}
 		}
 
-		keycloakEnvironmentValue, err := s.PlatformService.GenerateKeycloakSettings(instance)
+		var keycloakEnvironmentValue []coreV1Api.EnvVar
+
+		keycloakEnvironmentValue, err = s.PlatformService.GenerateKeycloakSettings(instance)
 		if err != nil {
 			return instance, err
 		}
 
-		if err = s.PlatformService.PatchDeploymentEnv(*instance, *keycloakEnvironmentValue); err != nil {
+		if err = s.PlatformService.PatchDeploymentEnv(instance, keycloakEnvironmentValue); err != nil {
 			return instance, errors.Wrap(err, "Failed to add identity service information")
 		}
 	} else {
@@ -503,27 +541,31 @@ func (s ComponentService) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 }
 
 func (s ComponentService) getKeycloakClient(instance *gerritApi.Gerrit) (*keycloakApi.KeycloakClient, error) {
-	client := &keycloakApi.KeycloakClient{}
-	err := s.client.Get(context.TODO(), types.NamespacedName{
+	ctx := context.Background()
+	k8sClient := &keycloakApi.KeycloakClient{}
+
+	err := s.client.Get(ctx, types.NamespacedName{
 		Name:      instance.Name,
 		Namespace: instance.Namespace,
-	}, client)
+	}, k8sClient)
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
-	return client, nil
+	return k8sClient, nil
 }
 
-func (s ComponentService) createKeycloakClient(instance gerritApi.Gerrit, externalUrl string) error {
+func (s ComponentService) createKeycloakClient(instance *gerritApi.Gerrit, externalUrl string) error {
+	ctx := context.Background()
 	keycloakClient := &keycloakApi.KeycloakClient{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			Kind: "KeycloakClient",
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      instance.Name,
 			Namespace: instance.Namespace,
 		},
@@ -549,10 +591,10 @@ func (s ComponentService) createKeycloakClient(instance gerritApi.Gerrit, extern
 		keycloakClient.Spec.TargetRealm = instance.Spec.KeycloakSpec.Realm
 	}
 
-	return s.client.Create(context.TODO(), keycloakClient)
+	return s.client.Create(ctx, keycloakClient)
 }
 
-func (s ComponentService) GetRestClient(gerritInstance *gerritApi.Gerrit) (gerrit.ClientInterface, error) {
+func (s ComponentService) GetRestClient(gerritInstance *gerritApi.Gerrit) (gerritClient.ClientInterface, error) {
 	if s.gerritClient.Resty() != nil {
 		return s.gerritClient, nil
 	}
@@ -567,6 +609,7 @@ func (s ComponentService) GetRestClient(gerritInstance *gerritApi.Gerrit) (gerri
 func (s *ComponentService) initRestClient(instance *gerritApi.Gerrit) error {
 	vLog := log.WithValues("gerrit", instance.Name)
 	vLog.Info("init rest client")
+
 	gerritAdminPassword, err := s.getGerritAdminPassword(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Gerrit admin password from secret for %s/%s", instance.Namespace, instance.Name)
@@ -581,13 +624,16 @@ func (s *ComponentService) initRestClient(instance *gerritApi.Gerrit) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
 	}
+
 	vLog.Info("rest client has been initialized.")
+
 	return nil
 }
 
 func (s *ComponentService) initSSHClient(instance *gerritApi.Gerrit) error {
 	vLog := log.WithValues("gerrit", instance.Name)
 	vLog.Info("init ssh client")
+
 	gerritUrl, err := s.GetGerritSSHUrl(instance)
 	if err != nil {
 		return err
@@ -607,68 +653,79 @@ func (s *ComponentService) initSSHClient(instance *gerritApi.Gerrit) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to init Gerrit SSH client %v/%v", instance.Namespace, instance.Name)
 	}
+
 	vLog.Info("ssh client has been initialized.")
+
 	return nil
 }
 
 func (s ComponentService) getGerritRestApiUrl(instance *gerritApi.Gerrit) (string, error) {
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
+
 	if !s.runningInCluster() {
 		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
 		}
+
 		gerritApiUrl = fmt.Sprintf("%v://%v/%v", sc, h, spec.GerritRestApiUrlPath)
 	}
+
 	return gerritApiUrl, nil
 }
 
 func (s ComponentService) GetGerritSSHUrl(instance *gerritApi.Gerrit) (string, error) {
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
+
 	if !s.runningInCluster() {
 		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get Service for %v/%v", instance.Namespace, instance.Name)
 		}
+
 		gerritSSHUrl = h
 	}
+
 	return gerritSSHUrl, nil
 }
 
 func (s ComponentService) getGerritAdminPassword(instance *gerritApi.Gerrit) (string, error) {
 	secretName := fmt.Sprintf("%s-admin-password", instance.Name)
+
 	gerritAdminCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, secretName)
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to get Secret %v for %v/%v", secretName, instance.Namespace, instance.Name)
 	}
+
 	return string(gerritAdminCredentials[password]), nil
 }
 
-func (s ComponentService) createSSHKeyPairs(instance *gerritApi.Gerrit, secretName string) ([]byte, []byte, error) {
+func (s ComponentService) createSSHKeyPairs(instance *gerritApi.Gerrit, secretName string) (privateKey, publicKey []byte, err error) {
 	secretData, err := s.PlatformService.GetSecretData(instance.Namespace, secretName)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Unable to get data from secret %v", secretName)
 	}
 
-	if secretData == nil {
-		privateKey, publicKey, err := helpers.GenerateKeyPairs()
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
-		}
-
-		if err := s.PlatformService.CreateSecret(instance, secretName, map[string][]byte{
-			rsaID:     privateKey,
-			rsaIDFile: publicKey,
-		}); err != nil {
-			return nil, nil, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
-		}
-		return privateKey, publicKey, nil
+	if secretData != nil {
+		return secretData[rsaID], secretData[rsaIDFile], nil
 	}
 
-	return secretData[rsaID], secretData[rsaIDFile], nil
+	privateKey, publicKey, err = helpers.GenerateKeyPairs()
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
+	}
+
+	if err := s.PlatformService.CreateSecret(instance, secretName, map[string][]byte{
+		rsaID:     privateKey,
+		rsaIDFile: publicKey,
+	}); err != nil {
+		return nil, nil, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
+	}
+
+	return
 }
 
-func (s ComponentService) setGerritAdminUserPassword(instance gerritApi.Gerrit, gerritUrl, gerritAdminPassword,
+func (s ComponentService) setGerritAdminUserPassword(instance *gerritApi.Gerrit, gerritUrl, gerritAdminPassword,
 	gerritApiUrl string, sshPortService int32) error {
 	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+admin)
 	if err != nil {
@@ -685,7 +742,7 @@ func (s ComponentService) setGerritAdminUserPassword(instance gerritApi.Gerrit, 
 		return errors.Wrapf(err, "Failed to set Gerrit admin password for %s/%s", instance.Namespace, instance.Name)
 	}
 
-	err = s.gerritClient.InitNewRestClient(&instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
+	err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to initialize Gerrit REST client for %s/%s", instance.Namespace, instance.Name)
 	}
@@ -704,6 +761,7 @@ func (s ComponentService) GetServicePort(instance *gerritApi.Gerrit) (int32, err
 			return port.NodePort, nil
 		}
 	}
+
 	return 0, errors.New("Unable to determine Gerrit ssh port")
 }
 
@@ -715,16 +773,18 @@ func (s ComponentService) updateDeploymentConfigPort(sshPort, sshPortService int
 				Value: fmt.Sprintf("*:%d", sshPortService),
 			},
 		}
-		if err := s.PlatformService.PatchDeploymentEnv(*instance, newEnv); err != nil {
+		if err := s.PlatformService.PatchDeploymentEnv(instance, newEnv); err != nil {
 			return false, err
 		}
+
 		return true, nil
 	}
+
 	return false, nil
 }
 
 // setAnnotation add key:value to current resource annotation.
-func (s ComponentService) setAnnotation(instance *gerritApi.Gerrit, key string, value string) {
+func (s ComponentService) setAnnotation(instance *gerritApi.Gerrit, key, value string) {
 	if len(instance.Annotations) == 0 {
 		instance.ObjectMeta.Annotations = map[string]string{
 			key: value,
@@ -734,13 +794,14 @@ func (s ComponentService) setAnnotation(instance *gerritApi.Gerrit, key string, 
 	}
 }
 
-func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Gerrit, host string, scheme string) error {
+func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Gerrit, host, scheme string) error {
 	sshPort, err := s.GetServicePort(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)
 	}
 
 	ciUserCredentialsName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserCredentialsName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Secret for CI user for %s/%s", instance.Namespace, instance.Name)
@@ -763,6 +824,7 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Ger
 	configMapData := map[string]string{
 		jenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
 	}
+
 	err = s.PlatformService.CreateConfigMap(instance, jenkinsPluginConfigurationName, configMapData)
 	if err != nil {
 		return err

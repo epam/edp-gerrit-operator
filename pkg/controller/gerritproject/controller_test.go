@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/stretchr/testify/require"
+	coreV1Api "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -19,31 +20,33 @@ import (
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
+
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1"},
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1"},
 		Spec:       gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: prj.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
-	clientMock := gerritClient.ClientInterfaceMock{}
+	clientMock := gerritClientMocks.ClientInterface{}
 
-	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.ErrDoesNotExist("")).Once()
+	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.DoesNotExistError("")).Once()
 	clientMock.On("CreateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
@@ -64,8 +67,10 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 	if err := logger.LastError(); err != nil {
 		t.Fatalf("%+v", err)
 	}
-	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.ErrDoesNotExist("")).Once()
+
+	clientMock.On("GetProject", prj.Spec.Name).Return(nil, gerritClient.DoesNotExistError("")).Once()
 	clientMock.On("CreateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(errors.New("create fatal")).Once()
+
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
 			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
@@ -83,11 +88,11 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	clientMock.On("GetProject", prj.Spec.Name).
 		Return(nil, errors.New("unknown get fatal")).Once()
-	if _, err := rcn.Reconcile(context.Background(),
+
+	_, err = rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
-		t.Fatal(err)
-	}
+			Name: prj.Name, Namespace: prj.Namespace}})
+	require.NoError(t, err)
 
 	err = logger.LastError()
 	if err == nil {
@@ -104,25 +109,26 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
+
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			DeletionTimestamp: &metaV1.Time{Time: time.Now()}},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: prj.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
-	clientMock := gerritClient.ClientInterfaceMock{}
+	clientMock := gerritClientMocks.ClientInterface{}
 
 	clientMock.On("GetProject", prj.Spec.Name).Return(&gerritClient.Project{}, nil)
 	clientMock.On("UpdateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
@@ -148,6 +154,7 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 	}
 
 	clientMock.On("UpdateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(errors.New("update fatal")).Once()
+
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
 			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
@@ -166,11 +173,10 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 	clientMock.On("UpdateProject", &gerritClient.Project{Name: prj.Spec.Name}).Return(nil).Once()
 	clientMock.On("DeleteProject", prj.Spec.Name).Return(errors.New("deletion fatal")).Once()
 
-	if _, err := rcn.Reconcile(context.Background(),
+	_, err = rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
-		t.Fatal(err)
-	}
+			Name: prj.Name, Namespace: prj.Namespace}})
+	require.NoError(t, err)
 
 	err = logger.LastError()
 	if err == nil {
@@ -187,8 +193,8 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 func TestIsSpecUpdated(t *testing.T) {
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			DeletionTimestamp: &metaV1.Time{Time: time.Now()}},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
@@ -199,11 +205,12 @@ func TestIsSpecUpdated(t *testing.T) {
 
 func TestReconcile_Reconcile_NotFound(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
+
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			DeletionTimestamp: &metaV1.Time{Time: time.Now()}},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
@@ -228,18 +235,19 @@ func TestReconcile_Reconcile_NotFound(t *testing.T) {
 
 func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
+
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			DeletionTimestamp: &metaV1.Time{Time: time.Now()}},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: prj.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}

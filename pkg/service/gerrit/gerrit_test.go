@@ -6,16 +6,18 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/resty.v1"
-	appsv1 "k8s.io/api/apps/v1"
+	appsV1 "k8s.io/api/apps/v1"
 	coreV1Api "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -24,6 +26,7 @@ import (
 	pmock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )
 
@@ -40,24 +43,26 @@ const (
 	servicePort = int32(100)
 )
 
-func GenPkey() (error, []byte) {
+func GenPkey() ([]byte, error) {
 	pk, err := rsa.GenerateKey(rand.Reader, 128)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
-	privkeyBytes := x509.MarshalPKCS1PrivateKey(pk)
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(pk)
 	pkey := pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
-			Bytes: privkeyBytes,
+			Bytes: privateKeyBytes,
 		},
 	)
-	return nil, pkey
+
+	return pkey, nil
 }
 
 func CreateGerritInstance() *gerritApi.Gerrit {
 	return &gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
@@ -75,17 +80,36 @@ func CreateService(port int32) *coreV1Api.Service {
 }
 
 func TestErrUserNotFoundError(t *testing.T) {
+	t.Parallel()
+
 	str := "err not found"
-	tnf := ErrUserNotFound(str)
+	tnf := UserNotFoundError(str)
+
 	assert.Equal(t, str, tnf.Error())
 }
 
 func TestIsErrUserNotFound(t *testing.T) {
-	tnf := ErrUserNotFound("err not found")
-	err := errors.Wrap(tnf, "error")
-	if !IsErrUserNotFound(err) {
-		t.Fatal("wrong error type")
-	}
+	t.Parallel()
+
+	t.Run("should return true for UserNotFoundError", func(t *testing.T) {
+		t.Parallel()
+
+		tnf := UserNotFoundError("err not found")
+		err := errors.Wrap(tnf, "error")
+
+		assert.Truef(t, IsErrUserNotFound(err), "wrong error type")
+	})
+
+	t.Run("should return false for other errors", func(t *testing.T) {
+		t.Parallel()
+
+		err := errors.New("random error")
+		notExistsErr := os.ErrNotExist
+
+		assert.False(t, IsErrUserNotFound(nil))
+		assert.False(t, IsErrUserNotFound(err))
+		assert.False(t, IsErrUserNotFound(notExistsErr))
+	})
 }
 
 func TestComponentService_IsDeploymentReady(t *testing.T) {
@@ -93,7 +117,6 @@ func TestComponentService_IsDeploymentReady(t *testing.T) {
 	CS := ComponentService{
 		PlatformService: ps,
 	}
-
 	inst := &gerritApi.Gerrit{}
 
 	ps.On("IsDeploymentReady", inst).Return(true, nil)
@@ -139,18 +162,22 @@ func TestComponentService_GetGerritSSHUrlErr(t *testing.T) {
 func Test_setAnnotation_EmptyInstance(t *testing.T) {
 	inst := &gerritApi.Gerrit{}
 	CS := ComponentService{}
+
 	CS.setAnnotation(inst, key, value)
+
 	assert.Equal(t, map[string]string{key: value}, inst.Annotations)
 }
 
 func Test_setAnnotation(t *testing.T) {
 	inst := &gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Annotations: map[string]string{oldK: oldV},
 		},
 	}
 	CS := ComponentService{}
+
 	CS.setAnnotation(inst, key, value)
+
 	assert.Equal(t, map[string]string{key: value, oldK: oldV}, inst.Annotations)
 }
 
@@ -158,8 +185,8 @@ func TestComponentService_GetServicePort(t *testing.T) {
 	instance := CreateGerritInstance()
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
-
 	service := CreateService(port)
+
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 
 	p, err := CS.GetServicePort(instance)
@@ -171,9 +198,9 @@ func TestComponentService_GetServicePortErr(t *testing.T) {
 	instance := CreateGerritInstance()
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
-
 	service := &coreV1Api.Service{}
 	errTest := errors.New("test")
+
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, errTest)
 
 	_, err := CS.GetServicePort(instance)
@@ -184,8 +211,8 @@ func TestComponentService_GetServicePort_NoPorts(t *testing.T) {
 	instance := CreateGerritInstance()
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
-
 	service := &coreV1Api.Service{}
+
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 
 	p, err := CS.GetServicePort(instance)
@@ -195,15 +222,15 @@ func TestComponentService_GetServicePort_NoPorts(t *testing.T) {
 
 func TestComponentService_Configure_CreateSecretErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
-
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(errTest)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(errTest)
+
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
@@ -213,16 +240,17 @@ func TestComponentService_Configure_CreateSecretErr(t *testing.T) {
 
 func TestComponentService_Configure_GetServicePortErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 	service := &coreV1Api.Service{}
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, errTest)
+
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
@@ -232,15 +260,15 @@ func TestComponentService_Configure_GetServicePortErr(t *testing.T) {
 
 func TestComponentService_Configure_GetDeploymentSSHPortErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 	service := CreateService(port)
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, errTest)
 
@@ -253,15 +281,15 @@ func TestComponentService_Configure_GetDeploymentSSHPortErr(t *testing.T) {
 
 func TestComponentService_Configure_GetServiceErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 	service := CreateService(port)
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil).Once()
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, errTest)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
@@ -275,18 +303,18 @@ func TestComponentService_Configure_GetServiceErr(t *testing.T) {
 
 func TestComponentService_Configure_UpdateServiceErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 	service := CreateService(port)
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, port).Return(errTest)
+	ps.On("UpdateService", service, port).Return(errTest)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -297,27 +325,25 @@ func TestComponentService_Configure_UpdateServiceErr(t *testing.T) {
 
 func TestComponentService_Configure_updateDeploymentConfigPortErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 	service := CreateService(servicePort)
-
 	newEnv := []coreV1Api.EnvVar{
 		{
 			Name:  spec.SSHListnerEnvName,
 			Value: fmt.Sprintf("*:%d", servicePort),
 		},
 	}
-
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, servicePort).Return(nil)
-	ps.On("PatchDeploymentEnv", *instance, newEnv).Return(errTest)
+	ps.On("UpdateService", service, servicePort).Return(nil)
+	ps.On("PatchDeploymentEnv", instance, newEnv).Return(errTest)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -328,13 +354,11 @@ func TestComponentService_Configure_updateDeploymentConfigPortErr(t *testing.T) 
 
 func TestComponentService_Configure_updateDeploymentConfigPortTrue(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
 	CS := ComponentService{PlatformService: ps, client: kc, k8sScheme: ks}
 	service := CreateService(servicePort)
-
 	newEnv := []coreV1Api.EnvVar{
 		{
 			Name:  spec.SSHListnerEnvName,
@@ -343,11 +367,11 @@ func TestComponentService_Configure_updateDeploymentConfigPortTrue(t *testing.T)
 	}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, servicePort).Return(nil)
-	ps.On("PatchDeploymentEnv", *instance, newEnv).Return(nil)
+	ps.On("UpdateService", service, servicePort).Return(nil)
+	ps.On("PatchDeploymentEnv", instance, newEnv).Return(nil)
 
 	configure, b, err := CS.Configure(instance)
 	assert.NoError(t, err)
@@ -357,7 +381,6 @@ func TestComponentService_Configure_updateDeploymentConfigPortTrue(t *testing.T)
 
 func TestComponentService_Configure_GetPodsErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
@@ -367,18 +390,16 @@ func TestComponentService_Configure_GetPodsErr(t *testing.T) {
 	secretData := map[string][]byte{
 		"password": {'o'},
 	}
-
 	podList := &coreV1Api.PodList{}
-
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, port).Return(nil)
+	ps.On("UpdateService", service, port).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
-	ps.On("GetPods", instance.Namespace,
-		metav1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, errTest)
+	ps.On("GetPods", instance.Namespace, &metaV1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, errTest)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -390,7 +411,6 @@ func TestComponentService_Configure_GetPodsErr(t *testing.T) {
 
 func TestComponentService_Configure_createSSHKeyPairsAdminErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
@@ -402,21 +422,20 @@ func TestComponentService_Configure_createSSHKeyPairsAdminErr(t *testing.T) {
 		"id_rsa":     {'a'},
 		"id_rsa.pub": {'k'},
 	}
-
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metav1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{}}}}
 
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, port).Return(nil)
+	ps.On("UpdateService", service, port).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-admin").Return(secretData, errTest)
-	ps.On("GetPods", instance.Namespace,
-		metav1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
+	ps.On("GetPods", instance.Namespace, &metaV1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -428,7 +447,6 @@ func TestComponentService_Configure_createSSHKeyPairsAdminErr(t *testing.T) {
 
 func TestComponentService_Configure_createSSHKeyPairsProjectCreatorErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
@@ -440,22 +458,20 @@ func TestComponentService_Configure_createSSHKeyPairsProjectCreatorErr(t *testin
 		"id_rsa":     {'a'},
 		"id_rsa.pub": {'k'},
 	}
-
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metav1.TypeMeta{}}}}
-
+			TypeMeta: metaV1.TypeMeta{}}}}
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, port).Return(nil)
+	ps.On("UpdateService", service, port).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-project-creator").Return(secretData, errTest)
-	ps.On("GetPods", instance.Namespace,
-		metav1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
+	ps.On("GetPods", instance.Namespace, &metaV1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -468,7 +484,6 @@ func TestComponentService_Configure_createSSHKeyPairsProjectCreatorErr(t *testin
 
 func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
@@ -481,21 +496,19 @@ func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 		"id_rsa":     {'a'},
 		"id_rsa.pub": {'k'},
 	}
-
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metav1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{}}}}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, port).Return(nil)
+	ps.On("UpdateService", service, port).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-project-creator").Return(secretData, nil)
-	ps.On("GetPods", instance.Namespace,
-		metav1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
+	ps.On("GetPods", instance.Namespace, &metaV1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -506,7 +519,6 @@ func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 
 func TestComponentService_Integrate_GetExternalEndpointErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	errTest := errors.New("test")
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
@@ -520,7 +532,7 @@ func TestComponentService_Integrate_GetExternalEndpointErr(t *testing.T) {
 
 func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 	instance := &gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
@@ -531,7 +543,7 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 		},
 	}
 	client := &keycloakApi.KeycloakClient{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
@@ -546,15 +558,16 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
 	var envs []coreV1Api.EnvVar
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("GenerateKeycloakSettings", instance).Return(&envs, nil)
-	ps.On("PatchDeploymentEnv", *instance, envs).Return(nil)
+	ps.On("GenerateKeycloakSettings", instance).Return(envs, nil)
+	ps.On("PatchDeploymentEnv", instance, envs).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserCredentialsName).Return(secretData, nil)
 
@@ -565,7 +578,7 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 
 func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 	instance := &gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
@@ -578,7 +591,8 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
+	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{})
+
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects().Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
@@ -586,12 +600,11 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 
 	_, err := CS.Integrate(instance)
 	assert.Error(t, err)
-
 }
 
 func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 	instance := &gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
@@ -602,12 +615,11 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 		},
 	}
 	client := &keycloakApi.KeycloakClient{}
-
 	errTest := errors.New("test")
-
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
@@ -616,12 +628,11 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 
 	_, err := CS.Integrate(instance)
 	assert.Equal(t, errTest, err)
-
 }
 
 func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 	instance := &gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
@@ -632,24 +643,25 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 		},
 	}
 	client := &keycloakApi.KeycloakClient{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
 			Namespace: "namespace",
 		},
 	}
-
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
 	var envs []coreV1Api.EnvVar
 
 	errTest := errors.New("test")
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("GenerateKeycloakSettings", instance).Return(&envs, nil)
-	ps.On("PatchDeploymentEnv", *instance, envs).Return(errTest)
+	ps.On("GenerateKeycloakSettings", instance).Return(envs, nil)
+	ps.On("PatchDeploymentEnv", instance, envs).Return(errTest)
 
 	_, err := CS.Integrate(instance)
 	assert.Error(t, err)
@@ -658,15 +670,14 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 
 func TestComponentService_GetRestClient(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	secretData := map[string][]byte{
 		"password": {'o'},
 	}
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{gerritClient: &gerrit.Client{}, PlatformService: ps}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
 
@@ -692,9 +703,10 @@ func TestComponentService_getUrlErr(t *testing.T) {
 	errTest := errors.New("test")
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", errTest)
 
-	_, err := CS.getUrl(*instance)
+	_, err := CS.getUrl(instance)
 	assert.Equal(t, errTest, err)
 }
 
@@ -704,9 +716,10 @@ func TestComponentService_getUrl(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
+
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 
-	u, err := CS.getUrl(*instance)
+	u, err := CS.getUrl(instance)
 	assert.NoError(t, err)
 	assert.Equal(t, url, *u)
 }
@@ -716,60 +729,56 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%v-%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, "password")
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-	err, pkey := GenPkey()
-	assert.NoError(t, err)
+
+	pkey, err := GenPkey()
+	require.NoError(t, err)
+
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   pkey,
 	}
-
 	service := CreateService(servicePort)
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName).Return(nil)
-	ps.On("CreateSecret", instance, ciUserSshSecretName).Return(nil)
-	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
 	ps.On("CreateJenkinsServiceAccount", instance.Namespace, ciUserSshSecretName, "ssh").Return(nil)
+
 	_, err = CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create ci user"))
-
 }
 
 func TestComponentService_ExposeConfiguration_initRestClientErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   {'a'},
 	}
-
 	errTest := errors.New("test")
-
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, errTest)
 
 	_, err := CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to init Gerrit REST client"))
-
 }
 
 func TestComponentService_ExposeConfiguration_initSSHClient(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   {'a'},
@@ -778,39 +787,40 @@ func TestComponentService_ExposeConfiguration_initSSHClient(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
+
 	_, err := CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to init Gerrit SSH client"))
-
 }
 
 func TestComponentService_ExposeConfiguration_FirstCreateSecretErr(t *testing.T) {
 	instance := CreateGerritInstance()
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
 
-	err, pkey := GenPkey()
-	assert.NoError(t, err)
+	pkey, err := GenPkey()
+	require.NoError(t, err)
+
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   pkey,
 	}
-
 	service := CreateService(servicePort)
 	errTest := errors.New("test")
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName).Return(errTest)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(errTest)
 
 	_, err = CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
@@ -821,10 +831,11 @@ func TestComponentService_ExposeConfiguration_SecondCreateSecretErr(t *testing.T
 	instance := CreateGerritInstance()
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%v-%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, "password")
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-	err, pkey := GenPkey()
-	assert.NoError(t, err)
+
+	pkey, err := GenPkey()
+	require.NoError(t, err)
+
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   pkey,
@@ -834,44 +845,44 @@ func TestComponentService_ExposeConfiguration_SecondCreateSecretErr(t *testing.T
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName).Return(nil)
-	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName).Return(errTest)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(errTest)
 
 	_, err = CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create project-creator Secret"))
-
 }
 
 func TestComponentService_ExposeConfiguration_GetSecretErr(t *testing.T) {
 	instance := CreateGerritInstance()
-
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%v-%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, "password")
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-	err, pkey := GenPkey()
-	assert.NoError(t, err)
+
+	pkey, err := GenPkey()
+	require.NoError(t, err)
+
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   pkey,
 	}
-
 	service := CreateService(servicePort)
 	errTest := errors.New("test")
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName).Return(nil)
-	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, errTest)
 
 	_, err = CS.ExposeConfiguration(instance)
@@ -884,32 +895,33 @@ func TestComponentService_ExposeConfiguration_CreateSecretErr(t *testing.T) {
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%v-%v-%v", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, "password")
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
-
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-	err, pkey := GenPkey()
-	assert.NoError(t, err)
+
+	pkey, err := GenPkey()
+	require.NoError(t, err)
+
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   pkey,
 	}
-
 	service := CreateService(servicePort)
 	errTest := errors.New("test")
 
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName).Return(nil)
-	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSshSecretName).Return(errTest)
+	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(errTest)
+
 	_, err = CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create Secret with SSH key pairs for Gerrit"))
-
 }
 
 func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *testing.T) {
@@ -919,8 +931,9 @@ func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 
 	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-	err, pkey := GenPkey()
-	assert.NoError(t, err)
+	pkey, err := GenPkey()
+	require.NoError(t, err)
+
 	secretData := map[string][]byte{
 		"password": {'o'},
 		"id_rsa":   pkey,
@@ -928,18 +941,19 @@ func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *
 
 	service := CreateService(servicePort)
 	errTest := errors.New("test")
-
 	ps := &pmock.PlatformService{}
 	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName).Return(nil)
-	ps.On("CreateSecret", instance, ciUserSshSecretName).Return(nil)
-	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
 	ps.On("CreateJenkinsServiceAccount", instance.Namespace, ciUserSshSecretName, "ssh").Return(errTest)
+
 	_, err = CS.ExposeConfiguration(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create Jenkins Service Account"))
@@ -947,7 +961,7 @@ func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *
 
 func TestComponentService_Configure_CreateGroups(t *testing.T) {
 	instance := CreateGerritInstance()
-	gerritClient := gerrit.ClientInterfaceMock{}
+	gerritClient := gerritClientMocks.ClientInterface{}
 	ps := &pmock.PlatformService{}
 	kc := fake.NewClientBuilder().Build()
 	ks := &runtime.Scheme{}
@@ -962,25 +976,26 @@ func TestComponentService_Configure_CreateGroups(t *testing.T) {
 
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metav1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{}}}}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password").Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
-	ps.On("UpdateService", *service, port).Return(nil)
+	ps.On("UpdateService", service, port).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
 	ps.On("GetSecretData", instance.Namespace, instance.Name+"-project-creator").Return(secretData, nil)
-	ps.On("GetPods", instance.Namespace,
-		metav1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
+	ps.On("GetPods", instance.Namespace, &metaV1.ListOptions{LabelSelector: "app=" + instance.Name}).Return(podList, nil)
 	ps.On("GetSecret", instance.Namespace, "name-admin").Return(map[string][]byte{}, nil)
 	ps.On("ExecInPod", instance.Namespace, "",
 		[]string{"/bin/sh", "-c", "chown -R gerrit2:gerrit2 /var/gerrit/review_site"}).
-		Return("", "", nil)
+		Return(nil, nil, nil)
 
 	var emptyByte []byte
+
 	statusOk := 404
+
 	gerritClient.On("InitNewRestClient", instance, ":///a/", "admin", "o").Return(nil)
 	gerritClient.On("CheckCredentials").Return(200, nil)
 	gerritClient.On("InitNewSshClient", "admin", emptyByte, "", int32(80)).Return(nil)

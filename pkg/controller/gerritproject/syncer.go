@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 )
 
@@ -39,9 +38,9 @@ func (r *Reconcile) syncBackendProjectsTick() error {
 		return errors.Wrap(err, "unable to list gerrit projects")
 	}
 
-	for _, gr := range gerritList.Items {
-		if err := r.syncGerritInstance(ctx, &gr, gerritProjectList.Items); err != nil {
-			return errors.Wrapf(err, "unable to sync gerrit instance: %s", gr.Name)
+	for i := 0; i < len(gerritList.Items); i++ {
+		if err := r.syncGerritInstance(ctx, &gerritList.Items[i], gerritProjectList.Items); err != nil {
+			return errors.Wrapf(err, "unable to sync gerrit instance: %s", gerritList.Items[i].Name)
 		}
 	}
 
@@ -79,7 +78,7 @@ func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *gerritApi.Gerrit
 	return nil
 }
 
-func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInterface,
+func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerritClient.ClientInterface,
 	k8sProject *gerritApi.GerritProject) error {
 	branches, err := cl.ListProjectBranches(k8sProject.Spec.Name)
 	if err != nil {
@@ -100,9 +99,8 @@ func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInt
 
 func (r *Reconcile) createGerritProject(ctx context.Context, gr *gerritApi.Gerrit,
 	backendProject *gerritClient.Project) (*gerritApi.GerritProject, error) {
-
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      strings.ToLower(fmt.Sprintf("%s-%s", gr.Name, backendProject.SlugifyName())),
 			Namespace: gr.Namespace,
 		},
@@ -130,10 +128,10 @@ func (r *Reconcile) createGerritProject(ctx context.Context, gr *gerritApi.Gerri
 func filterGerritProjectsByGerrit(g *gerritApi.Gerrit, projects []gerritApi.GerritProject) map[string]*gerritApi.GerritProject {
 	result := make(map[string]*gerritApi.GerritProject)
 
-	for k, p := range projects {
-		for _, owner := range p.OwnerReferences {
+	for i := 0; i < len(projects); i++ {
+		for _, owner := range projects[i].OwnerReferences {
 			if owner.UID == g.UID && owner.Kind == g.Kind {
-				result[p.Spec.Name] = &projects[k]
+				result[projects[i].Spec.Name] = &projects[i]
 			}
 		}
 	}

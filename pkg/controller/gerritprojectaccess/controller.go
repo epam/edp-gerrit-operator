@@ -34,15 +34,15 @@ type Reconcile struct {
 	log     logr.Logger
 }
 
-func NewReconcile(client client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
+func NewReconcile(k8sClient client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create platform service")
 	}
 
 	return &Reconcile{
-		client:  client,
-		service: gerrit.NewComponentService(ps, client, scheme),
+		client:  k8sClient,
+		service: gerrit.NewComponentService(ps, k8sClient, scheme),
 		log:     log.WithName("gerrit"),
 	}, nil
 }
@@ -58,8 +58,15 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
-	oo := e.ObjectOld.(*gerritApi.GerritProjectAccess)
-	no := e.ObjectNew.(*gerritApi.GerritProjectAccess)
+	oo, ok := e.ObjectOld.(*gerritApi.GerritProjectAccess)
+	if !ok {
+		return false
+	}
+
+	no, ok := e.ObjectNew.(*gerritApi.GerritProjectAccess)
+	if !ok {
+		return false
+	}
 
 	return !reflect.DeepEqual(oo.Spec, no.Spec) ||
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
@@ -87,6 +94,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
 		reqLogger.Error(err, "unable to reconcile GerritProjectAccess")
 		instance.Status.Value = err.Error()
+
 		return reconcile.Result{RequeueAfter: requeueTime}, nil
 	}
 

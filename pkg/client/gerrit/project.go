@@ -21,7 +21,7 @@ type Project struct {
 	RejectEmptyCommit string `json:"reject_empty_commit,omitempty"`
 }
 
-func (p Project) SlugifyName() string {
+func (p *Project) SlugifyName() string {
 	return slug.Make(p.Name)
 }
 
@@ -39,14 +39,14 @@ type WebLink struct {
 	Target   string `json:"target"`
 }
 
-func (gc Client) CreateProject(prj *Project) error {
+func (gc *Client) CreateProject(prj *Project) error {
 	rsp, err := gc.resty.R().SetBody(prj).SetHeader(contentType, applicationJson).
 		Put(fmt.Sprintf("/projects/%s", url.QueryEscape(prj.Name)))
 
 	return parseRestyResponse(rsp, err)
 }
 
-func (gc Client) GetProject(name string) (*Project, error) {
+func (gc *Client) GetProject(name string) (*Project, error) {
 	rsp, err := gc.resty.R().
 		SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/%s", url.QueryEscape(name)))
@@ -57,7 +57,7 @@ func (gc Client) GetProject(name string) (*Project, error) {
 
 	if rsp.StatusCode() != http.StatusOK {
 		if rsp.StatusCode() == http.StatusNotFound {
-			return nil, ErrDoesNotExist("does not exists")
+			return nil, DoesNotExistError("does not exists")
 		}
 
 		return nil, errors.Errorf("wrong response code: %d, body: %s", rsp.StatusCode(), rsp.String())
@@ -71,14 +71,15 @@ func (gc Client) GetProject(name string) (*Project, error) {
 	return &prj, nil
 }
 
-func (gc Client) UpdateProject(prj *Project) error {
+func (gc *Client) UpdateProject(prj *Project) error {
 	rsp, err := gc.resty.R().SetHeader(contentType, applicationJson).
 		SetBody(map[string]string{
 			"description":    prj.Description,
 			"commit_message": "Update the project description",
 		}).Put(fmt.Sprintf("/projects/%s/description", url.QueryEscape(prj.Name)))
 
-	if err := parseRestyResponse(rsp, err); err != nil {
+	err = parseRestyResponse(rsp, err)
+	if err != nil {
 		return errors.Wrap(err, "unable to update project description")
 	}
 
@@ -91,7 +92,7 @@ func (gc Client) UpdateProject(prj *Project) error {
 	return parseRestyResponse(rsp, err)
 }
 
-func (gc Client) DeleteProject(name string) error {
+func (gc *Client) DeleteProject(name string) error {
 	rsp, err := gc.resty.R().SetHeader(contentType, applicationJson).
 		SetBody(map[string]bool{
 			"force":    false,
@@ -101,7 +102,7 @@ func (gc Client) DeleteProject(name string) error {
 	return parseRestyResponse(rsp, err)
 }
 
-func (gc Client) ListProjects(_type string) ([]Project, error) {
+func (gc *Client) ListProjects(_type string) ([]Project, error) {
 	rsp, err := gc.resty.R().SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/?type=%s&d=1&t=1", _type))
 
@@ -123,6 +124,7 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 	delete(preProjects, "All-Users")
 
 	projects := make([]Project, 0, len(preProjects))
+
 	for k, v := range preProjects {
 		v.Name = k
 		projects = append(projects, v)
@@ -131,7 +133,7 @@ func (gc Client) ListProjects(_type string) ([]Project, error) {
 	return projects, nil
 }
 
-func (gc Client) ListProjectBranches(projectName string) ([]Branch, error) {
+func (gc *Client) ListProjectBranches(projectName string) ([]Branch, error) {
 	rsp, err := gc.resty.R().SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/%s/branches/", url.QueryEscape(projectName)))
 

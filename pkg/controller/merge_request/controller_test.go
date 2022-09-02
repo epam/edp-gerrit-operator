@@ -8,18 +8,20 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreV1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
@@ -30,7 +32,7 @@ type ControllerTestSuite struct {
 	gerritService *gmock.Interface
 	logger        *helper.Logger
 	gitClient     *gmock.GitClient
-	gerritClient  *gerritClient.ClientInterfaceMock
+	gerritClient  *gerritClientMocks.ClientInterface
 	scheme        *runtime.Scheme
 	rootGerrit    *gerritApi.Gerrit
 	mergeRequest  *gerritApi.GerritMergeRequest
@@ -38,15 +40,15 @@ type ControllerTestSuite struct {
 
 func (s *ControllerTestSuite) SetupTest() {
 	s.scheme = runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(s.scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(s.scheme))
 
 	s.gerritService = &gmock.Interface{}
 	s.logger = &helper.Logger{}
 	s.gitClient = &gmock.GitClient{}
-	s.gerritClient = &gerritClient.ClientInterfaceMock{}
+	s.gerritClient = &gerritClientMocks.ClientInterface{}
 
-	s.rootGerrit = &gerritApi.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
-	s.mergeRequest = &gerritApi.GerritMergeRequest{ObjectMeta: metav1.ObjectMeta{Name: "mr1",
+	s.rootGerrit = &gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
+	s.mergeRequest = &gerritApi.GerritMergeRequest{ObjectMeta: metaV1.ObjectMeta{Name: "mr1",
 		Namespace: s.rootGerrit.Namespace},
 		Spec: gerritApi.GerritMergeRequestSpec{
 			SourceBranch:        "rev123",
@@ -134,7 +136,7 @@ func (s *ControllerTestSuite) TestReconcile() {
 
 func (s *ControllerTestSuite) TestReconcileDelete() {
 	deleteMergeRequest := s.mergeRequest.DeepCopy()
-	deleteMergeRequest.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	deleteMergeRequest.DeletionTimestamp = &metaV1.Time{Time: time.Now()}
 	deleteMergeRequest.Status.ChangeID = "change321"
 
 	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, deleteMergeRequest).Build()
@@ -206,9 +208,11 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 func (s *ControllerTestSuite) TestConfigMap() {
 	s.mergeRequest.Spec.SourceBranch = ""
 	s.mergeRequest.Spec.ChangesConfigMap = "changes"
-	err := corev1.AddToScheme(s.scheme)
-	assert.NoError(s.T(), err)
-	cm := corev1.ConfigMap{Data: map[string]string{"test.txt": `{"path": "test.txt", "contents": "test"}`}, ObjectMeta: metav1.ObjectMeta{
+
+	err := coreV1.AddToScheme(s.scheme)
+	require.NoError(s.T(), err)
+
+	cm := coreV1.ConfigMap{Data: map[string]string{"test.txt": `{"path": "test.txt", "contents": "test"}`}, ObjectMeta: metaV1.ObjectMeta{
 		Name: s.mergeRequest.Spec.ChangesConfigMap, Namespace: s.mergeRequest.Namespace,
 	}}
 

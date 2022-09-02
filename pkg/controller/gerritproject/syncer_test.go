@@ -7,35 +7,36 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreV1Api "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/controller/helper"
 )
 
 func TestSyncBackendProjectsTick(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			OwnerReferences: []metav1.OwnerReference{
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			OwnerReferences: []metaV1.OwnerReference{
 				{
 					Kind: g.Kind,
 					UID:  g.UID,
@@ -46,7 +47,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
-	clientMock := gerritClient.ClientInterfaceMock{}
+	clientMock := gerritClientMocks.ClientInterface{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
@@ -89,20 +90,20 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
 
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			OwnerReferences: []metav1.OwnerReference{
+		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+			OwnerReferences: []metaV1.OwnerReference{
 				{
 					Kind: g.Kind,
 					UID:  g.UID,
@@ -113,7 +114,7 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
-	clientMock := gerritClient.ClientInterfaceMock{}
+	clientMock := gerritClientMocks.ClientInterface{}
 
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
@@ -147,13 +148,13 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
@@ -173,11 +174,12 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	if err == nil {
 		t.Fatal("no error returned")
 	}
+
 	if !strings.Contains(err.Error(), "gerrit client fatal") {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
 
-	clientMock := gerritClient.ClientInterfaceMock{}
+	clientMock := gerritClientMocks.ClientInterface{}
 	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
 
 	clientMock.On("ListProjects", "CODE").
@@ -187,6 +189,7 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 	if err == nil {
 		t.Fatal("no error returned")
 	}
+
 	if !strings.Contains(err.Error(), "list projects fatal") {
 		t.Fatalf("wrong error returned: %s", err.Error())
 	}
@@ -197,13 +200,13 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 
 func TestSyncBackendProjects(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}

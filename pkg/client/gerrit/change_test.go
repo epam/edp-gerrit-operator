@@ -17,6 +17,7 @@ func TestClient_ChangeGet(t *testing.T) {
 
 	httpmock.RegisterResponder("GET", "/changes/ch1",
 		httpmock.NewStringResponder(200, ")]}' {}"))
+
 	_, err = cl.ChangeGet("ch1")
 	assert.NoError(t, err)
 }
@@ -35,6 +36,7 @@ func TestClient_ChangeAbandon(t *testing.T) {
 
 	httpmock.RegisterResponder("POST", "/changes/ch1/abandon",
 		httpmock.NewStringResponder(200, ""))
+
 	err = cl.ChangeAbandon("ch1")
 	assert.NoError(t, err)
 }

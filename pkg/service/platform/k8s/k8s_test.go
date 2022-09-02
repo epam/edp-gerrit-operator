@@ -19,6 +19,7 @@ func TestK8SService_getKeycloakRootUrl(t *testing.T) {
 	sch := runtime.NewScheme()
 	utilruntime.Must(gerritApi.AddToScheme(sch))
 	assert.NoError(t, keycloakApi.AddToScheme(sch))
+
 	rlm := keycloakApi.KeycloakRealm{ObjectMeta: metav1.ObjectMeta{Name: "main"}}
 	fk := fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&g, &rlm).Build()
 

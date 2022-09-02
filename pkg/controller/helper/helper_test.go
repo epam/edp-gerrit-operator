@@ -9,33 +9,34 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/stretchr/testify/require"
+	coreV1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
-	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
+	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 )
 
 func TestTryToDelete(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
 	instance := gerritApi.GerritGroupMember{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
@@ -48,7 +49,7 @@ func TestTryToDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	instance.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	instance.DeletionTimestamp = &metaV1.Time{Time: time.Now()}
 
 	if err := TryToDelete(context.Background(), client, &instance, "fin1", func() error {
 		return nil
@@ -62,6 +63,7 @@ func TestTryToDelete(t *testing.T) {
 	if err == nil {
 		t.Fatal("fatal not returned")
 	}
+
 	if errors.Cause(err).Error() != "try del fatal" {
 		t.Fatal("wrong error returned")
 	}
@@ -69,20 +71,20 @@ func TestTryToDelete(t *testing.T) {
 
 func TestGetGerritClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
 	instance := gerritApi.GerritGroupMember{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
@@ -90,9 +92,10 @@ func TestGetGerritClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
-	gCl := gerrit.ClientInterfaceMock{}
+	gCl := gerritClientMocks.ClientInterface{}
 
 	gerritService.On("GetRestClient", &g).Return(&gCl, nil)
+
 	if _, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService); err != nil {
 		t.Fatal(err)
 	}
@@ -103,23 +106,23 @@ func TestGetGerritClient(t *testing.T) {
 
 func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
 	instance := gerritApi.GerritGroupMember{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
-			OwnerReferences: []metav1.OwnerReference{
+			OwnerReferences: []metaV1.OwnerReference{
 				{},
 			},
 		},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
@@ -142,11 +145,11 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 
 func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
 	instance := gerritApi.GerritGroupMember{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
@@ -169,20 +172,20 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 
 func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
 	instance := gerritApi.GerritGroupMember{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "t1",
 			Namespace: "t2",
 		},
 	}
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
@@ -190,8 +193,8 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
-
 	gerritService.On("GetRestClient", &g).Return(nil, errors.New("mock error"))
+
 	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
 	if err == nil {
 		t.Fatal("no error returned")
@@ -206,13 +209,13 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 
 func TestGetGerritInstance(t *testing.T) {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(corev1.AddToScheme(scheme))
+	utilRuntime.Must(gerritApi.AddToScheme(scheme))
+	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
 	g := gerritApi.Gerrit{
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1"},
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
 		}}
@@ -238,10 +241,12 @@ func TestGetGerritInstance(t *testing.T) {
 func TestGetWatchNamespace(t *testing.T) {
 	ns := "test"
 	err := os.Setenv(watchNamespaceEnvVar, ns)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
 	namespace, err := GetWatchNamespace()
 	assert.NoError(t, err)
 	assert.Equal(t, ns, namespace)
+
 	err = os.Unsetenv(watchNamespaceEnvVar)
 	assert.NoError(t, err)
 }
@@ -255,10 +260,12 @@ func TestGetWatchNamespaceErr(t *testing.T) {
 func TestGetDebugMode(t *testing.T) {
 	debugMode := "true"
 	err := os.Setenv(debugModeEnvVar, debugMode)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
 	mode, err := GetDebugMode()
 	assert.NoError(t, err)
 	assert.True(t, mode)
+
 	err = os.Unsetenv(debugModeEnvVar)
 	assert.NoError(t, err)
 }
@@ -272,10 +279,13 @@ func TestGetDebugMode_EmptyEnv(t *testing.T) {
 func TestGetDebugMode_NotBool(t *testing.T) {
 	debugMode := "123"
 	err := os.Setenv(debugModeEnvVar, debugMode)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
 	mode, err := GetDebugMode()
 	assert.Error(t, err)
+
 	assert.False(t, mode)
+
 	err = os.Unsetenv(debugModeEnvVar)
 	assert.NoError(t, err)
 }
@@ -283,10 +293,11 @@ func TestGetDebugMode_NotBool(t *testing.T) {
 func TestGetPlatformTypeEnv(t *testing.T) {
 	ns := "test"
 	err := os.Setenv(platformType, ns)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
 	namespace := GetPlatformTypeEnv()
-	assert.NoError(t, err)
 	assert.Equal(t, ns, namespace)
+
 	err = os.Unsetenv(platformType)
 	assert.NoError(t, err)
 }

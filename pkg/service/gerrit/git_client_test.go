@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	coreV1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	mock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
@@ -31,9 +31,9 @@ func TestComponentService_GetGitClient_Failure(t *testing.T) {
 	sch := runtime.NewScheme()
 	plt := mock.PlatformService{}
 
-	err := corev1.AddToScheme(sch)
+	err := coreV1.AddToScheme(sch)
 	assert.NoError(t, err)
-	utilruntime.Must(gerritApi.AddToScheme(sch))
+	utilRuntime.Must(gerritApi.AddToScheme(sch))
 
 	s := ComponentService{
 		PlatformService: &plt,
@@ -48,7 +48,7 @@ func TestComponentService_GetGitClient_Failure(t *testing.T) {
 	assert.EqualError(t, err,
 		"unable to get parent gerrit: gerrits.v2.edp.epam.com \"gerrit\" not found")
 
-	rootGerrit := gerritApi.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: testCh.OwnerName(),
+	rootGerrit := gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{Name: testCh.OwnerName(),
 		Namespace: testCh.GetNamespace()}}
 	s.client = fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build()
 	plt.On("GetSecretData", testCh.GetNamespace(), fmt.Sprintf("%v-admin-password", rootGerrit.Name)).
@@ -66,12 +66,12 @@ func TestComponentService_GetGitClient(t *testing.T) {
 	sch := runtime.NewScheme()
 	plt := mock.PlatformService{}
 
-	err := corev1.AddToScheme(sch)
+	err := coreV1.AddToScheme(sch)
 	assert.NoError(t, err)
-	utilruntime.Must(gerritApi.AddToScheme(sch))
+	utilRuntime.Must(gerritApi.AddToScheme(sch))
 
 	testCh := testChild{}
-	rootGerrit := gerritApi.Gerrit{ObjectMeta: metav1.ObjectMeta{Name: testCh.OwnerName(),
+	rootGerrit := gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{Name: testCh.OwnerName(),
 		Namespace: testCh.GetNamespace()}}
 
 	s := ComponentService{

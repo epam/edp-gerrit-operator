@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
@@ -19,14 +20,15 @@ func TestLogErrorAndReturn(t *testing.T) {
 }
 
 func Test_generatePublicKey(t *testing.T) {
+	private, err := generatePrivateKey()
+	require.NoError(t, err)
 
-	priv, err := generatePrivateKey()
-	assert.NoError(t, err)
-	publicKey, err := ssh.NewPublicKey(&priv.PublicKey)
-	assert.NoError(t, err)
+	publicKey, err := ssh.NewPublicKey(&private.PublicKey)
+	require.NoError(t, err)
+
 	publicKeyBytes := ssh.MarshalAuthorizedKey(publicKey)
+	key, err := generatePublicKey(private)
 
-	key, err := generatePublicKey(priv)
 	assert.NoError(t, err)
 	assert.Equal(t, publicKeyBytes, key)
 }
@@ -54,10 +56,13 @@ func TestGenerateAnnotationKey(t *testing.T) {
 
 func TestGenerateKeyPairs(t *testing.T) {
 	private, public, err := GenerateKeyPairs()
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
 	decode, _ := pem.Decode(private)
+
 	key, err := x509.ParsePKCS1PrivateKey(decode.Bytes)
 	assert.NoError(t, err)
+
 	publicKey, err := generatePublicKey(key)
 	assert.NoError(t, err)
 	assert.Equal(t, publicKey, public)
