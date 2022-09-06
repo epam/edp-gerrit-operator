@@ -40,7 +40,7 @@ spec:
               value: https://{{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}gerrit-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
             - name: GERRIT_INIT_ARGS
               value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
-                        --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication'
+                        --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication --install-plugin=webhooks'
           image: {{.Values.gerrit.image}}:{{.Values.gerrit.version}}
           imagePullPolicy: "{{ .Values.gerrit.imagePullPolicy }}"
           name: {{ .Values.gerrit.name }}

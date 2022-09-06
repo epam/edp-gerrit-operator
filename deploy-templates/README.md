@@ -43,7 +43,7 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.storage.class | string | `"gp2"` | Storageclass for Gerrit data volume |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
-| gerrit.version | string | `"3.6.1"` | Define gerrit docker image tag |
+| gerrit.version | string | `"3.6.1-SNAPSHOT.4"` | Define gerrit docker image tag |
 | gitServer.httpsPort | int | `443` | HTTPS port |
 | gitServer.name | string | `"gerrit"` | GitServer CR name |
 | gitServer.nameSshKeySecret | string | `"gerrit-ciuser-sshkey"` | Name of secret with credentials to Git server |
@@ -52,7 +52,7 @@ A Helm chart for EDP Gerrit Operator
 | global.developers | list | `["stub_user_one@example.com","stub_user_two@example.com"]` | Developers of your tenant |
 | global.dnsWildCard | string | `nil` | a cluster DNS wildcard name |
 | global.edpName | string | `""` | namespace or a project name (in case of OpenShift) |
-| global.openshift.deploymentType | string | `"deployments"` | Wich type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
+| global.openshift.deploymentType | string | `"deployments"` | Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
 | global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |
 | image.repository | string | `"epamedp/gerrit-operator"` | EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
 | image.tag | string | `nil` | EDP gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |

@@ -13,7 +13,7 @@ global:
     - "stub_user_one@example.com"
     - "stub_user_two@example.com"
   openshift:
-    # -- Wich type of kind will be deployed to Openshift (values: deployments/deploymentConfigs)
+    # -- Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs)
     deploymentType: "deployments"
 
 # -- component name
@@ -50,7 +50,7 @@ gerrit:
   # -- Define gerrit docker image name
   image: "epamedp/edp-gerrit"
   # -- Define gerrit docker image tag
-  version: "3.6.1"
+  version: "3.6.1-SNAPSHOT.4"
   # -- If defined, a imagePullPolicy applied for gerrit deployment
   imagePullPolicy: "IfNotPresent"
   # --  Secrets to pull from private Docker registry;
