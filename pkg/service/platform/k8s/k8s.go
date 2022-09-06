@@ -363,7 +363,7 @@ func (s *K8SService) ExecInPod(namespace, podName string, command []string) (std
 		return nil, nil, err
 	}
 
-	var stdoutBuffer, stderrBuffer *bytes.Buffer
+	stdoutBuffer, stderrBuffer := new(bytes.Buffer), new(bytes.Buffer)
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  nil,
