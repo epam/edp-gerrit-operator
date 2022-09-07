@@ -23,16 +23,21 @@ func LogErrorAndReturn(err error) error {
 	return err
 }
 
+// LogError prints error message to the log.
+func LogError(err error) {
+	log.Printf("[ERROR] %v", err)
+}
+
 // GeneratePrivateKey generates private key.
 func generatePrivateKey() (*rsa.PrivateKey, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, keyBitSize)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate private rsa key: %w", err)
 	}
 
 	err = privateKey.Validate()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to validate private key: %w", err)
 	}
 
 	return privateKey, nil
@@ -42,7 +47,7 @@ func generatePrivateKey() (*rsa.PrivateKey, error) {
 func generatePublicKey(privateKey *rsa.PrivateKey) ([]byte, error) {
 	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate public key: %w", err)
 	}
 
 	publicKeyBytes := ssh.MarshalAuthorizedKey(publicKey)

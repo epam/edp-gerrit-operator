@@ -1,4 +1,7 @@
+[![Build](https://github.com/epam/edp-gerrit-operator/.github/workflows/build.yaml/badge.svg)](https://github.com/epam/edp-gerrit-operator/.github/workflows/build.yaml)
 [![codecov](https://codecov.io/gh/epam/edp-gerrit-operator/branch/master/graph/badge.svg?token=8JOEVZL3VL)](https://codecov.io/gh/epam/edp-gerrit-operator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/epam/edp-gerrit-operator/v2)](https://goreportcard.com/report/github.com/epam/edp-gerrit-operator/v2)
+[![GitHub license](https://img.shields.io/github/license/epam/edp-gerrit-operator)](https://github.com/epam/edp-gerrit-operator/blob/master/LICENSE-2.0)
 
 # Gerrit Operator
 

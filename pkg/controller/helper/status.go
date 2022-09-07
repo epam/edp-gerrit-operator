@@ -28,7 +28,7 @@ type StatusValueFailureCountable interface {
 func SetFailureCount(fc FailureCountable) time.Duration {
 	failures := fc.GetFailureCount()
 	timeout := getTimeout(failures, TimeOut)
-	failures += 1
+	failures++
 	fc.SetFailureCount(failures)
 
 	return timeout

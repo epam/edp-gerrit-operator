@@ -59,7 +59,7 @@ func (s *K8SService) GetExternalEndpoint(namespace, name string) (host, scheme s
 	if err != nil && k8sErrors.IsNotFound(err) {
 		return "", "", fmt.Errorf("ingress %v in namespace %v not found", name, namespace)
 	} else if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("failed to Get Ingress %q: %w", name, err)
 	}
 
 	host = i.Spec.Rules[0].Host
@@ -73,7 +73,7 @@ func (s *K8SService) IsDeploymentReady(gerrit *gerritApi.Gerrit) (bool, error) {
 
 	deployment, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(ctx, gerrit.Name, metaV1.GetOptions{})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to Get Deployment %q: %w", gerrit.Name, err)
 	}
 
 	if deployment.Status.UpdatedReplicas == 1 && deployment.Status.AvailableReplicas == 1 {
@@ -85,10 +85,10 @@ func (s *K8SService) IsDeploymentReady(gerrit *gerritApi.Gerrit) (bool, error) {
 
 func (s *K8SService) PatchDeploymentEnv(gerrit *gerritApi.Gerrit, env []coreV1Api.EnvVar) error {
 	ctx := context.Background()
-	d, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(ctx, gerrit.Name, metaV1.GetOptions{})
 
+	d, err := s.appsV1Client.Deployments(gerrit.Namespace).Get(ctx, gerrit.Name, metaV1.GetOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Get Deployment %q: %w", gerrit.Name, err)
 	}
 
 	if len(env) == 0 {
@@ -97,7 +97,7 @@ func (s *K8SService) PatchDeploymentEnv(gerrit *gerritApi.Gerrit, env []coreV1Ap
 
 	container, err := platformHelper.SelectContainer(d.Spec.Template.Spec.Containers, gerrit.Name)
 	if err != nil {
-		return err
+		return fmt.Errorf("not containers found for gerrit resource %q: %w", gerrit.Name, err)
 	}
 
 	container.Env = platformHelper.UpdateEnv(container.Env, env)
@@ -106,12 +106,12 @@ func (s *K8SService) PatchDeploymentEnv(gerrit *gerritApi.Gerrit, env []coreV1Ap
 
 	jsonDc, err := json.Marshal(d)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed encode to json gerrit deployment k8s object %q: %w", gerrit.Name, err)
 	}
 
 	_, err = s.appsV1Client.Deployments(d.Namespace).Patch(ctx, d.Name, types.StrategicMergePatchType, jsonDc, metaV1.PatchOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Patch Deployment %q: %w", d.Name, err)
 	}
 
 	return nil
@@ -123,14 +123,14 @@ func (s *K8SService) Init(config *rest.Config, scheme *runtime.Scheme) error {
 
 	coreClient, err := coreV1Client.NewForConfig(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create k8s coreV1Client: %w", err)
 	}
 
 	s.CoreClient = coreClient
 
 	appsClient, err := appsV1Client.NewForConfig(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create k8s AppsV1Client: %w", err)
 	}
 
 	s.appsV1Client = appsClient
@@ -159,7 +159,7 @@ func (s *K8SService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, er
 
 	d, err := s.appsV1Client.Deployments(instance.Namespace).Get(ctx, instance.Name, metaV1.GetOptions{})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to GET Deployment %q: %w", instance.Name, err)
 	}
 
 	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
@@ -171,9 +171,11 @@ func (s *K8SService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, er
 					return 0, nil
 				}
 
-				portNumber, err := strconv.ParseInt(ports[0], Base, BitSize)
+				port := ports[0]
+
+				portNumber, err := strconv.ParseInt(port, Base, BitSize)
 				if err != nil {
-					return 0, err
+					return 0, fmt.Errorf("failed to parse port value %q: %w", port, err)
 				}
 
 				return int32(portNumber), nil
@@ -259,14 +261,15 @@ func (s *K8SService) getKeycloakRealm(instance *gerritApi.Gerrit) (*keycloakApi.
 		}
 	}
 
+	name := "main"
 	realm := &keycloakApi.KeycloakRealm{}
 
 	err := s.client.Get(ctx, types.NamespacedName{
-		Name:      "main",
+		Name:      name,
 		Namespace: instance.Namespace,
 	}, realm)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to GET KeycloakRealm resorce %q: %w", name, err)
 	}
 
 	return realm, nil
@@ -285,13 +288,14 @@ func (s *K8SService) getKeycloakRootUrl(instance *gerritApi.Gerrit) (*string, er
 	}
 
 	keycloak := &keycloakApi.Keycloak{}
+	name := realm.OwnerReferences[0].Name //TODO: check if owner references is not empty before access
 
 	err = s.client.Get(ctx, types.NamespacedName{
-		Name:      realm.OwnerReferences[0].Name, //TODO: check if owner references is not empty before access
+		Name:      name,
 		Namespace: instance.Namespace,
 	}, keycloak)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to GET Keycloak resorce %q: %w", name, err)
 	}
 
 	keycloakUrl := keycloak.Spec.Url
@@ -311,7 +315,7 @@ func (s *K8SService) GetSecretData(namespace, name string) (map[string][]byte, e
 
 		return nil, nil
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to GET secret resorce %q: %w", name, err)
 	}
 
 	return secret.Data, nil
@@ -323,7 +327,7 @@ func (s *K8SService) GetPods(namespace string, filter *metaV1.ListOptions) (*cor
 
 	podList, err := s.CoreClient.Pods(namespace).List(ctx, *filter)
 	if err != nil {
-		return &coreV1Api.PodList{}, err
+		return &coreV1Api.PodList{}, fmt.Errorf("failed to GET list of Pods: %w", err)
 	}
 
 	return podList, nil
@@ -335,7 +339,7 @@ func (s *K8SService) ExecInPod(namespace, podName string, command []string) (std
 
 	pod, err := s.CoreClient.Pods(namespace).Get(ctx, podName, metaV1.GetOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to GET Pod %q: %w", podName, err)
 	}
 
 	req := s.CoreClient.RESTClient().
@@ -360,7 +364,7 @@ func (s *K8SService) ExecInPod(namespace, podName string, command []string) (std
 
 	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to connect to the %q server: %w", req.URL(), err)
 	}
 
 	stdoutBuffer, stderrBuffer := new(bytes.Buffer), new(bytes.Buffer)
@@ -372,7 +376,7 @@ func (s *K8SService) ExecInPod(namespace, podName string, command []string) (std
 		Tty:    false,
 	})
 	if err != nil {
-		return nil, stderrBuffer, err
+		return nil, stderrBuffer, fmt.Errorf("failed to execute shell-style stream: %w", err)
 	}
 
 	stdout = stdoutBuffer
@@ -393,7 +397,7 @@ func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, d
 	}
 
 	if !k8sErrors.IsNotFound(err) {
-		return err
+		return fmt.Errorf("failed to GET secret resorce %q: %w", secretName, err)
 	}
 
 	log.Info("Creating a new Secret for Gerrit", nameKey, secretName)
@@ -402,12 +406,12 @@ func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, d
 
 	err = controllerutil.SetControllerReference(gerrit, gerritSecretObject, s.Scheme)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set owner %q (Gerrit resource) as a controller OwnerReference on %q (Gerrit Secret resource): %w", gerrit.Name, gerritSecretObject.Name, err)
 	}
 
 	_, err = s.CoreClient.Secrets(gerritSecretObject.Namespace).Create(ctx, gerritSecretObject, metaV1.CreateOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create gerrit Secret resource %q: %w", gerritSecretObject.Name, err)
 	}
 
 	log.Info("Secret has been created", nameKey, gerritSecretObject.Name)

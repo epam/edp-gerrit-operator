@@ -404,7 +404,7 @@ func TestComponentService_Configure_GetPodsErr(t *testing.T) {
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
-	assert.True(t, strings.Contains(err.Error(), "Unable to determine Gerrit pod name"))
+	assert.Contains(t, err.Error(), "unable to determine Gerrit pod name")
 	assert.Equal(t, instance, configure)
 	assert.False(t, b)
 }
@@ -439,8 +439,8 @@ func TestComponentService_Configure_createSSHKeyPairsAdminErr(t *testing.T) {
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
-	assert.True(t, strings.Contains(err.Error(), "Failed to create Gerrit admin SSH keypair"))
+	assert.ErrorIs(t, err, errTest)
+	assert.Contains(t, err.Error(), "failed to create Gerrit admin SSH keypair")
 	assert.Equal(t, instance, configure)
 	assert.False(t, b)
 }
@@ -475,9 +475,8 @@ func TestComponentService_Configure_createSSHKeyPairsProjectCreatorErr(t *testin
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
-	assert.True(t, strings.Contains(err.Error(), "Failed to create Gerrit project-creator SSH keypair"))
-
+	assert.ErrorIs(t, err, errTest)
+	assert.Contains(t, err.Error(), "failed to create Gerrit project-creator SSH keypair")
 	assert.Equal(t, instance, configure)
 	assert.False(t, b)
 }
@@ -512,7 +511,7 @@ func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Unable to verify Gerrit credentials"))
+	assert.Contains(t, err.Error(), "Unable to verify Gerrit credentials")
 	assert.Equal(t, instance, configure)
 	assert.False(t, b)
 }
@@ -627,7 +626,7 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 	ps.On("GenerateKeycloakSettings", instance).Return(nil, errTest)
 
 	_, err := CS.Integrate(instance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
@@ -707,7 +706,7 @@ func TestComponentService_getUrlErr(t *testing.T) {
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", errTest)
 
 	_, err := CS.getUrl(instance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func TestComponentService_getUrl(t *testing.T) {

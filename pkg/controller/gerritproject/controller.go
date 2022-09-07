@@ -2,6 +2,7 @@ package gerritproject
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"time"
@@ -57,9 +58,14 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager, syncInterval time.Duratio
 
 	go r.syncBackendProjects(syncInterval)
 
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.GerritProject{}, builder.WithPredicates(pred)).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup GerritProject controller: %w", err)
+	}
+
+	return nil
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
@@ -150,7 +156,7 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 	return nil
 }
 
-func (r *Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string) func() error {
+func (*Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string) func() error {
 	return func() error {
 		if err := gc.DeleteProject(projectName); err != nil {
 			return errors.Wrap(err, "unable to delete project")

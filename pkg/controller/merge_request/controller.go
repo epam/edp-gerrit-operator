@@ -106,10 +106,20 @@ func PrepareGerritServiceOption(k8sClient client.Client, platformType string, sc
 	return func(r *Reconcile) {
 		r.service = gerritService
 		r.getGitClient = func(ctx context.Context, child gerrit.Child, workDir string) (GitClient, error) {
-			return gerritService.GetGitClient(ctx, child, workDir)
+			gitClient, err := gerritService.GetGitClient(ctx, child, workDir)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create git client: %w", err)
+			}
+
+			return gitClient, nil
 		}
 		r.getGerritClient = func(ctx context.Context, instance *gerritApi.GerritMergeRequest) (GerritClient, error) {
-			return helper.GetGerritClient(ctx, r.k8sClient, instance, instance.OwnerName(), r.service)
+			gerritClientInst, err := helper.GetGerritClient(ctx, r.k8sClient, instance, instance.OwnerName(), r.service)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create gerrit client: %w", err)
+			}
+
+			return gerritClientInst, nil
 		}
 	}, nil
 }
@@ -119,9 +129,14 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 		UpdateFunc: isSpecUpdated,
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.GerritMergeRequest{}, builder.WithPredicates(pred)).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup GerritMergeRequest controller: %w", err)
+	}
+
+	return nil
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {

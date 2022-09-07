@@ -289,7 +289,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusConfiguringUpdateErr(t
 	rs, err := rg.Reconcile(ctx, req)
 	assert.NoError(t, err)
 
-	assert.Equal(t, errTest, log.LastError())
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -372,7 +372,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateStatusReadyErr(t *test
 	}
 	rs, err := rg.Reconcile(ctx, req)
 
-	assert.Equal(t, errTest, log.LastError())
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
@@ -419,7 +419,7 @@ func TestReconcileGerritReplicationConfig_Reconcile_configureReplicationErr(t *t
 	}
 	rs, err := rg.Reconcile(ctx, req)
 
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 	assert.Equal(t, reconcile.Result{}, rs)
 }
 
@@ -448,7 +448,7 @@ func Test_configureReplication_GetGerritSSHUrlErr(t *testing.T) {
 	}
 
 	err := rg.configureReplication(instance, gerritInstance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_configureReplication_GetServicePortErr(t *testing.T) {
@@ -477,7 +477,7 @@ func Test_configureReplication_GetServicePortErr(t *testing.T) {
 	}
 
 	err := rg.configureReplication(instance, gerritInstance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_configureReplication_FirstGetSecretErr(t *testing.T) {
@@ -507,7 +507,7 @@ func Test_configureReplication_FirstGetSecretErr(t *testing.T) {
 	}
 
 	err := rg.configureReplication(instance, gerritInstance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_configureReplication_SecondGetSecretErr(t *testing.T) {
@@ -538,7 +538,7 @@ func Test_configureReplication_SecondGetSecretErr(t *testing.T) {
 	}
 
 	err := rg.configureReplication(instance, gerritInstance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_configureReplication_saveSshReplicationKeyErr(t *testing.T) {
@@ -575,7 +575,7 @@ func Test_configureReplication_saveSshReplicationKeyErr(t *testing.T) {
 	}
 
 	err := rg.configureReplication(instance, gerritInstance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_configureReplication_InitNewSshClientErr(t *testing.T) {
@@ -667,7 +667,7 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 	}
 
 	err = rg.configureReplication(instance, gerritInstance)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
@@ -738,7 +738,7 @@ func Test_reloadReplicationPluginErr(t *testing.T) {
 	}
 	err := rg.reloadReplicationPlugin(&gclient)
 
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_reloadReplicationPlugin(t *testing.T) {
@@ -788,7 +788,7 @@ func Test_createSshConfigErr(t *testing.T) {
 
 	err := rg.createSshConfig("", "")
 
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }
 
 func Test_createSshConfig(t *testing.T) {
@@ -852,5 +852,5 @@ func Test_updateAvailableStatusErr(t *testing.T) {
 	}
 
 	err := rg.updateAvailableStatus(ctx, &gerritApi.GerritReplicationConfig{}, true)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 }

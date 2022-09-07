@@ -46,7 +46,7 @@ func GetDebugMode() (bool, error) {
 
 	b, err := strconv.ParseBool(mode)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to parse bool value %q for debug mode: %w", mode, err)
 	}
 
 	return b, nil
@@ -75,7 +75,7 @@ func GetPlatformTypeEnv() string {
 func GetExecutableFilePath() (string, error) {
 	executableFilePath, err := os.Executable()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get path for the executable that started process: %w", err)
 	}
 
 	return filepath.Dir(executableFilePath), nil

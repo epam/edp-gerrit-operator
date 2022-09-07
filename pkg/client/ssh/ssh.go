@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/go-logr/logr"
+	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -28,28 +29,23 @@ type SSHClient struct {
 	Port   int32
 }
 
-func (client *SSHClient) RunCommand(cmd *SSHCommand) ([]byte, error) {
+func (client *SSHClient) RunCommand(cmd *SSHCommand) (out []byte, err error) {
 	session, connection, err := client.NewSession()
 	if err != nil {
 		return nil, err
 	}
 
 	defer func() {
-		if deferErr := session.Close(); deferErr != nil {
-			err = deferErr
-		}
-
-		if deferErr := connection.Close(); deferErr != nil {
-			err = deferErr
-		}
+		err = multierr.Append(err, session.Close())
+		err = multierr.Append(err, connection.Close())
 	}()
 
-	commandOutput, err := session.Output(cmd.Path)
+	out, err = session.Output(cmd.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec cmd %q on the remote host, %w", cmd.Path, err)
 	}
 
-	return commandOutput, err
+	return
 }
 
 func (client *SSHClient) NewSession() (*ssh.Session, *ssh.Client, error) {
@@ -71,7 +67,7 @@ func (client *SSHClient) NewSession() (*ssh.Session, *ssh.Client, error) {
 func SshInit(userName string, privateKey []byte, host string, port int32, log logr.Logger) (SSHClient, error) {
 	signer, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {
-		return SSHClient{}, err
+		return SSHClient{}, fmt.Errorf("failed to parse private key for user %q: %w", userName, err)
 	}
 
 	sshConfig := &ssh.ClientConfig{
@@ -79,7 +75,9 @@ func SshInit(userName string, privateKey []byte, host string, port int32, log lo
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
+		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			return nil
+		}),
 	}
 
 	newClient := &SSHClient{
@@ -88,8 +86,7 @@ func SshInit(userName string, privateKey []byte, host string, port int32, log lo
 		Port:   port,
 	}
 
-	log.Info("SSH Client has been initialized",
-		"Username", userName, "host", host, "port", port)
+	log.Info("SSH Client has been initialized", "Username", userName, "host", host, "port", port)
 
 	return *newClient, nil
 }

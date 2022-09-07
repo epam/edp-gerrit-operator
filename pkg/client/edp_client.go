@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -23,7 +25,7 @@ func NewForConfig(config *rest.Config) (*EdpV1Client, error) {
 
 	crClient, err := rest.RESTClientFor(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create a REST client from config: %w", err)
 	}
 
 	return &EdpV1Client{crClient: crClient}, nil
@@ -34,7 +36,7 @@ func createCrdClient(cfg *rest.Config) error {
 	SchemeBuilder := runtime.NewSchemeBuilder(addKnownTypes)
 
 	if err := SchemeBuilder.AddToScheme(scheme); err != nil {
-		return err
+		return fmt.Errorf("fail to configure required K8s scheme: %w", err)
 	}
 
 	config := cfg

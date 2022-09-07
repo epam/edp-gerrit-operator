@@ -82,7 +82,7 @@ func TestReconcileGerrit_Reconcile_UpdateInstallStatusErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 	assert.Equal(t, reconcile.Result{}, rs)
 }
 
@@ -108,7 +108,7 @@ func TestReconcileGerrit_Reconcile_UpdateInstallStatus(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -138,7 +138,7 @@ func TestReconcileGerrit_Reconcile_UpdateEmptyStatusErr(t *testing.T) {
 	}
 	rs, err := rg.Reconcile(ctx, req)
 	assert.NoError(t, err)
-	assert.Equal(t, errTest, log.LastError())
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -164,7 +164,7 @@ func TestReconcileGerrit_Reconcile_EmptyClient(t *testing.T) {
 	_, isMsgFound := log.InfoMessages["instance not found"]
 
 	assert.True(t, isMsgFound)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{}, rs)
 }
 
@@ -191,8 +191,9 @@ func TestReconcileGerrit_Reconcile_DeployErr(t *testing.T) {
 	rs, err := rg.Reconcile(ctx, req)
 	_, ok := log.InfoMessages[fmt.Sprintf("Failed to check Deployment for %v/%v object!",
 		instance.Namespace, instance.Name)]
+
 	assert.True(t, ok)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -219,8 +220,9 @@ func TestReconcileGerrit_Reconcile_DeployNotReady(t *testing.T) {
 	msg := fmt.Sprintf("Deployment for %v/%v object is not ready for configuration yet", instance.Namespace,
 		instance.Name)
 	_, ok := log.InfoMessages[msg]
+
 	assert.True(t, ok)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 30 * time.Second}, rs)
 }
 
@@ -252,8 +254,9 @@ func TestReconcileGerrit_Reconcile_UpdateCreatedStatus(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+
 	assert.NoError(t, err)
-	assert.Equal(t, errTest, log.LastError())
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -285,7 +288,8 @@ func TestReconcileGerrit_Reconcile_ConfigureErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, errTest, err)
+
+	assert.ErrorIs(t, err, errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -317,8 +321,9 @@ func TestReconcileGerrit_Reconcile_ConfigureDPatched(t *testing.T) {
 	}
 	rs, err := rg.Reconcile(ctx, req)
 	_, ok := log.InfoMessages["Restarting deployment after configuration change"]
+
 	assert.True(t, ok)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -354,8 +359,9 @@ func TestReconcileGerrit_Reconcile_IsDeploymentReadyErr(t *testing.T) {
 	msg := fmt.Sprintf("Failed to check Deployment config for %v/%v Gerrit!", instance.Namespace, instance.Name)
 	rs, err := rg.Reconcile(ctx, req)
 	_, ok := log.InfoMessages[msg]
+
 	assert.True(t, ok)
-	assert.Equal(t, errTest, err)
+	assert.ErrorIs(t, err, errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -390,8 +396,9 @@ func TestReconcileGerrit_Reconcile_IsDeploymentReadyFalse(t *testing.T) {
 		instance.Namespace, instance.Name)
 	rs, err := rg.Reconcile(ctx, req)
 	_, ok := log.InfoMessages[msg]
+
 	assert.True(t, ok)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 30 * time.Second}, rs)
 }
 
@@ -427,8 +434,8 @@ func TestReconcileGerrit_Reconcile_ExposeConfigurationErr(t *testing.T) {
 	}
 	rs, err := rg.Reconcile(ctx, req)
 
-	assert.Equal(t, errTest, log.LastError())
-	assert.Equal(t, nil, err)
+	assert.ErrorIs(t, log.LastError(), errTest)
+	assert.NoError(t, err)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -462,8 +469,9 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeStartErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+
 	assert.NoError(t, err)
-	assert.Equal(t, errTest, log.LastError())
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -497,8 +505,9 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeFinishErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, errTest, err)
-	assert.Equal(t, errTest, log.LastError())
+
+	assert.ErrorIs(t, err, errTest)
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -532,7 +541,8 @@ func TestReconcileGerrit_Reconcile_IntegrateErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	assert.Equal(t, "Integration failed: "+errTest.Error(), err.Error())
+
+	assert.ErrorIs(t, err, errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
@@ -567,8 +577,9 @@ func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T)
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
+
 	assert.NoError(t, err)
-	assert.Equal(t, errTest, log.LastError())
+	assert.ErrorIs(t, log.LastError(), errTest)
 	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 

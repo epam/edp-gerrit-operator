@@ -2,6 +2,7 @@ package gerritgroupmember
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -50,9 +51,14 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 		UpdateFunc: isSpecUpdated,
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.GerritGroupMember{}, builder.WithPredicates(pred)).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup GerritGroupMember controller: %w", err)
+	}
+
+	return nil
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
@@ -119,7 +125,7 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 	return nil
 }
 
-func (r *Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *gerritApi.GerritGroupMember) func() error {
+func (*Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *gerritApi.GerritGroupMember) func() error {
 	return func() error {
 		if err := cl.DeleteUserFromGroup(instance.Spec.GroupID, instance.Spec.AccountID); err != nil {
 			return errors.Wrap(err, "unable to delete user from group")

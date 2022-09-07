@@ -88,7 +88,7 @@ func fileExists(filename string) bool {
 func GetExecutableFilePath() (string, error) {
 	executableFilePath, err := os.Executable()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get path for the executable that started process: %w", err)
 	}
 
 	return filepath.Dir(executableFilePath), nil
@@ -113,7 +113,7 @@ func SelectContainer(containers []coreV1Api.Container, name string) (coreV1Api.C
 		}
 	}
 
-	return coreV1Api.Container{}, errors.New("No matching container in spec found!")
+	return coreV1Api.Container{}, errors.New("no matching container in spec found")
 }
 
 func UpdateEnv(existing, env []coreV1Api.EnvVar) []coreV1Api.EnvVar {

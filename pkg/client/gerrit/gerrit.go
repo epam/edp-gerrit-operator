@@ -124,7 +124,7 @@ func (gc *Client) GetUser(username string) (*int, error) {
 	return &status, nil
 }
 
-func (gc *Client) InitAdminUser(instance *gerritApi.Gerrit, k8sService platform.PlatformService, gerritScriptsPath, podName, gerritAdminPublicKey string) (*gerritApi.Gerrit, error) {
+func (*Client) InitAdminUser(instance *gerritApi.Gerrit, k8sService platform.PlatformService, gerritScriptsPath, podName, gerritAdminPublicKey string) (*gerritApi.Gerrit, error) {
 	addInitialAdminUserScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", gerritScriptsPath)))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to read add-initial-admin-user.sh script")
@@ -261,7 +261,7 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 
 	group := re.FindStringSubmatch(groups)
 	if group == nil {
-		return "", err
+		return "", nil
 	}
 
 	uuid := strings.Split(group[0], "\t")[1]
@@ -270,7 +270,7 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 }
 
 func (gc *Client) InitAllProjects(instance *gerritApi.Gerrit, k8sService platform.PlatformService, gerritScriptsPath string,
-	podName string, gerritAdminPublicKey string) error {
+	podName string, _ string) error {
 	initAllProjectsScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", gerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")

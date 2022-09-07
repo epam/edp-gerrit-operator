@@ -45,7 +45,7 @@ linters-settings:
     first-strong-isolate: true
     pop-directional-isolate: true
 
-    cyclop:
+  cyclop:
     # the maximal code complexity to report
     max-complexity: 10
     # the maximal average package complexity. If it's higher than 0.0 (float) the check is enabled (default 0.0)
@@ -348,35 +348,7 @@ linters-settings:
     # Forbid the use of the `exclude` directives. Default is false.
     exclude-forbidden: false
 
-  gomodguard:
-    allowed:
-      modules:                                                        # List of allowed modules
-      # - gopkg.in/yaml.v2
-      domains:                                                        # List of allowed module domains
-      # - golang.org
-    blocked:
-      modules:                                                        # List of blocked modules
-      # - github.com/uudashr/go-module:                             # Blocked module
-      #     recommendations:                                        # Recommended modules that should be used instead (Optional)
-      #       - golang.org/x/mod
-      #     reason: "`mod` is the official go.mod parser library."  # Reason why the recommended module should be used (Optional)
-      versions:                                                       # List of blocked module version constraints
-      # - github.com/mitchellh/go-homedir:                          # Blocked module with version constraint
-      #     version: "< 1.1.0"                                      # Version constraint, see https://github.com/Masterminds/semver#basic-comparisons
-      #     reason: "testing if blocked version constraint works."  # Reason why the version constraint exists. (Optional)
-      local_replace_directives: false                                 # Set to true to raise lint issues for packages that are loaded from a local path via replace directive
-
   gosec:
-    # To select a subset of rules to run.
-    # Available rules: https://github.com/securego/gosec#available-rules
-    includes:
-      - G401
-      - G306
-      - G101
-    # To specify a set of rules to explicitly exclude.
-    # Available rules: https://github.com/securego/gosec#available-rules
-    excludes:
-      - G204
     # Exclude generated files
     exclude-generated: true
     # Filter out the issues with a lower severity than the given value. Valid options are: low, medium, high.
@@ -592,15 +564,171 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules:
-      - name: indent-error-flow
-        severity: warning
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#add-constant
       - name: add-constant
         severity: warning
+        disabled: false
         arguments:
           - maxLitCount: "3"
             allowStrs: '""'
             allowInts: "0,1,2"
             allowFloats: "0.0,0.,1.0,1.,2.0,2."
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
+      - name: atomic
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#blank-imports
+      - name: blank-imports
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#bool-literal-in-expr
+      - name: bool-literal-in-expr
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#call-to-gc
+      - name: call-to-gc
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#confusing-naming
+      - name: confusing-naming
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#confusing-results
+      - name: confusing-results
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#constant-logical-expr
+      - name: constant-logical-expr
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-as-argument
+      - name: context-as-argument
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-keys-type
+      - name: context-keys-type
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#datarace
+      - name: datarace
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#dot-imports
+      - name: dot-imports
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#duplicated-imports
+      - name: duplicated-imports
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#early-return
+      - name: early-return
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#empty-block
+      - name: empty-block
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#empty-lines
+      - name: empty-lines
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-naming
+      - name: error-naming
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-return
+      - name: error-return
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
+      - name: error-strings
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#errorf
+      - name: errorf
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#get-return
+      - name: get-return
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#identical-branches
+      - name: identical-branches
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#if-return
+      - name: if-return
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#increment-decrement
+      - name: increment-decrement
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#indent-error-flow
+      - name: indent-error-flow
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#optimize-operands-order
+      - name: optimize-operands-order
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range
+      - name: range
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range-val-in-closure
+      - name: range-val-in-closure
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range-val-address
+      - name: range-val-address
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#receiver-naming
+      - name: receiver-naming
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#redefines-builtin-id
+      - name: redefines-builtin-id
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#string-of-int
+      - name: string-of-int
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#superfluous-else
+      - name: superfluous-else
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-equal
+      - name: time-equal
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unnecessary-stmt
+      - name: unnecessary-stmt
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unreachable-code
+      - name: unreachable-code
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unused-parameter
+      - name: unused-parameter
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unused-receiver
+      - name: unused-receiver
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#useless-break
+      - name: useless-break
+        severity: warning
+        disabled: false
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#waitgroup-by-value
+      - name: waitgroup-by-value
+        severity: warning
+        disabled: false
 
   staticcheck:
     # https://staticcheck.io/docs/options#checks
@@ -752,7 +880,7 @@ linters:
     - asciicheck
     - bidichk
     - containedctx
-#    - cyclop
+    - cyclop
     - decorder
     - depguard
     - dogsled
@@ -779,13 +907,14 @@ linters:
     - megacheck
     - decorder
     - forcetypeassert
-#    - funlen
+    - funlen
     - gochecknoinits
-#    - wrapcheck
+    - wrapcheck
     - wsl
     - unused
 
   disabled:
+    - gosec # Enable in future
     - exhaustruct
     - contextcheck #Disabled due to issue https://github.com/golangci/golangci-lint/issues/2649.
     - bodyclose #Disabled due to issue https://github.com/timakin/bodyclose/issues/30
@@ -800,6 +929,7 @@ issues:
         - dupl
         - revive
         - goconst
+        - gosec
         - funlen
         - wrapcheck
     - path: mock\.go
@@ -817,6 +947,22 @@ issues:
         - funlen
         - cyclop
         - wrapcheck
+    # Disable for Reconcile func
+    # mostly because those function aggregators
+    - linters:
+        - funlen
+        - cyclop
+      text: "Reconcile"
+    # This file should be fully refactored
+    - path: pkg/service/gerrit/gerrit.go
+      linters:
+        - funlen
+        - cyclop
+    - path: pkg/controller/gerritreplicationconfig/gerritreplicationconfig_controller.go
+      text: configureReplication
+      linters:
+        - funlen
+        - cyclop
 
   # Independently of option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all

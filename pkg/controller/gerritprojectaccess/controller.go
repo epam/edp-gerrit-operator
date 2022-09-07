@@ -2,6 +2,7 @@ package gerritprojectaccess
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -52,9 +53,14 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 		UpdateFunc: isSpecUpdated,
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.GerritProjectAccess{}, builder.WithPredicates(pred)).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup GerritProjectAccess controller: %w", err)
+	}
+
+	return nil
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
@@ -152,7 +158,7 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 	return nil
 }
 
-func (r *Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string,
+func (*Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string,
 	refs []gerritApi.Reference) func() error {
 	return func() error {
 		if err := gc.DeleteAccessRights(projectName, prepareAccessInfo(refs)); err != nil {

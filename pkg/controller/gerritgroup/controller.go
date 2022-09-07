@@ -2,6 +2,7 @@ package gerritgroup
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"time"
@@ -50,9 +51,14 @@ func (r *Reconcile) SetupWithManager(mgr ctrl.Manager) error {
 		UpdateFunc: isSpecUpdated,
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.GerritGroup{}, builder.WithPredicates(pred)).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup GerritGroup controller: %w", err)
+	}
+
+	return nil
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
@@ -116,7 +122,8 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 
 		helper.SetOwnerReference(instance, gerritInstance.TypeMeta, &gerritInstance.ObjectMeta)
 
-		if err := r.client.Update(ctx, instance); err != nil {
+		err = r.client.Update(ctx, instance)
+		if err != nil {
 			return errors.Wrap(err, "unable to update instance owner refs")
 		}
 	}
@@ -132,22 +139,31 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 	}
 
 	gr, err := cl.CreateGroup(instance.Spec.Name, instance.Spec.Description, instance.Spec.VisibleToAll)
-	if err != nil && !gerritClient.IsErrAlreadyExists(err) {
-		return errors.Wrap(err, "unable to create group")
-	}
+	if err == nil {
+		instance.Status.ID = gr.ID
+		instance.Status.GroupID = strconv.Itoa(gr.GroupID)
 
-	if err != nil && gerritClient.IsErrAlreadyExists(err) {
-		if instance.Status.ID != "" {
-			if err := cl.UpdateGroup(instance.Status.ID, instance.Spec.Description, instance.Spec.VisibleToAll); err != nil {
-				return errors.Wrap(err, "unable to update gerrit group")
-			}
-		}
-
+		// group is created, job done, we can exit
 		return nil
 	}
 
-	instance.Status.ID = gr.ID
-	instance.Status.GroupID = strconv.Itoa(gr.GroupID)
+	if !gerritClient.IsErrAlreadyExists(err) {
+		// unexpected error
+		return errors.Wrap(err, "unable to create group")
+	}
+
+	// in case group already exists,
+	// we want to make sure that CRs spec is in sync with group
+
+	// if ID is not set yet, we can move on
+	if instance.Status.ID == "" {
+		return nil
+	}
+
+	err = cl.UpdateGroup(instance.Status.ID, instance.Spec.Description, instance.Spec.VisibleToAll)
+	if err != nil {
+		return errors.Wrap(err, "unable to update gerrit group")
+	}
 
 	return nil
 }

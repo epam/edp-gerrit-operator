@@ -82,9 +82,14 @@ type ReconcileGerrit struct {
 }
 
 func (r *ReconcileGerrit) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.Gerrit{}).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup Gerrit controller: %w", err)
+	}
+
+	return nil
 }
 
 func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -103,7 +108,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 			return reconcile.Result{}, nil
 		}
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, fmt.Errorf("failed Get Gerrit CR %q: %w", request.NamespacedName, err)
 	}
 
 	if instance.Status.Status == "" || instance.Status.Status == StatusFailed {
@@ -157,11 +162,11 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 	if err != nil {
 		log.Error(err, "Gerrit configuration has been failed.")
 
-		if gerrit.IsErrUserNotFound(err) {
-			finalRequeueAfterTimeout = requeueTime60
-		} else {
-			return reconcile.Result{RequeueAfter: RequeueTime10}, err
+		if !gerrit.IsErrUserNotFound(err) {
+			return reconcile.Result{RequeueAfter: RequeueTime10}, fmt.Errorf("failed to configure Gerrit: %w", err)
 		}
+
+		finalRequeueAfterTimeout = requeueTime60
 	}
 
 	if dPatched {
@@ -171,8 +176,11 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 
 	dIsReady, err = r.service.IsDeploymentReady(instance)
 	if err != nil {
-		log.Info(fmt.Sprintf("Failed to check Deployment config for %s/%s Gerrit!", instance.Namespace, instance.Name))
-		return reconcile.Result{RequeueAfter: RequeueTime10}, err
+		msg := fmt.Sprintf("Failed to check Deployment config for %s/%s Gerrit!", instance.Namespace, instance.Name)
+
+		log.Info(msg)
+
+		return reconcile.Result{RequeueAfter: RequeueTime10}, fmt.Errorf("%s: %w", msg, err)
 	}
 
 	if !dIsReady {
@@ -197,6 +205,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		err = r.updateStatus(ctx, instance, StatusExposeStart)
 		if err != nil {
 			log.Error(err, updatingStatusErr, status, instance.Status.Status)
+
 			return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 		}
 	}
@@ -262,9 +271,9 @@ func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *gerritApi.
 
 	err := r.client.Status().Update(ctx, instance)
 	if err != nil {
-		err := r.client.Update(ctx, instance)
+		err = r.client.Update(ctx, instance)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update Gerrit resource: %w", err)
 		}
 	}
 
@@ -274,16 +283,18 @@ func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *gerritApi.
 }
 
 func (r ReconcileGerrit) updateAvailableStatus(ctx context.Context, instance *gerritApi.Gerrit, value bool) error {
-	if instance.Status.Available != value {
-		instance.Status.Available = value
-		instance.Status.LastTimeUpdated = metav1.Now()
+	if instance.Status.Available == value {
+		return nil
+	}
 
-		err := r.client.Status().Update(ctx, instance)
+	instance.Status.Available = value
+	instance.Status.LastTimeUpdated = metav1.Now()
+
+	err := r.client.Status().Update(ctx, instance)
+	if err != nil {
+		err = r.client.Update(ctx, instance)
 		if err != nil {
-			err := r.client.Update(ctx, instance)
-			if err != nil {
-				return err
-			}
+			return fmt.Errorf("failed to update Gerrit resource: %w", err)
 		}
 	}
 

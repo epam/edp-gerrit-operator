@@ -67,9 +67,14 @@ func (r *ReconcileGerritReplicationConfig) SetupWithManager(mgr ctrl.Manager) er
 		UpdateFunc: isSpecUpdated,
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	err := ctrl.NewControllerManagedBy(mgr).
 		For(&gerritApi.GerritReplicationConfig{}, builder.WithPredicates(p)).
 		Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup GerritReplicationConfig controller: %w", err)
+	}
+
+	return nil
 }
 
 func isSpecUpdated(e event.UpdateEvent) bool {
@@ -174,9 +179,9 @@ func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, ins
 
 	err := r.client.Status().Update(ctx, instance)
 	if err != nil {
-		err := r.client.Update(ctx, instance)
+		err = r.client.Update(ctx, instance)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update GerritReplicationConfig CR %q: %w", instance.Name, err)
 		}
 	}
 
@@ -186,43 +191,49 @@ func (r *ReconcileGerritReplicationConfig) updateStatus(ctx context.Context, ins
 }
 
 func (r *ReconcileGerritReplicationConfig) configureReplication(config *gerritApi.GerritReplicationConfig, gerritObj *gerritApi.Gerrit) error {
-	GerritTemplatesPath := platformHelper.LocalTemplatesRelativePath
+	gerritTemplatesPath := platformHelper.LocalTemplatesRelativePath
 
 	executableFilePath, err := helper.GetExecutableFilePath()
 	if err != nil {
-		return err
+		return errors.New("failed to check if operator running in cluster")
 	}
 
 	if helper.RunningInCluster() {
-		GerritTemplatesPath = fmt.Sprintf("%s/../%s/%s", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
+		gerritTemplatesPath = fmt.Sprintf("%s/../%s/%s", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultTemplatesDirectory)
 	}
 
 	podList, err := r.platform.GetPods(gerritObj.Namespace, &metaV1.ListOptions{LabelSelector: fmt.Sprintf("deploymentconfig=%s", gerritObj.Name)})
-	if err != nil || len(podList.Items) != 1 {
-		return err
+	if err != nil {
+		return fmt.Errorf("failed to get Gerrit pods: %w", err)
 	}
+
+	if len(podList.Items) != 1 {
+		return errors.New("found multiple pods of Gerrit instance. It seams that some of old pods does not shutdown yet")
+	}
+
+	gerritPodName := podList.Items[0].Name
 
 	gerritUrl, err := r.componentService.GetGerritSSHUrl(gerritObj)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Get ssh url for gerrit instance: %w", err)
 	}
 
 	sshPortService, err := r.componentService.GetServicePort(gerritObj)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Get ssh port for gerrit: %w", err)
 	}
 
 	gerritAdminSshKeys, err := r.platform.GetSecret(gerritObj.Namespace, gerritObj.Name+"-admin")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Get a ssh key for admin user : %w", err)
 	}
 
 	gerritVCSSshKey, err := r.platform.GetSecret(gerritObj.Namespace, spec.GerritDefaultVCSKeyName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to Get a ssh key for autouser: %w", err)
 	}
 
-	err = r.saveSshReplicationKey(gerritObj.Namespace, podList.Items[0].Name, string(gerritVCSSshKey["ssh-privatekey"]))
+	err = r.saveSshReplicationKey(gerritObj.Namespace, gerritPodName, string(gerritVCSSshKey["ssh-privatekey"]))
 	if err != nil {
 		return err
 	}
@@ -231,20 +242,20 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *gerritAp
 
 	err = k8sClient.InitNewSshClient(spec.GerritDefaultAdminUser, gerritAdminSshKeys["id_rsa"], gerritUrl, sshPortService)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to init ssh client for Gerrit admin user: %w", err)
 	}
 
-	err = r.createReplicationConfig(gerritObj.Namespace, podList.Items[0].Name)
+	err = r.createReplicationConfig(gerritObj.Namespace, gerritPodName)
 	if err != nil {
 		return err
 	}
 
-	err = r.updateReplicationConfig(gerritObj.Namespace, podList.Items[0].Name, config, GerritTemplatesPath)
+	err = r.updateReplicationConfig(gerritObj.Namespace, gerritPodName, config, gerritTemplatesPath)
 	if err != nil {
 		return err
 	}
 
-	err = r.updateSshConfig(gerritObj.Namespace, podList.Items[0].Name, config, GerritTemplatesPath,
+	err = r.updateSshConfig(gerritObj.Namespace, gerritPodName, config, gerritTemplatesPath,
 		filepath.Join(spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName))
 	if err != nil {
 		return err
@@ -259,23 +270,27 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *gerritAp
 }
 
 func (r *ReconcileGerritReplicationConfig) createReplicationConfig(namespace, podName string) error {
-	_, _, err := r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
+	command := []string{bin, containerFlag,
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
-			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)})
+			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)}
+
+	_, _, err := r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed executing command to create replication config: %w", err)
 	}
 
 	return nil
 }
 
 func (r *ReconcileGerritReplicationConfig) createSshConfig(namespace, podName string) error {
-	_, _, err := r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
+	command := []string{bin, containerFlag,
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath+config)})
+			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath+config)}
+
+	_, _, err := r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed executing command to create ssh config: %w", err)
 	}
 
 	return nil
@@ -283,11 +298,11 @@ func (r *ReconcileGerritReplicationConfig) createSshConfig(namespace, podName st
 
 func (r *ReconcileGerritReplicationConfig) saveSshReplicationKey(namespace, podName, key string) error {
 	path := filepath.Join(spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
+	command := []string{bin, containerFlag, fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", key, path, path)}
 
-	_, _, err := r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
-		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", key, path, path)})
+	_, _, err := r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed executing command save ssh key: %w", err)
 	}
 
 	return nil
@@ -300,10 +315,11 @@ func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, po
 		return err
 	}
 
-	_, _, err = r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
-		fmt.Sprintf("echo \"%v\" >> %v", config.String(), spec.DefaultGerritReplicationConfigPath)})
+	command := []string{bin, containerFlag, fmt.Sprintf("echo \"%v\" >> %v", config.String(), spec.DefaultGerritReplicationConfigPath)}
+
+	_, _, err = r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed executing command to update Gerrit replication config: %w", err)
 	}
 
 	return nil
@@ -320,19 +336,43 @@ func (r *ReconcileGerritReplicationConfig) updateSshConfig(namespace, podName st
 		return err
 	}
 
-	_, _, err = r.platform.ExecInPod(namespace, podName, []string{bin, containerFlag,
-		fmt.Sprintf("echo %q >> %s", sshTemplate.String(), spec.DefaultGerritSSHConfigPath+config)})
+	command := []string{
+		bin,
+		containerFlag,
+		fmt.Sprintf("echo %q >> %s", sshTemplate.String(), spec.DefaultGerritSSHConfigPath+config),
+	}
+
+	_, _, err = r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to exec command in pod: %w", err)
 	}
 
 	return nil
 }
 
-func (r *ReconcileGerritReplicationConfig) reloadReplicationPlugin(k8sClient gerritClient.ClientInterface) error {
-	err := k8sClient.ReloadPlugin("replication")
+func (*ReconcileGerritReplicationConfig) reloadReplicationPlugin(k8sClient gerritClient.ClientInterface) error {
+	pluginName := "replication"
+
+	err := k8sClient.ReloadPlugin(pluginName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to reload Gerrit %q plugin: %w", pluginName, err)
+	}
+
+	return nil
+}
+
+func (r *ReconcileGerritReplicationConfig) updateAvailableStatus(ctx context.Context, instance *gerritApi.GerritReplicationConfig, value bool) error {
+	if instance.Status.Available != value {
+		instance.Status.Available = value
+		instance.Status.LastTimeUpdated = metaV1.Now()
+
+		err := r.client.Status().Update(ctx, instance)
+		if err != nil {
+			err = r.client.Update(ctx, instance)
+			if err != nil {
+				return fmt.Errorf("failed to update GerritReplicationConfig CR %q: %w", instance.Name, err)
+			}
+		}
 	}
 
 	return nil
@@ -341,14 +381,16 @@ func (r *ReconcileGerritReplicationConfig) reloadReplicationPlugin(k8sClient ger
 func resolveReplicationTemplate(grc *gerritApi.GerritReplicationConfig, path, templateName string) (*bytes.Buffer, error) {
 	var config bytes.Buffer
 
-	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(filepath.Join(path, templateName)))
+	templatePath := filepath.FromSlash(filepath.Join(path, templateName))
+
+	tmpl, err := template.New(templateName).ParseFiles(templatePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse template file %q: %w", templatePath, err)
 	}
 
 	err = tmpl.Execute(&config, grc)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	return &config, nil
@@ -364,33 +406,17 @@ func resolveSshTemplate(grc *gerritApi.GerritReplicationConfig, path, templateNa
 		Hostname string
 		KeyPath  string
 	}{host[1], keyPath}
+	templatePath := filepath.FromSlash(filepath.Join(path, templateName))
 
-	tmpl, err := template.New(templateName).ParseFiles(filepath.FromSlash(filepath.Join(path, templateName)))
+	tmpl, err := template.New(templateName).ParseFiles(templatePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse template file %q: %w", templatePath, err)
 	}
 
 	err = tmpl.Execute(&config, data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	return &config, nil
-}
-
-func (r ReconcileGerritReplicationConfig) updateAvailableStatus(ctx context.Context, instance *gerritApi.GerritReplicationConfig, value bool) error {
-	if instance.Status.Available != value {
-		instance.Status.Available = value
-		instance.Status.LastTimeUpdated = metaV1.Now()
-
-		err := r.client.Status().Update(ctx, instance)
-		if err != nil {
-			err := r.client.Update(ctx, instance)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }

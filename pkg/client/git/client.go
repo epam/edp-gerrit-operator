@@ -28,10 +28,6 @@ type User struct {
 	Email string
 }
 
-func (c Client) GerritBaseURL() string {
-	return c.gerritBaseURL
-}
-
 func New(gerritBaseURL, workingDir, username, password string) *Client {
 	return &Client{
 		workingDir:    workingDir,
@@ -39,6 +35,10 @@ func New(gerritBaseURL, workingDir, username, password string) *Client {
 		password:      password,
 		gerritBaseURL: gerritBaseURL,
 	}
+}
+
+func (c *Client) GerritBaseURL() string {
+	return c.gerritBaseURL
 }
 
 func (c *Client) projectPath(projectName string) string {
@@ -240,7 +240,7 @@ func (c *Client) createRemoteWithCredential(repo *git.Repository, baseRemoteName
 	return newRemote, nil
 }
 
-func (c *Client) GenerateChangeID() (string, error) {
+func (*Client) GenerateChangeID() (string, error) {
 	h := sha1.New()
 	if _, err := h.Write([]byte(time.Now().Format(time.RFC3339))); err != nil {
 		return "", errors.Wrap(err, "unable to write hash")
