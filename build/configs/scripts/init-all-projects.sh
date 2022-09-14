@@ -17,12 +17,12 @@ printf \"\$3\\tProject Bootstrappers\\n\" >> groups
 printf \"\$4\\tDevelopers\\n\" >> groups
 printf \"\$5\\tReadOnly\\n\" >> groups
 
-cat << EOF > "webhooks.config"
-[remote "changemerged"]
+cat << EOF > \"webhooks.config\"
+[remote \"changemerged\"]
   url = http://el-gerrit-listener:8080
   event = change-merged
 
-[remote "patchsetcreated"]
+[remote \"patchsetcreated\"]
   url = http://el-gerrit-listener:8080
   event = patchset-created
 EOF
