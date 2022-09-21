@@ -43,89 +43,61 @@ const (
 	// StatuseExposeConf = "exposing config".
 	StatuseExposeConf = "exposing config"
 
-
 	GerritDefaultAdminUser = "admin"
-
 
 	GerritDefaultAdminPassword = "secret"
 
-
 	GerritRestApiUrlPath = "a/"
-
 
 	GerritPort = "8080"
 
-
 	GerritCIToolsGroupName = "Continuous Integration Tools"
 
-
 	GerritCIToolsGroupDescription = "Contains Jenkins and any other CI tools that get +2/-2 access on reviews"
-
 
 	GerritProjectDevelopersGroupName = "Developers"
 
 	GerritReadOnlyGroupName = "ReadOnly"
 
-
 	GerritProjectDevelopersGroupNameDescription = "Grant access to all projects in Gerrit"
-
 
 	GerritProjectBootstrappersGroupName = "Project Bootstrappers"
 
-
 	GerritProjectBootstrappersGroupDescription = "Grants all the permissions needed to set up a new project"
-
 
 	GerritServiceUsersGroup = "Service Users"
 
-
 	GerritAdministratorsGroup = "Administrators"
 
-
-	GerritDefaultCiUserUser = "jenkins"
-
+	GerritDefaultCiUserUser = "edp-ci"
 
 	GerritDefaultProjectCreatorUser = "project-creator"
 
-
 	GerritDefaultCiUserSecretPostfix = "ciuser-password"
-
 
 	EdpAnnotationsPrefix = "edp.epam.com"
 
-
 	EdpCiUserSuffix string = "ci-credentials"
-
 
 	EdpCiUSerSshKeySuffix string = "ci-sshkey"
 
-
 	GerritDefaultProjectCreatorSecretPostfix = "project-creator"
-
 
 	JenkinsPluginConfigPostfix = "jenkins-plugin-config"
 
-
 	EdpProjectCreatorUserSuffix string = "project-creator-credentials"
-
 
 	EdpProjectCreatorSshKeySuffix string = "project-creator-sshkey"
 
-
 	DefaultGerritReplicationConfigPath = "/var/gerrit/review_site/etc/replication.config"
-
 
 	DefaultGerritSSHConfigPath = "/var/gerrit/.ssh"
 
-
 	GerritDefaultVCSKeyPath = "/var/gerrit/review_site/etc"
-
 
 	GerritDefaultVCSKeyName = "vcs-autouser"
 
-
 	IdentityServiceCredentialsSecretPostfix = "is-credentials"
-
 
 	SshKeyPostfix = "-sshkey"
 )

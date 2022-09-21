@@ -373,7 +373,7 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
 
 	err = s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials[password]),
-		"CI Jenkins", string(publicKey))
+		"EDP CI bot", string(publicKey))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", spec.GerritDefaultCiUserUser)
 	}

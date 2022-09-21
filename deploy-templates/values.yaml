@@ -93,7 +93,7 @@ gitServer:
   # -- GitServer CR name
   name: "gerrit"
   # -- Git user to connect
-  user: "jenkins"
+  user: "edp-ci"
   # -- HTTPS port
   httpsPort: 443
   # -- Name of secret with credentials to Git server

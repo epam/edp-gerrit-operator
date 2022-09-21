@@ -47,7 +47,7 @@ A Helm chart for EDP Gerrit Operator
 | gitServer.httpsPort | int | `443` | HTTPS port |
 | gitServer.name | string | `"gerrit"` | GitServer CR name |
 | gitServer.nameSshKeySecret | string | `"gerrit-ciuser-sshkey"` | Name of secret with credentials to Git server |
-| gitServer.user | string | `"jenkins"` | Git user to connect |
+| gitServer.user | string | `"edp-ci"` | Git user to connect |
 | global.admins | list | `["stub_user_one@example.com"]` | Administrators of your tenant |
 | global.developers | list | `["stub_user_one@example.com","stub_user_two@example.com"]` | Developers of your tenant |
 | global.dnsWildCard | string | `nil` | a cluster DNS wildcard name |
