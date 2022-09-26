@@ -49,12 +49,12 @@ func (_m *Interface) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, b
 }
 
 // ExposeConfiguration provides a mock function with given fields: instance
-func (_m *Interface) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
-	ret := _m.Called(instance)
+func (_m *Interface) ExposeConfiguration(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
+	ret := _m.Called(ctx, instance)
 
 	var r0 *gerritApi.Gerrit
-	if rf, ok := ret.Get(0).(func(*gerritApi.Gerrit) *gerritApi.Gerrit); ok {
-		r0 = rf(instance)
+	if rf, ok := ret.Get(0).(func(context.Context, *gerritApi.Gerrit) *gerritApi.Gerrit); ok {
+		r0 = rf(ctx, instance)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*gerritApi.Gerrit)
@@ -160,12 +160,12 @@ func (_m *Interface) GetServicePort(instance *gerritApi.Gerrit) (int32, error) {
 }
 
 // Integrate provides a mock function with given fields: instance
-func (_m *Interface) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
-	ret := _m.Called(instance)
+func (_m *Interface) Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
+	ret := _m.Called(ctx, instance)
 
 	var r0 *gerritApi.Gerrit
-	if rf, ok := ret.Get(0).(func(*gerritApi.Gerrit) *gerritApi.Gerrit); ok {
-		r0 = rf(instance)
+	if rf, ok := ret.Get(0).(func(context.Context, *gerritApi.Gerrit) *gerritApi.Gerrit); ok {
+		r0 = rf(ctx, instance)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*gerritApi.Gerrit)
@@ -173,8 +173,8 @@ func (_m *Interface) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, e
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*gerritApi.Gerrit) error); ok {
-		r1 = rf(instance)
+	if rf, ok := ret.Get(1).(func(context.Context, *gerritApi.Gerrit) error); ok {
+		r1 = rf(ctx, instance)
 	} else {
 		r1 = ret.Error(1)
 	}

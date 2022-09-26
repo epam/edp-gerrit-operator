@@ -421,7 +421,7 @@ func TestReconcileGerrit_Reconcile_ExposeConfigurationErr(t *testing.T) {
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil).Once()
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, errTest)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, errTest)
 
 	log := &common.Logger{}
 	rg := ReconcileGerrit{
@@ -457,7 +457,7 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeStartErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
 
 	log := &common.Logger{}
 	rg := ReconcileGerrit{
@@ -493,7 +493,7 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeFinishErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
 
 	log := &common.Logger{}
 	rg := ReconcileGerrit{
@@ -529,8 +529,8 @@ func TestReconcileGerrit_Reconcile_IntegrateErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, nil)
-	serviceMock.On("Integrate", instance).Return(instance, errTest)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
+	serviceMock.On("Integrate", ctx, instance).Return(instance, errTest)
 
 	rg := ReconcileGerrit{
 		client:  &mc,
@@ -564,8 +564,8 @@ func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T)
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, nil)
-	serviceMock.On("Integrate", instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
+	serviceMock.On("Integrate", ctx, instance).Return(instance, nil)
 
 	log := &common.Logger{}
 	rg := ReconcileGerrit{
@@ -605,8 +605,8 @@ func TestReconcileGerrit_Reconcile_UpdateAvailableStatusErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, nil)
-	serviceMock.On("Integrate", instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
+	serviceMock.On("Integrate", ctx, instance).Return(instance, nil)
 
 	log := &common.Logger{}
 	rg := ReconcileGerrit{
@@ -618,7 +618,7 @@ func TestReconcileGerrit_Reconcile_UpdateAvailableStatusErr(t *testing.T) {
 		NamespacedName: nsn,
 	}
 	rs, err := rg.Reconcile(ctx, req)
-	msg := fmt.Sprintf("Failed update avalability status for Gerrit object with name %s", instance.Name)
+	msg := fmt.Sprintf("Failed update availability status for Gerrit object with name %s", instance.Name)
 	_, ok := log.InfoMessages[msg]
 	assert.True(t, ok)
 	assert.Equal(t, nil, err)
@@ -641,8 +641,8 @@ func TestReconcileGerrit_Reconcile_Valid(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", instance).Return(instance, nil)
-	serviceMock.On("Integrate", instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
+	serviceMock.On("Integrate", ctx, instance).Return(instance, nil)
 
 	rg := ReconcileGerrit{
 		client:  &mc,

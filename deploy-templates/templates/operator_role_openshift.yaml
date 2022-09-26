@@ -76,4 +76,12 @@ rules:
     - get
     - list
     - update
+- apiGroups:
+    - v2.edp.epam.com
+  resources:
+    - jenkins
+  verbs:
+    - get
+    - list
+    - watch
 {{ end }}

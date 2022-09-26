@@ -23,6 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
@@ -48,12 +49,12 @@ const (
 	admin                            = "-admin"
 )
 
-// Interface expresses behaviour of the Gerrit EDP Component.
+// Interface expresses behavior of the Gerrit EDP Component.
 type Interface interface {
 	IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error)
 	Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, bool, error)
-	ExposeConfiguration(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
-	Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
+	ExposeConfiguration(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
+	Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
 	GetGerritSSHUrl(instance *gerritApi.Gerrit) (string, error)
 	GetServicePort(instance *gerritApi.Gerrit) (int32, error)
 	GetRestClient(gerritInstance *gerritApi.Gerrit) (gerritClient.ClientInterface, error)
@@ -299,8 +300,7 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 }
 
 // ExposeConfiguration describes integration points of the Gerrit EDP Component for the other Operators and Components.
-func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
-	ctx := context.Background()
+func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
 	vLog := log.WithValues("gerrit", instance.Name)
 	vLog.Info("start exposing configuration")
 
@@ -361,9 +361,11 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
 
-	err = s.PlatformService.CreateJenkinsServiceAccount(instance.Namespace, ciUserSshSecretName, "ssh")
-	if err != nil {
-		return instance, errors.Wrapf(err, "Failed to create Jenkins Service Account %s", ciUserSshSecretName)
+	if s.jenkinsEnabled(ctx, instance.Namespace) {
+		err = s.PlatformService.CreateJenkinsServiceAccount(instance.Namespace, ciUserSshSecretName, "ssh")
+		if err != nil {
+			return instance, errors.Wrapf(err, "Failed to create Jenkins Service Account %s", ciUserSshSecretName)
+		}
 	}
 
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
@@ -421,7 +423,7 @@ func (s ComponentService) ExposeConfiguration(instance *gerritApi.Gerrit) (*gerr
 
 		secret, err = uuid.NewUUID()
 		if err != nil {
-			return instance, errors.Wrap(err, "Failed to generate secret for Gerrit in Keycloack")
+			return instance, errors.Wrap(err, "Failed to generate secret for Gerrit in Keycloak")
 		}
 
 		identityServiceClientCredentials := map[string][]byte{
@@ -478,7 +480,7 @@ func (s ComponentService) createEDPComponent(gerritObj *gerritApi.Gerrit) error 
 func (s ComponentService) getUrl(gerritObj *gerritApi.Gerrit) (*string, error) {
 	h, sc, err := s.PlatformService.GetExternalEndpoint(gerritObj.Namespace, gerritObj.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get exteranl endpoint for gerrit %q: %w", gerritObj.Name, err)
+		return nil, fmt.Errorf("failed to get external endpoint for gerrit %q: %w", gerritObj.Name, err)
 	}
 
 	url := fmt.Sprintf("%v://%v", sc, h)
@@ -512,7 +514,7 @@ func getIcon() (*string, error) {
 }
 
 // Integrate applies actions required for the integration with the other EDP Components.
-func (s ComponentService) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
+func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
 	h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
@@ -523,13 +525,13 @@ func (s ComponentService) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 	if instance.Spec.KeycloakSpec.Enabled {
 		var keycloakClient *keycloakApi.KeycloakClient
 
-		keycloakClient, err = s.getKeycloakClient(instance)
+		keycloakClient, err = s.getKeycloakClient(ctx, instance)
 		if err != nil {
 			return instance, err
 		}
 
 		if keycloakClient == nil {
-			err = s.createKeycloakClient(instance, externalUrl)
+			err = s.createKeycloakClient(ctx, instance, externalUrl)
 			if err != nil {
 				return instance, err
 			}
@@ -549,16 +551,17 @@ func (s ComponentService) Integrate(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 		log.V(1).Info("Keycloak integration not enabled.")
 	}
 
-	err = s.configureGerritPluginInJenkins(instance, h, sc)
-	if err != nil {
-		return nil, err
+	if s.jenkinsEnabled(ctx, instance.Namespace) {
+		err = s.configureGerritPluginInJenkins(instance, h, sc)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return instance, nil
 }
 
-func (s ComponentService) getKeycloakClient(instance *gerritApi.Gerrit) (*keycloakApi.KeycloakClient, error) {
-	ctx := context.Background()
+func (s ComponentService) getKeycloakClient(ctx context.Context, instance *gerritApi.Gerrit) (*keycloakApi.KeycloakClient, error) {
 	k8sClient := &keycloakApi.KeycloakClient{}
 
 	err := s.client.Get(ctx, types.NamespacedName{
@@ -576,8 +579,7 @@ func (s ComponentService) getKeycloakClient(instance *gerritApi.Gerrit) (*keyclo
 	return k8sClient, nil
 }
 
-func (s ComponentService) createKeycloakClient(instance *gerritApi.Gerrit, externalUrl string) error {
-	ctx := context.Background()
+func (s ComponentService) createKeycloakClient(ctx context.Context, instance *gerritApi.Gerrit, externalUrl string) error {
 	keycloakClient := &keycloakApi.KeycloakClient{
 		TypeMeta: metaV1.TypeMeta{
 			Kind: "KeycloakClient",
@@ -864,4 +866,14 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Ger
 
 func createSecretName(name, postfix string) string {
 	return fmt.Sprintf("%s-%s", name, postfix)
+}
+
+func (s ComponentService) jenkinsEnabled(ctx context.Context, namespace string) bool {
+	jenkinsList := &jenkinsApi.JenkinsList{}
+
+	if err := s.client.List(ctx, jenkinsList, &client.ListOptions{Namespace: namespace}); err != nil {
+		return false
+	}
+
+	return len(jenkinsList.Items) != 0
 }

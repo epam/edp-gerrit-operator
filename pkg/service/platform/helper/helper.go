@@ -62,7 +62,7 @@ func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
 
 	templateAbsolutePath := fmt.Sprintf("%v/%v", templatesDirectoryPath, JenkinsPluginConfigFileName)
 	if !fileExists(templateAbsolutePath) {
-		errMsg := fmt.Sprintf("Template file not found in path specificed! Path: %s", templateAbsolutePath)
+		errMsg := fmt.Sprintf("Template file not found in path specified! Path: %s", templateAbsolutePath)
 		return bytes.Buffer{}, errors.New(errMsg)
 	}
 

@@ -210,7 +210,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		}
 	}
 
-	exposedInstance, err := r.service.ExposeConfiguration(instance)
+	exposedInstance, err := r.service.ExposeConfiguration(ctx, instance)
 	if err != nil {
 		log.Error(err, "error while exposing configuration", "name", instance.Name)
 		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
@@ -236,7 +236,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		}
 	}
 
-	exposedInstance, err = r.service.Integrate(exposedInstance)
+	exposedInstance, err = r.service.Integrate(ctx, exposedInstance)
 	if err != nil {
 		return reconcile.Result{RequeueAfter: RequeueTime10}, errors.Wrapf(err, "Integration failed")
 	}
@@ -254,7 +254,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 
 	err = r.updateAvailableStatus(ctx, exposedInstance, true)
 	if err != nil {
-		msg := fmt.Sprintf("Failed update avalability status for Gerrit object with name %s", exposedInstance.Name)
+		msg := fmt.Sprintf("Failed update availability status for Gerrit object with name %s", exposedInstance.Name)
 		log.Info(msg)
 
 		return reconcile.Result{RequeueAfter: requeueTime30}, nil

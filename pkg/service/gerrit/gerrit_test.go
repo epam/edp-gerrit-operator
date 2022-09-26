@@ -1,6 +1,7 @@
 package gerrit
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -21,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
 	pmock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
@@ -97,7 +99,7 @@ func TestIsErrUserNotFound(t *testing.T) {
 		tnf := UserNotFoundError("err not found")
 		err := errors.Wrap(tnf, "error")
 
-		assert.Truef(t, IsErrUserNotFound(err), "wrong error type")
+		assert.True(t, IsErrUserNotFound(err), "wrong error type")
 	})
 
 	t.Run("should return false for other errors", func(t *testing.T) {
@@ -524,7 +526,7 @@ func TestComponentService_Integrate_GetExternalEndpointErr(t *testing.T) {
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", errTest)
 
-	_, err := CS.Integrate(instance)
+	_, err := CS.Integrate(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
 }
@@ -541,9 +543,15 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 			},
 		},
 	}
-	client := &keycloakApi.KeycloakClient{
+	kc := &keycloakApi.KeycloakClient{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "name",
+			Namespace: "namespace",
+		},
+	}
+	jenkins := &jenkinsV1Api.Jenkins{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      "jenkins",
 			Namespace: "namespace",
 		},
 	}
@@ -557,10 +565,11 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{},
+		&keycloakApi.KeycloakClient{}, &jenkinsV1Api.Jenkins{}, &jenkinsV1Api.JenkinsList{})
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
-	CS := ComponentService{PlatformService: ps, client: cl}
+	k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(kc, jenkins).Build()
+	CS := ComponentService{PlatformService: ps, client: k8sClient}
 
 	var envs []coreV1Api.EnvVar
 
@@ -570,9 +579,9 @@ func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserCredentialsName).Return(secretData, nil)
 
-	_, err := CS.Integrate(instance)
+	_, err := CS.Integrate(context.Background(), instance)
 	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Template file not found in path specificed!"))
+	assert.True(t, strings.Contains(err.Error(), "Template file not found in path specified!"))
 }
 
 func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
@@ -597,7 +606,7 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
 
-	_, err := CS.Integrate(instance)
+	_, err := CS.Integrate(context.Background(), instance)
 	assert.Error(t, err)
 }
 
@@ -625,7 +634,7 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
 	ps.On("GenerateKeycloakSettings", instance).Return(nil, errTest)
 
-	_, err := CS.Integrate(instance)
+	_, err := CS.Integrate(context.Background(), instance)
 	assert.ErrorIs(t, err, errTest)
 }
 
@@ -662,7 +671,7 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 	ps.On("GenerateKeycloakSettings", instance).Return(envs, nil)
 	ps.On("PatchDeploymentEnv", instance, envs).Return(errTest)
 
-	_, err := CS.Integrate(instance)
+	_, err := CS.Integrate(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to add identity service information"))
 }
@@ -739,8 +748,24 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	}
 	service := CreateService(servicePort)
 
+	scheme := runtime.NewScheme()
+	err = jenkinsV1Api.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(
+			&jenkinsV1Api.Jenkins{
+				ObjectMeta: metaV1.ObjectMeta{
+					Namespace: instance.Namespace,
+					Name:      "jenkins",
+				},
+			},
+		).
+		Build()
+
 	ps := &pmock.PlatformService{}
-	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}, client: k8sClient}
 
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
@@ -752,7 +777,7 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
 	ps.On("CreateJenkinsServiceAccount", instance.Namespace, ciUserSshSecretName, "ssh").Return(nil)
 
-	_, err = CS.ExposeConfiguration(instance)
+	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create ci user"))
 }
@@ -770,7 +795,7 @@ func TestComponentService_ExposeConfiguration_initRestClientErr(t *testing.T) {
 
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, errTest)
 
-	_, err := CS.ExposeConfiguration(instance)
+	_, err := CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to init Gerrit REST client"))
 }
@@ -792,7 +817,7 @@ func TestComponentService_ExposeConfiguration_initSSHClient(t *testing.T) {
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
 
-	_, err := CS.ExposeConfiguration(instance)
+	_, err := CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to init Gerrit SSH client"))
 }
@@ -821,7 +846,7 @@ func TestComponentService_ExposeConfiguration_FirstCreateSecretErr(t *testing.T)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
 	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(errTest)
 
-	_, err = CS.ExposeConfiguration(instance)
+	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create ci user Secret"))
 }
@@ -852,7 +877,7 @@ func TestComponentService_ExposeConfiguration_SecondCreateSecretErr(t *testing.T
 	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
 	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(errTest)
 
-	_, err = CS.ExposeConfiguration(instance)
+	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create project-creator Secret"))
 }
@@ -884,7 +909,7 @@ func TestComponentService_ExposeConfiguration_GetSecretErr(t *testing.T) {
 	ps.On("CreateSecret", instance, projectCreatorSecretPasswordName, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, errTest)
 
-	_, err = CS.ExposeConfiguration(instance)
+	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to get Secret"))
 }
@@ -918,7 +943,7 @@ func TestComponentService_ExposeConfiguration_CreateSecretErr(t *testing.T) {
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
 	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(errTest)
 
-	_, err = CS.ExposeConfiguration(instance)
+	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create Secret with SSH key pairs for Gerrit"))
 }
@@ -940,8 +965,25 @@ func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *
 
 	service := CreateService(servicePort)
 	errTest := errors.New("test")
+
+	scheme := runtime.NewScheme()
+	err = jenkinsV1Api.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(
+			&jenkinsV1Api.Jenkins{
+				ObjectMeta: metaV1.ObjectMeta{
+					Namespace: instance.Namespace,
+					Name:      "jenkins",
+				},
+			},
+		).
+		Build()
+
 	ps := &pmock.PlatformService{}
-	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}}
+	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}, client: k8sClient}
 
 	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
@@ -953,7 +995,7 @@ func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
 	ps.On("CreateJenkinsServiceAccount", instance.Namespace, ciUserSshSecretName, "ssh").Return(errTest)
 
-	_, err = CS.ExposeConfiguration(instance)
+	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create Jenkins Service Account"))
 }

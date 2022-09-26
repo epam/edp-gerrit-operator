@@ -23,7 +23,7 @@ const (
 	Test       = "test"
 )
 
-// PlatformService defines common behaviour of the services for the supported platforms.
+// PlatformService defines common behavior of the services for the supported platforms.
 type PlatformService interface {
 	GetPods(namespace string, filter *metav1.ListOptions) (*coreV1Api.PodList, error)
 	GetExternalEndpoint(namespace string, name string) (string, string, error)
