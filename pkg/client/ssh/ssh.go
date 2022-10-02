@@ -38,7 +38,7 @@ func (client *SSHClient) RunCommand(cmd *SSHCommand) (out []byte, err error) {
 
 	defer func() {
 		err = session.Close()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// ignore EOF error
 			// on Session Close,
 			err = nil
