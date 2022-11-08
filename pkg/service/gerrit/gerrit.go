@@ -413,6 +413,11 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 		}
 	}
 
+	err = s.exposeArgoCDConfiguration(ctx, instance)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.client.Update(ctx, instance)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't update project")
@@ -876,4 +881,61 @@ func (s ComponentService) jenkinsEnabled(ctx context.Context, namespace string) 
 	}
 
 	return len(jenkinsList.Items) != 0
+}
+
+// exposeArgoCDConfiguration creates argocd user in Gerrit and adds this user to the ReadOnly group.
+// It generates login/password and ssh private/public and stores them in secrets.
+func (s *ComponentService) exposeArgoCDConfiguration(_ context.Context, gerrit *gerritApi.Gerrit) error {
+	argoUserSecretName := createSecretName(gerrit.Name, spec.GerritArgoUserSecretPostfix)
+	argoUserSecretData := map[string][]byte{
+		user:     []byte(spec.GerritArgoUser),
+		password: []byte(uniuri.New()),
+	}
+
+	err := s.PlatformService.CreateSecret(gerrit, argoUserSecretName, argoUserSecretData)
+	if err != nil {
+		return fmt.Errorf("failed to create secret %s: %w", argoUserSecretName, err)
+	}
+
+	argoUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpArgoUserSuffix)
+	s.setAnnotation(gerrit, argoUserAnnotationKey, argoUserSecretName)
+
+	privateKey, publicKey, err := helpers.GenerateED25519KeyPairs()
+	if err != nil {
+		return fmt.Errorf("unable to generate SSH key pairs for Gerrit ArgoCD user: %w", err)
+	}
+
+	argoUserSshSecretName := fmt.Sprintf("%s-argocd%s", gerrit.Name, spec.SshKeyPostfix)
+
+	err = s.PlatformService.CreateSecret(
+		gerrit,
+		argoUserSshSecretName,
+		map[string][]byte{
+			"username": []byte(spec.GerritArgoUser),
+			rsaID:      privateKey,
+			rsaIDFile:  publicKey,
+		})
+	if err != nil {
+		return fmt.Errorf("unable to create secret for Gerrit ArgoCD user: %w", err)
+	}
+
+	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpArgoUserSshKeySuffix)
+	s.setAnnotation(gerrit, ciUserSshKeyAnnotationKey, argoUserSshSecretName)
+
+	err = s.gerritClient.CreateUser(
+		spec.GerritArgoUser,
+		string(argoUserSecretData[password]),
+		"argo cd user",
+		string(publicKey),
+	)
+	if err != nil {
+		return fmt.Errorf("unable to create ArgoCD user in Gerrit: %w", err)
+	}
+
+	err = s.gerritClient.AddUserToGroups(spec.GerritArgoUser, []string{spec.GerritReadOnlyGroupName})
+	if err != nil {
+		return fmt.Errorf("unable to add ArgoCD user to %s group in Gerrit: %w", spec.GerritReadOnlyGroupName, err)
+	}
+
+	return nil
 }

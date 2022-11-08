@@ -30,6 +30,7 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
 const (
@@ -1056,4 +1057,138 @@ func TestNewComponentService(t *testing.T) {
 	svc := NewComponentService(nil, nil, nil)
 	_, ok := svc.(ComponentService)
 	assert.True(t, ok)
+}
+
+func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
+	gerritInstance := &gerritApi.Gerrit{
+		TypeMeta: metaV1.TypeMeta{},
+		ObjectMeta: metaV1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "test-name",
+		},
+	}
+
+	tests := []struct {
+		name            string
+		PlatformService func(t *testing.T) platform.PlatformService
+		gerritClient    func(t *testing.T) gerrit.ClientInterface
+		gerrit          *gerritApi.Gerrit
+		wantErr         require.ErrorAssertionFunc
+		errContains     string
+	}{
+		{
+			name: "success expose argocd configuration",
+			PlatformService: func(t *testing.T) platform.PlatformService {
+				serviceMock := &pmock.PlatformService{}
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
+
+				return serviceMock
+			},
+			gerritClient: func(t *testing.T) gerrit.ClientInterface {
+				clientMock := &gerritClientMocks.ClientInterface{}
+				clientMock.On("CreateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
+				clientMock.On("AddUserToGroups", mock.Anything, mock.Anything).
+					Return(nil)
+
+				return clientMock
+			},
+			wantErr: require.NoError,
+		},
+		{
+			name: "failed to create user secret",
+			PlatformService: func(t *testing.T) platform.PlatformService {
+				serviceMock := &pmock.PlatformService{}
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					Return(errors.New("failed to create secret"))
+
+				return serviceMock
+			},
+			gerritClient: func(t *testing.T) gerrit.ClientInterface {
+				clientMock := &gerritClientMocks.ClientInterface{}
+
+				return clientMock
+			},
+			wantErr:     require.Error,
+			errContains: "failed to create secret",
+		},
+		{
+			name: "failed to create ssh secret",
+			PlatformService: func(t *testing.T) platform.PlatformService {
+				serviceMock := &pmock.PlatformService{}
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					Once().
+					Return(nil).
+					On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					Once().
+					Return(errors.New("failed to create ssh secret"))
+
+				return serviceMock
+			},
+			gerritClient: func(t *testing.T) gerrit.ClientInterface {
+				clientMock := &gerritClientMocks.ClientInterface{}
+
+				return clientMock
+			},
+			wantErr:     require.Error,
+			errContains: "failed to create ssh secret",
+		},
+		{
+			name: "failed to create user",
+			PlatformService: func(t *testing.T) platform.PlatformService {
+				serviceMock := &pmock.PlatformService{}
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
+
+				return serviceMock
+			},
+			gerritClient: func(t *testing.T) gerrit.ClientInterface {
+				clientMock := &gerritClientMocks.ClientInterface{}
+				clientMock.On("CreateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(errors.New("failed to create user"))
+
+				return clientMock
+			},
+			wantErr:     require.Error,
+			errContains: "failed to create user",
+		},
+		{
+			name: "failed to add user to groups",
+			PlatformService: func(t *testing.T) platform.PlatformService {
+				serviceMock := &pmock.PlatformService{}
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
+
+				return serviceMock
+			},
+			gerritClient: func(t *testing.T) gerrit.ClientInterface {
+				clientMock := &gerritClientMocks.ClientInterface{}
+				clientMock.On("CreateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
+				clientMock.On("AddUserToGroups", mock.Anything, mock.Anything).
+					Return(errors.New("failed to add user to groups"))
+
+				return clientMock
+			},
+			wantErr:     require.Error,
+			errContains: "failed to add user to groups",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &ComponentService{
+				PlatformService: tt.PlatformService(t),
+				gerritClient:    tt.gerritClient(t),
+			}
+
+			err := s.exposeArgoCDConfiguration(context.Background(), gerritInstance)
+
+			tt.wantErr(t, err)
+			if tt.errContains != "" {
+				assert.Contains(t, err.Error(), tt.errContains)
+			}
+		})
+	}
 }

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -96,4 +97,29 @@ func IsStringInSlice(str string, list []string) bool {
 
 func GenerateAnnotationKey(entitySuffix string) string {
 	return fmt.Sprintf("%v/%v", spec.EdpAnnotationsPrefix, entitySuffix)
+}
+
+// GenerateED25519KeyPairs generates ed25519 key pairs. Private key is in PEM format.
+func GenerateED25519KeyPairs() (privateKey, publicKey []byte, err error) {
+	public, private, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate ed25519 key pair: %w", err)
+	}
+
+	asnPrivate, err := x509.MarshalPKCS8PrivateKey(private)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal private key: %w", err)
+	}
+
+	pemPrivate := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: asnPrivate,
+	}
+
+	sshPublic, err := ssh.NewPublicKey(public)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate public key: %w", err)
+	}
+
+	return pem.EncodeToMemory(pemPrivate), ssh.MarshalAuthorizedKey(sshPublic), nil
 }

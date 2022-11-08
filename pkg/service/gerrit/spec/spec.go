@@ -71,15 +71,23 @@ const (
 
 	GerritDefaultCiUserUser = "edp-ci"
 
+	GerritArgoUser = "argocd"
+
 	GerritDefaultProjectCreatorUser = "project-creator"
 
 	GerritDefaultCiUserSecretPostfix = "ciuser-password"
+
+	GerritArgoUserSecretPostfix = "argocd-password"
 
 	EdpAnnotationsPrefix = "edp.epam.com"
 
 	EdpCiUserSuffix string = "ci-credentials"
 
+	EdpArgoUserSuffix string = "argocd-credentials"
+
 	EdpCiUSerSshKeySuffix string = "ci-sshkey"
+
+	EdpArgoUserSshKeySuffix string = "argocd-sshkey"
 
 	GerritDefaultProjectCreatorSecretPostfix = "project-creator"
 
