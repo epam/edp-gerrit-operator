@@ -900,7 +900,7 @@ func (s *ComponentService) exposeArgoCDConfiguration(_ context.Context, gerrit *
 	argoUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpArgoUserSuffix)
 	s.setAnnotation(gerrit, argoUserAnnotationKey, argoUserSecretName)
 
-	privateKey, publicKey, err := helpers.GenerateED25519KeyPairs()
+	privateKey, publicKey, err := helpers.GenerateSSHED25519KeyPairs()
 	if err != nil {
 		return fmt.Errorf("unable to generate SSH key pairs for Gerrit ArgoCD user: %w", err)
 	}

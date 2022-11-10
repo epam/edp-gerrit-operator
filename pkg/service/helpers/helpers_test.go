@@ -69,7 +69,7 @@ func TestGenerateKeyPairs(t *testing.T) {
 }
 
 func TestGenerateED25519KeyPairs(t *testing.T) {
-	gotPrivateKey, gotPublicKey, err := GenerateED25519KeyPairs()
+	gotPrivateKey, gotPublicKey, err := GenerateSSHED25519KeyPairs()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, gotPrivateKey)
 	assert.NotEmpty(t, gotPublicKey)
