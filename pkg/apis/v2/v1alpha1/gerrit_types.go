@@ -1,8 +1,12 @@
 package v1alpha1
 
 import (
+	"path"
+
 	coreV1Api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -32,7 +36,16 @@ type GerritSpec struct {
 	Volumes []GerritVolumes `json:"volumes,omitempty"`
 
 	// +optional
-	SshPort int32 `json:"sshPort,omitempty"`
+	SshPort  int32  `json:"sshPort,omitempty"`
+	BasePath string `json:"basePath"`
+}
+
+func (in *GerritSpec) GetBasePath() string {
+	if in.BasePath == "" {
+		return spec.GerritRestApiUrlPath
+	}
+
+	return path.Join(in.BasePath, spec.GerritRestApiUrlPath) + "/"
 }
 
 // GerritStatus defines the observed state of Gerrit.
