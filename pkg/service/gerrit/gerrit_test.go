@@ -1000,3 +1000,23 @@ func TestNewComponentService(t *testing.T) {
 	_, ok := svc.(ComponentService)
 	assert.True(t, ok)
 }
+
+func TestComponentService_GetGerritRestApiUrl(t *testing.T) {
+	ps := pmock.PlatformService{}
+	s := ComponentService{
+		PlatformService: &ps,
+	}
+	basePath := "kong"
+	g := gerritApi.Gerrit{Spec: gerritApi.GerritSpec{BasePath: basePath}, ObjectMeta: metav1.ObjectMeta{
+		Name:      "g1",
+		Namespace: "ns1",
+	}}
+
+	ps.On("GetExternalEndpoint", g.Namespace, g.Name).Return("gerrit.host", "http", nil)
+	url, err := s.getGerritRestApiUrl(&g)
+
+	assert.NoError(t, err)
+	assert.Contains(t, url, basePath)
+
+	ps.AssertExpectations(t)
+}

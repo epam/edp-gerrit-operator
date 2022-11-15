@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -120,7 +119,7 @@ func (gc Client) GetUser(username string) (*int, error) {
 }
 
 func (gc Client) InitAdminUser(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (gerritApi.Gerrit, error) {
-	addInitialAdminUserScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
+	addInitialAdminUserScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/add-initial-admin-user.sh", GerritScriptsPath)))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to read add-initial-admin-user.sh script")
 	}
@@ -258,12 +257,12 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 
 func (gc *Client) InitAllProjects(instance gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
 	podName string, gerritAdminPublicKey string) error {
-	initAllProjectsScript, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
+	initAllProjectsScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", GerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
 	}
 
-	gerritConfig, err := ioutil.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", GerritScriptsPath)))
+	gerritConfig, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/../gerrit.config", GerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
 	}

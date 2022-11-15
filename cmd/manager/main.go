@@ -42,6 +42,7 @@ const (
 	gerritOperatorLock = "edp-gerrit-operator-lock"
 	gitWorkDirEnv      = "GIT_WORK_DIR"
 	gitWorkDirDefault  = "/tmp/git_tmp"
+	serverPort         = 9443
 )
 
 func init() {
@@ -121,7 +122,7 @@ func initManager(metricsAddr, probeAddr string, enableLeaderElection bool) (ctrl
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		HealthProbeBindAddress: probeAddr,
-		Port:                   9443,
+		Port:                   serverPort,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       gerritOperatorLock,
 		MapperProvider: func(c *rest.Config) (meta.RESTMapper, error) {

@@ -611,14 +611,17 @@ func (s *ComponentService) initSSHClient(instance *gerritApi.Gerrit) error {
 }
 
 func (s ComponentService) getGerritRestApiUrl(instance *gerritApi.Gerrit) (string, error) {
-	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort, spec.GerritRestApiUrlPath)
+	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort,
+		instance.Spec.GetBasePath())
+
 	if !s.runningInCluster() {
 		h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "Failed to get external endpoint for %v/%v", instance.Namespace, instance.Name)
 		}
-		gerritApiUrl = fmt.Sprintf("%v://%v/%v", sc, h, spec.GerritRestApiUrlPath)
+		gerritApiUrl = fmt.Sprintf("%v://%v/%v", sc, h, instance.Spec.GetBasePath())
 	}
+
 	return gerritApiUrl, nil
 }
 

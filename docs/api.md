@@ -1071,6 +1071,13 @@ GerritSpec defines the desired state of Gerrit
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>basePath</b></td>
+        <td>string</td>
+        <td>
+          gerrit http route base path<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>sshPort</b></td>
         <td>integer</td>
         <td>
@@ -2250,6 +2257,13 @@ Gerrit is the Schema for the gerrits API
           <br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>basePath</b></td>
+        <td>string</td>
+        <td>
+          gerrit http route base path<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritspecimagepullsecretsindex">imagePullSecrets</a></b></td>
         <td>[]object</td>

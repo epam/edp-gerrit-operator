@@ -1,7 +1,12 @@
 package v1
 
 import (
+	"fmt"
+	"path"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )
 
 // GerritSpec defines the desired state of Gerrit
@@ -10,6 +15,9 @@ type GerritSpec struct {
 
 	// +optional
 	SshPort int32 `json:"sshPort,omitempty"`
+
+	//BasePath gerrit http route base path
+	BasePath string `json:"basePath,omitempty"`
 }
 
 type KeycloakSpec struct {
@@ -47,6 +55,14 @@ type Gerrit struct {
 
 	Spec   GerritSpec   `json:"spec,omitempty"`
 	Status GerritStatus `json:"status,omitempty"`
+}
+
+func (in *GerritSpec) GetBasePath() string {
+	if in.BasePath == "" {
+		return spec.GerritRestApiUrlPath
+	}
+
+	return fmt.Sprintf("%s/", path.Join(in.BasePath, spec.GerritRestApiUrlPath))
 }
 
 // +kubebuilder:object:root=true
