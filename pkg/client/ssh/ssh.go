@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -28,6 +27,7 @@ type SSHClient struct {
 	Config *ssh.ClientConfig
 	Host   string
 	Port   int32
+	log    logr.Logger
 }
 
 func (client *SSHClient) RunCommand(cmd *SSHCommand) (out []byte, err error) {
@@ -37,15 +37,15 @@ func (client *SSHClient) RunCommand(cmd *SSHCommand) (out []byte, err error) {
 	}
 
 	defer func() {
-		err = session.Close()
-		if errors.Is(err, io.EOF) {
-			// ignore EOF error
-			// on Session Close,
-			err = nil
+		closeErr := session.Close()
+		if closeErr != nil && !errors.Is(closeErr, io.EOF) {
+			client.log.Error(closeErr, "failed to close SSH session")
 		}
 
-		err = multierr.Append(err, errors.Wrap(err, "failed to close SSH session"))
-		err = multierr.Append(err, errors.Wrap(connection.Close(), "failed to close SSH connection"))
+		closeErr = connection.Close()
+		if closeErr != nil && !errors.Is(closeErr, io.EOF) {
+			client.log.Error(closeErr, "failed to close SSH connection")
+		}
 	}()
 
 	out, err = session.Output(cmd.Path)
@@ -92,6 +92,7 @@ func SshInit(userName string, privateKey []byte, host string, port int32, log lo
 		Config: sshConfig,
 		Host:   host,
 		Port:   port,
+		log:    log,
 	}
 
 	log.Info("SSH Client has been initialized", "Username", userName, "host", host, "port", port)
