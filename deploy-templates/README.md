@@ -43,7 +43,7 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.storage.class | string | `"gp2"` | Storageclass for Gerrit data volume |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
-| gerrit.version | string | `"3.6.1-SNAPSHOT.5"` | Define gerrit docker image tag |
+| gerrit.version | string | `"3.6.1-SNAPSHOT.7"` | Define gerrit docker image tag |
 | gitServer.httpsPort | int | `443` | HTTPS port |
 | gitServer.name | string | `"gerrit"` | GitServer CR name |
 | gitServer.nameSshKeySecret | string | `"gerrit-ciuser-sshkey"` | Name of secret with credentials to Git server |
