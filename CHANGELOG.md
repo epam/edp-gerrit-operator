@@ -2,8 +2,15 @@
 ## [Unreleased]
 
 
+<a name="v2.13.1"></a>
+## [v2.13.1] - 2022-11-26
+### Routine
+
+- Bump gerrit image version to 3.6.2 [EPMDEDP-11009](https://jiraeu.epam.com/browse/EPMDEDP-11009)
+
+
 <a name="v2.13.0"></a>
-## [v2.13.0] - 2022-11-15
+## [v2.13.0] - 2022-11-26
 ### Features
 
 - Add webhooks plugin configuration [EPMDEDP-10428](https://jiraeu.epam.com/browse/EPMDEDP-10428)
@@ -198,7 +205,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...HEAD
+[v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
 [v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.13.0
 [v2.12.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...v2.12.0
 [v2.11.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...v2.11.0
