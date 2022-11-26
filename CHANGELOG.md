@@ -2,6 +2,49 @@
 ## [Unreleased]
 
 
+<a name="v2.13.1"></a>
+## [v2.13.1] - 2022-11-26
+### Routine
+
+- Bump gerrit image version to 3.6.2 [EPMDEDP-11009](https://jiraeu.epam.com/browse/EPMDEDP-11009)
+
+
+<a name="v2.13.0"></a>
+## [v2.13.0] - 2022-11-26
+### Features
+
+- Add webhooks plugin configuration [EPMDEDP-10428](https://jiraeu.epam.com/browse/EPMDEDP-10428)
+- Eanble webhooks plugin installation [EPMDEDP-10428](https://jiraeu.epam.com/browse/EPMDEDP-10428)
+- Do not configure jenkins if not found [EPMDEDP-10643](https://jiraeu.epam.com/browse/EPMDEDP-10643)
+- Create gerrit argocd user [EPMDEDP-10988](https://jiraeu.epam.com/browse/EPMDEDP-10988)
+- Add base path to gerrit spec [EPMDEDP-11045](https://jiraeu.epam.com/browse/EPMDEDP-11045)
+
+### Bug Fixes
+
+- Escape double quotes for webhooks.config [EPMDEDP-10428](https://jiraeu.epam.com/browse/EPMDEDP-10428)
+- Ignore variable expansion for gerrit config [EPMDEDP-10428](https://jiraeu.epam.com/browse/EPMDEDP-10428)
+- Write ed25519 private key into the OpenSSH private key format [EPMDEDP-10988](https://jiraeu.epam.com/browse/EPMDEDP-10988)
+- SSH command log session close errors [EPMDEDP-10994](https://jiraeu.epam.com/browse/EPMDEDP-10994)
+- Ignore EOF error for session close [EPMDEDP-8343](https://jiraeu.epam.com/browse/EPMDEDP-8343)
+- Nil pointer panic [EPMDEDP-8343](https://jiraeu.epam.com/browse/EPMDEDP-8343)
+
+### Code Refactoring
+
+- Address linting issues [EPMDEDP-10627](https://jiraeu.epam.com/browse/EPMDEDP-10627)
+- Rename Gerrit CI username jenkins [EPMDEDP-10640](https://jiraeu.epam.com/browse/EPMDEDP-10640)
+- Enable golangci linter [EPMDEDP-8343](https://jiraeu.epam.com/browse/EPMDEDP-8343)
+- Resolve all issues pointed by linter [EPMDEDP-8343](https://jiraeu.epam.com/browse/EPMDEDP-8343)
+- Initial preparation for linter [EPMDEDP-8343](https://jiraeu.epam.com/browse/EPMDEDP-8343)
+
+### Routine
+
+- Update current development version [EPMDEDP-10274](https://jiraeu.epam.com/browse/EPMDEDP-10274)
+- Downgrade gerrit to version 3.6.2 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
+- Upgrade gerrit to version 3.7.0 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
+- Upgrade gerrit to version 3.6.2 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
+- Upgrade gerrit to version 3.6.2 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
+
+
 <a name="v2.12.0"></a>
 ## [v2.12.0] - 2022-08-26
 ### Features
@@ -162,7 +205,9 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...HEAD
+[v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
+[v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.13.0
 [v2.12.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...v2.12.0
 [v2.11.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...v2.11.0
 [v2.10.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.9.0...v2.10.0
