@@ -39,7 +39,6 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.resources.limits.memory | string | `"2Gi"` |  |
 | gerrit.resources.requests.cpu | string | `"100m"` |  |
 | gerrit.resources.requests.memory | string | `"512Mi"` |  |
-| gerrit.sshPort | string | `"30022"` | SSH port |
 | gerrit.storage.class | string | `"gp2"` | Storageclass for Gerrit data volume |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
@@ -52,6 +51,7 @@ A Helm chart for EDP Gerrit Operator
 | global.developers | list | `["stub_user_one@example.com","stub_user_two@example.com"]` | Developers of your tenant |
 | global.dnsWildCard | string | `nil` | a cluster DNS wildcard name |
 | global.edpName | string | `""` | namespace or a project name (in case of OpenShift) |
+| global.gerritSSHPort | string | `"30022"` | Gerrit SSH node port |
 | global.openshift.deploymentType | string | `"deployments"` | Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
 | global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |
 | image.repository | string | `"epamedp/gerrit-operator"` | EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |

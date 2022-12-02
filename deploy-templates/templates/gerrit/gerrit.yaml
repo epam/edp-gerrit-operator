@@ -6,5 +6,5 @@ metadata:
 spec:
   keycloakSpec:
     enabled: true
-  sshPort: {{.Values.gerrit.sshPort}}
+  sshPort: {{ .Values.global.gerritSSHPort }}
 {{end}}

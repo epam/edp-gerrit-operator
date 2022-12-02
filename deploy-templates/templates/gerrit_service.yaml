@@ -13,10 +13,10 @@ spec:
       protocol: TCP
       targetPort: {{.Values.gerrit.port}}
     - name: ssh
-      nodePort: {{.Values.gerrit.sshPort}}
-      port: {{.Values.gerrit.sshPort}}
+      nodePort: {{ .Values.global.gerritSSHPort }}
+      port: {{ .Values.global.gerritSSHPort }}
       protocol: TCP
-      targetPort: {{.Values.gerrit.sshPort}}
+      targetPort: {{ .Values.global.gerritSSHPort }}
   selector:
     app: {{.Values.gerrit.name}}
   sessionAffinity: None
