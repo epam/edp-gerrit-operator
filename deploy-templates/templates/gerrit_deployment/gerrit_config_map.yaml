@@ -1,7 +1,7 @@
 {{- if .Values.gerrit.deploy -}}
 apiVersion: v1
 data:
-  sshPort: "{{.Values.gerrit.sshPort}}"
+  sshPort: "{{ .Values.global.gerritSSHPort }}"
 kind: ConfigMap
 metadata:
   labels:
