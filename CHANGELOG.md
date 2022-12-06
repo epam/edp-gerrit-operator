@@ -2,6 +2,13 @@
 ## [Unreleased]
 
 
+<a name="v2.13.2"></a>
+## [v2.13.2] - 2022-12-02
+### Routine
+
+- Get gerrit sshPort form global section [EPMDEDP-10642](https://jiraeu.epam.com/browse/EPMDEDP-10642)
+
+
 <a name="v2.13.1"></a>
 ## [v2.13.1] - 2022-11-26
 ### Routine
@@ -205,7 +212,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...HEAD
+[v2.13.2]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...v2.13.2
 [v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
 [v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.13.0
 [v2.12.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...v2.12.0
