@@ -8,18 +8,26 @@ import (
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 )
 
+const syncRetries = 3
+
 func (r *Reconcile) syncBackendProjects(interval time.Duration) {
 	ticker := time.Tick(interval)
 
 	for range ticker {
-		if err := r.syncBackendProjectsTick(); err != nil {
-			r.log.Error(err, "unable to sync gerrit projects")
+		for i := 0; i < syncRetries; i++ {
+			if err := r.syncBackendProjectsTick(); err != nil {
+				r.log.Error(err, "unable to sync gerrit projects")
+				continue
+			}
+
+			break
 		}
 	}
 }
@@ -86,12 +94,21 @@ func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerrit.ClientInt
 		return errors.Wrap(err, "unable to list project branches")
 	}
 
-	k8sProject.Status.Branches = make([]string, 0, len(branches))
-	for _, br := range branches {
-		k8sProject.Status.Branches = append(k8sProject.Status.Branches, br.Ref)
+	//reload gerrit project to prevent conflict with gerrit project operator
+	var prj gerritApi.GerritProject
+	if err := r.client.Get(ctx, types.NamespacedName{
+		Name:      k8sProject.Name,
+		Namespace: k8sProject.Namespace,
+	}, &prj); err != nil {
+		return errors.Wrap(err, "unable to get gerrit project")
 	}
 
-	if err := r.client.Status().Update(ctx, k8sProject); err != nil {
+	prj.Status.Branches = make([]string, 0, len(branches))
+	for _, br := range branches {
+		prj.Status.Branches = append(prj.Status.Branches, br.Ref)
+	}
+
+	if err := r.client.Status().Update(ctx, &prj); err != nil {
 		return errors.Wrap(err, "unable to update gerrit project")
 	}
 
