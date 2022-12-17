@@ -2,8 +2,15 @@
 ## [Unreleased]
 
 
+<a name="v2.13.3"></a>
+## [v2.13.3] - 2022-12-07
+### Bug Fixes
+
+- Gerrit project syncer and controller conflict [EPMDEDP-11142](https://jiraeu.epam.com/browse/EPMDEDP-11142)
+
+
 <a name="v2.13.2"></a>
-## [v2.13.2] - 2022-12-02
+## [v2.13.2] - 2022-12-06
 ### Routine
 
 - Get gerrit sshPort form global section [EPMDEDP-10642](https://jiraeu.epam.com/browse/EPMDEDP-10642)
@@ -212,7 +219,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...HEAD
+[v2.13.3]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...v2.13.3
 [v2.13.2]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...v2.13.2
 [v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
 [v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.13.0
