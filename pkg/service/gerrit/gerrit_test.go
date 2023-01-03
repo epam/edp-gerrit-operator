@@ -112,6 +112,12 @@ func TestComponentService_GetGerritSSHUrl(t *testing.T) {
 
 	_, err := CS.GetGerritSSHUrl(instance)
 	assert.NoError(t, err)
+
+	instance.Spec.SSHUrl = "url"
+	sshURL, err := CS.GetGerritSSHUrl(instance)
+
+	assert.NoError(t, err)
+	assert.Equal(t, sshURL, instance.Spec.SSHUrl)
 }
 
 func TestComponentService_GetGerritSSHUrlErr(t *testing.T) {
@@ -1017,6 +1023,11 @@ func TestComponentService_GetGerritRestApiUrl(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Contains(t, url, basePath)
+
+	g.Spec.RestAPIUrl = "url"
+	url, err = s.getGerritRestApiUrl(&g)
+	assert.NoError(t, err)
+	assert.Equal(t, g.Spec.RestAPIUrl, url)
 
 	ps.AssertExpectations(t)
 }

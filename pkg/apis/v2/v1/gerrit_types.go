@@ -13,6 +13,12 @@ import (
 type GerritSpec struct {
 	KeycloakSpec KeycloakSpec `json:"keycloakSpec"`
 
+	//RestAPIUrl gerrit http full api url
+	RestAPIUrl string `json:"restAPIUrl,omitempty"`
+
+	//SSHUrl gerrit ssh url
+	SSHUrl string `json:"sshUrl,omitempty"`
+
 	// +optional
 	SshPort int32 `json:"sshPort,omitempty"`
 

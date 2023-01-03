@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -451,7 +451,7 @@ func getIcon() (*string, error) {
 		return nil, err
 	}
 	reader := bufio.NewReader(f)
-	content, err := ioutil.ReadAll(reader)
+	content, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -611,6 +611,10 @@ func (s *ComponentService) initSSHClient(instance *gerritApi.Gerrit) error {
 }
 
 func (s ComponentService) getGerritRestApiUrl(instance *gerritApi.Gerrit) (string, error) {
+	if instance.Spec.RestAPIUrl != "" {
+		return instance.Spec.RestAPIUrl, nil
+	}
+
 	gerritApiUrl := fmt.Sprintf("http://%v.%v:%v/%v", instance.Name, instance.Namespace, spec.GerritPort,
 		instance.Spec.GetBasePath())
 
@@ -626,6 +630,10 @@ func (s ComponentService) getGerritRestApiUrl(instance *gerritApi.Gerrit) (strin
 }
 
 func (s ComponentService) GetGerritSSHUrl(instance *gerritApi.Gerrit) (string, error) {
+	if instance.Spec.SSHUrl != "" {
+		return instance.Spec.SSHUrl, nil
+	}
+
 	gerritSSHUrl := fmt.Sprintf("%v.%v", instance.Name, instance.Namespace)
 	if !s.runningInCluster() {
 		h, _, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
@@ -634,6 +642,7 @@ func (s ComponentService) GetGerritSSHUrl(instance *gerritApi.Gerrit) (string, e
 		}
 		gerritSSHUrl = h
 	}
+
 	return gerritSSHUrl, nil
 }
 
