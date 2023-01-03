@@ -52,6 +52,12 @@ spec:
               basePath:
                 type: string
                 description: gerrit http route base path
+              restAPIUrl:
+                type: string
+                description: gerrit http full api url
+              SSHUrl:
+                type: string
+                description: gerrit ssh url
             required:
             - keycloakSpec
             type: object
