@@ -1071,10 +1071,24 @@ GerritSpec defines the desired state of Gerrit
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>SSHUrl</b></td>
+        <td>string</td>
+        <td>
+          gerrit ssh url<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>basePath</b></td>
         <td>string</td>
         <td>
           gerrit http route base path<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>restAPIUrl</b></td>
+        <td>string</td>
+        <td>
+          gerrit http full api url<br/>
         </td>
         <td>false</td>
       </tr><tr>
