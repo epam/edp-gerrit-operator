@@ -39,7 +39,6 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.resources.limits.memory | string | `"2Gi"` |  |
 | gerrit.resources.requests.cpu | string | `"100m"` |  |
 | gerrit.resources.requests.memory | string | `"512Mi"` |  |
-| gerrit.storage.class | string | `"gp2"` | Storageclass for Gerrit data volume |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
 | gerrit.version | string | `"3.6.2"` | Define gerrit docker image tag |

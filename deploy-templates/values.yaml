@@ -63,7 +63,7 @@ gerrit:
     # --  Size for Gerrit data volume
     size: 1Gi
     # --  Storageclass for Gerrit data volume
-    class: gp2
+    # class: gp2
   # --  Base path for Nexus URL
   basePath: ""
   annotations: {}
