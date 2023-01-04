@@ -35,8 +35,8 @@ In order to install the EDP Gerrit Operator, follow the steps below:
      ```bash
      helm search repo epamedp/gerrit-operator -l
      NAME                     CHART VERSION   APP VERSION     DESCRIPTION
-     epamedp/gerrit-operator  2.11.0          2.11.0          A Helm chart for EDP Gerrit Operator
-     epamedp/gerrit-operator  2.10.0          2.10.0          A Helm chart for EDP Gerrit Operator
+     epamedp/gerrit-operator  2.13.3          2.13.3          A Helm chart for EDP Gerrit Operator
+     epamedp/gerrit-operator  2.13.2          2.13.2          A Helm chart for EDP Gerrit Operator
      ```
 
     _**NOTE:** It is highly recommended to use the latest released version._
