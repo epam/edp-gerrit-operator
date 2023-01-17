@@ -1,0 +1,12 @@
+apiVersion: v1.edp.epam.com/v1
+kind: Gerrit
+metadata:
+  labels:
+    app.kubernetes.io/name: gerrit
+    app.kubernetes.io/instance: gerrit-sample
+    app.kubernetes.io/part-of: empty-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: empty-operator
+  name: gerrit-sample
+spec:
+  # TODO(user): Add fields here

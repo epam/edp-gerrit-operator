@@ -1,0 +1,73 @@
+domain: edp.epam.com
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: empty-operator
+repo: github.com/epam/edp-gerrit-operator/v2
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: Gerrit
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: GerritGroup
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: GerritGroupMember
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: GerritMergeRequest
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: GerritProject
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: GerritProjectAccess
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: edp.epam.com
+  group: edp
+  kind: GerritReplicationConfig
+  path: github.com/epam/edp-gerrit-operator/v2/api/v1
+  version: v1
+version: "3"

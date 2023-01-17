@@ -3,7 +3,7 @@ package gerrit
 import (
 	"gopkg.in/resty.v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 

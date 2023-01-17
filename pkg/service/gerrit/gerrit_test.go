@@ -25,8 +25,8 @@ import (
 	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	pmock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"

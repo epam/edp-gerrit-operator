@@ -1,0 +1,10 @@
+## Append samples you want in your CSV to this file as resources ##
+resources:
+- v1_v1_gerrit.yaml
+- v1_v1_gerritgroup.yaml
+- v1_v1_gerritgroupmember.yaml
+- v1_v1_gerritmergerequest.yaml
+- v1_v1_gerritproject.yaml
+- v1_v1_gerritprojectaccess.yaml
+- v1_v1_gerritreplicationconfig.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

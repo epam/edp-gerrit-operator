@@ -26,11 +26,11 @@ import (
 	k8sClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	edpCompApi "github.com/epam/edp-component-operator/pkg/apis/v1/v1"
+	edpCompApi "github.com/epam/edp-component-operator/api/v1/v1"
 	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
 )
@@ -369,7 +369,7 @@ func (s *K8SService) ExecInPod(namespace, podName string, command []string) (std
 
 	stdoutBuffer, stderrBuffer := new(bytes.Buffer), new(bytes.Buffer)
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  nil,
 		Stdout: stdoutBuffer,
 		Stderr: stderrBuffer,

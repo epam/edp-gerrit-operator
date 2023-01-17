@@ -34,7 +34,7 @@ Resource Types:
 
 
 
-GerritGroupMember is the Schema for the gerrit group member API
+GerritGroupMember is the Schema for the gerrit group member API.
 
 <table>
     <thead>
@@ -66,14 +66,14 @@ GerritGroupMember is the Schema for the gerrit group member API
         <td><b><a href="#gerritgroupmemberspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupMemberSpec defines the desired state of GerritGroupMember<br/>
+          GerritGroupMemberSpec defines the desired state of GerritGroupMember.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritgroupmemberstatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupMemberStatus defines the observed state of GerritGroupMember<br/>
+          GerritGroupMemberStatus defines the observed state of GerritGroupMember.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -85,7 +85,7 @@ GerritGroupMember is the Schema for the gerrit group member API
 
 
 
-GerritGroupMemberSpec defines the desired state of GerritGroupMember
+GerritGroupMemberSpec defines the desired state of GerritGroupMember.
 
 <table>
     <thead>
@@ -126,7 +126,7 @@ GerritGroupMemberSpec defines the desired state of GerritGroupMember
 
 
 
-GerritGroupMemberStatus defines the observed state of GerritGroupMember
+GerritGroupMemberStatus defines the observed state of GerritGroupMember.
 
 <table>
     <thead>
@@ -164,7 +164,7 @@ GerritGroupMemberStatus defines the observed state of GerritGroupMember
 
 
 
-GerritGroup is the Schema for the gerrit group API
+GerritGroup is the Schema for the gerrit group API.
 
 <table>
     <thead>
@@ -196,14 +196,14 @@ GerritGroup is the Schema for the gerrit group API
         <td><b><a href="#gerritgroupspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupSpec defines the desired state of GerritGroup<br/>
+          GerritGroupSpec defines the desired state of GerritGroup.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritgroupstatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupStatus defines the observed state of GerritGroup<br/>
+          GerritGroupStatus defines the observed state of GerritGroup.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -215,7 +215,7 @@ GerritGroup is the Schema for the gerrit group API
 
 
 
-GerritGroupSpec defines the desired state of GerritGroup
+GerritGroupSpec defines the desired state of GerritGroup.
 
 <table>
     <thead>
@@ -263,7 +263,7 @@ GerritGroupSpec defines the desired state of GerritGroup
 
 
 
-GerritGroupStatus defines the observed state of GerritGroup
+GerritGroupStatus defines the observed state of GerritGroup.
 
 <table>
     <thead>
@@ -306,7 +306,7 @@ GerritGroupStatus defines the observed state of GerritGroup
 
 
 
-GerritMergeRequest is the Schema for the gerrit merge request API
+GerritMergeRequest is the Schema for the gerrit merge request API.
 
 <table>
     <thead>
@@ -338,14 +338,14 @@ GerritMergeRequest is the Schema for the gerrit merge request API
         <td><b><a href="#gerritmergerequestspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritMergeRequestSpec defines the desired state of GerritMergeRequest<br/>
+          GerritMergeRequestSpec defines the desired state of GerritMergeRequest.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritmergerequeststatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritMergeRequestStatus defines the observed state of GerritMergeRequest<br/>
+          GerritMergeRequestStatus defines the observed state of GerritMergeRequest.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -357,7 +357,7 @@ GerritMergeRequest is the Schema for the gerrit merge request API
 
 
 
-GerritMergeRequestSpec defines the desired state of GerritMergeRequest
+GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
 
 <table>
     <thead>
@@ -440,7 +440,7 @@ GerritMergeRequestSpec defines the desired state of GerritMergeRequest
 
 
 
-GerritMergeRequestStatus defines the observed state of GerritMergeRequest
+GerritMergeRequestStatus defines the observed state of GerritMergeRequest.
 
 <table>
     <thead>
@@ -483,7 +483,7 @@ GerritMergeRequestStatus defines the observed state of GerritMergeRequest
 
 
 
-GerritProjectAccess is the Schema for the gerrit project access API
+GerritProjectAccess is the Schema for the gerrit project access API.
 
 <table>
     <thead>
@@ -515,14 +515,14 @@ GerritProjectAccess is the Schema for the gerrit project access API
         <td><b><a href="#gerritprojectaccessspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectAccessSpec defines the desired state of GerritProjectAccess<br/>
+          GerritProjectAccessSpec defines the desired state of GerritProjectAccess.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritprojectaccessstatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectAccessStatus defines the observed state of GerritProjectAccess<br/>
+          GerritProjectAccessStatus defines the observed state of GerritProjectAccess.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -534,7 +534,7 @@ GerritProjectAccess is the Schema for the gerrit project access API
 
 
 
-GerritProjectAccessSpec defines the desired state of GerritProjectAccess
+GerritProjectAccessSpec defines the desired state of GerritProjectAccess.
 
 <table>
     <thead>
@@ -658,7 +658,7 @@ GerritProjectAccessSpec defines the desired state of GerritProjectAccess
 
 
 
-GerritProjectAccessStatus defines the observed state of GerritProjectAccess
+GerritProjectAccessStatus defines the observed state of GerritProjectAccess.
 
 <table>
     <thead>
@@ -694,7 +694,7 @@ GerritProjectAccessStatus defines the observed state of GerritProjectAccess
 
 
 
-GerritProject is the Schema for the gerrit project API
+GerritProject is the Schema for the gerrit project API.
 
 <table>
     <thead>
@@ -726,14 +726,14 @@ GerritProject is the Schema for the gerrit project API
         <td><b><a href="#gerritprojectspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectSpec defines the desired state of GerritProject<br/>
+          GerritProjectSpec defines the desired state of GerritProject.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritprojectstatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectStatus defines the observed state of GerritProject<br/>
+          GerritProjectStatus defines the observed state of GerritProject.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -745,7 +745,7 @@ GerritProject is the Schema for the gerrit project API
 
 
 
-GerritProjectSpec defines the desired state of GerritProject
+GerritProjectSpec defines the desired state of GerritProject.
 
 <table>
     <thead>
@@ -835,7 +835,7 @@ GerritProjectSpec defines the desired state of GerritProject
 
 
 
-GerritProjectStatus defines the observed state of GerritProject
+GerritProjectStatus defines the observed state of GerritProject.
 
 <table>
     <thead>
@@ -871,7 +871,7 @@ GerritProjectStatus defines the observed state of GerritProject
 
 
 
-GerritReplicationConfig is the Schema for the gerrit replication config API
+GerritReplicationConfig is the Schema for the gerrit replication config API.
 
 <table>
     <thead>
@@ -903,14 +903,14 @@ GerritReplicationConfig is the Schema for the gerrit replication config API
         <td><b><a href="#gerritreplicationconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig<br/>
+          GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritreplicationconfigstatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig<br/>
+          GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -922,7 +922,7 @@ GerritReplicationConfig is the Schema for the gerrit replication config API
 
 
 
-GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig
+GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig.
 
 <table>
     <thead>
@@ -956,7 +956,7 @@ GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig
 
 
 
-GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig
+GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig.
 
 <table>
     <thead>
@@ -1001,7 +1001,7 @@ GerritReplicationConfigStatus defines the observed state of GerritReplicationCon
 
 
 
-Gerrit is the Schema for the gerrits API
+Gerrit is the Schema for the gerrits API.
 
 <table>
     <thead>
@@ -1033,14 +1033,14 @@ Gerrit is the Schema for the gerrits API
         <td><b><a href="#gerritspec">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritSpec defines the desired state of Gerrit<br/>
+          GerritSpec defines the desired state of Gerrit.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritstatus">status</a></b></td>
         <td>object</td>
         <td>
-          GerritStatus defines the observed state of Gerrit<br/>
+          GerritStatus defines the observed state of Gerrit.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1052,7 +1052,7 @@ Gerrit is the Schema for the gerrits API
 
 
 
-GerritSpec defines the desired state of Gerrit
+GerritSpec defines the desired state of Gerrit.
 
 <table>
     <thead>
@@ -1071,24 +1071,17 @@ GerritSpec defines the desired state of Gerrit
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b>SSHUrl</b></td>
-        <td>string</td>
-        <td>
-          gerrit ssh url<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b>basePath</b></td>
         <td>string</td>
         <td>
-          gerrit http route base path<br/>
+          BasePath gerrit http route base path.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>restAPIUrl</b></td>
         <td>string</td>
         <td>
-          gerrit http full api url<br/>
+          RestAPIUrl gerrit http full api url.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1098,6 +1091,13 @@ GerritSpec defines the desired state of Gerrit
           <br/>
           <br/>
             <i>Format</i>: int32<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sshUrl</b></td>
+        <td>string</td>
+        <td>
+          SSHUrl gerrit ssh url.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1150,7 +1150,7 @@ GerritSpec defines the desired state of Gerrit
 
 
 
-GerritStatus defines the observed state of Gerrit
+GerritStatus defines the observed state of Gerrit.
 
 <table>
     <thead>
@@ -1223,7 +1223,7 @@ Resource Types:
 
 
 
-GerritGroupMember is the Schema for the gerrit group member API
+GerritGroupMember is the Schema for the gerrit group member API.
 
 <table>
     <thead>
@@ -1255,14 +1255,14 @@ GerritGroupMember is the Schema for the gerrit group member API
         <td><b><a href="#gerritgroupmemberspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupMemberSpec defines the desired state of GerritGroupMember<br/>
+          GerritGroupMemberSpec defines the desired state of GerritGroupMember.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritgroupmemberstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupMemberStatus defines the observed state of GerritGroupMember<br/>
+          GerritGroupMemberStatus defines the observed state of GerritGroupMember.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1274,7 +1274,7 @@ GerritGroupMember is the Schema for the gerrit group member API
 
 
 
-GerritGroupMemberSpec defines the desired state of GerritGroupMember
+GerritGroupMemberSpec defines the desired state of GerritGroupMember.
 
 <table>
     <thead>
@@ -1315,7 +1315,7 @@ GerritGroupMemberSpec defines the desired state of GerritGroupMember
 
 
 
-GerritGroupMemberStatus defines the observed state of GerritGroupMember
+GerritGroupMemberStatus defines the observed state of GerritGroupMember.
 
 <table>
     <thead>
@@ -1344,7 +1344,7 @@ GerritGroupMemberStatus defines the observed state of GerritGroupMember
 
 
 
-GerritGroup is the Schema for the gerrit group API
+GerritGroup is the Schema for the gerrit group API.
 
 <table>
     <thead>
@@ -1376,14 +1376,14 @@ GerritGroup is the Schema for the gerrit group API
         <td><b><a href="#gerritgroupspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupSpec defines the desired state of GerritGroup<br/>
+          GerritGroupSpec defines the desired state of GerritGroup.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritgroupstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritGroupStatus defines the observed state of GerritGroup<br/>
+          GerritGroupStatus defines the observed state of GerritGroup.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1395,7 +1395,7 @@ GerritGroup is the Schema for the gerrit group API
 
 
 
-GerritGroupSpec defines the desired state of GerritGroup
+GerritGroupSpec defines the desired state of GerritGroup.
 
 <table>
     <thead>
@@ -1443,7 +1443,7 @@ GerritGroupSpec defines the desired state of GerritGroup
 
 
 
-GerritGroupStatus defines the observed state of GerritGroup
+GerritGroupStatus defines the observed state of GerritGroup.
 
 <table>
     <thead>
@@ -1486,7 +1486,7 @@ GerritGroupStatus defines the observed state of GerritGroup
 
 
 
-GerritMergeRequest is the Schema for the gerrit merge request API
+GerritMergeRequest is the Schema for the gerrit merge request API.
 
 <table>
     <thead>
@@ -1518,14 +1518,14 @@ GerritMergeRequest is the Schema for the gerrit merge request API
         <td><b><a href="#gerritmergerequestspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritMergeRequestSpec defines the desired state of GerritMergeRequest<br/>
+          GerritMergeRequestSpec defines the desired state of GerritMergeRequest.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritmergerequeststatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritMergeRequestStatus defines the observed state of GerritMergeRequest<br/>
+          GerritMergeRequestStatus defines the observed state of GerritMergeRequest.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1537,7 +1537,7 @@ GerritMergeRequest is the Schema for the gerrit merge request API
 
 
 
-GerritMergeRequestSpec defines the desired state of GerritMergeRequest
+GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
 
 <table>
     <thead>
@@ -1620,7 +1620,7 @@ GerritMergeRequestSpec defines the desired state of GerritMergeRequest
 
 
 
-GerritMergeRequestStatus defines the observed state of GerritMergeRequest
+GerritMergeRequestStatus defines the observed state of GerritMergeRequest.
 
 <table>
     <thead>
@@ -1663,7 +1663,7 @@ GerritMergeRequestStatus defines the observed state of GerritMergeRequest
 
 
 
-GerritProjectAccess is the Schema for the gerrit project access API
+GerritProjectAccess is the Schema for the gerrit project access API.
 
 <table>
     <thead>
@@ -1695,14 +1695,14 @@ GerritProjectAccess is the Schema for the gerrit project access API
         <td><b><a href="#gerritprojectaccessspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectAccessSpec defines the desired state of GerritProjectAccess<br/>
+          GerritProjectAccessSpec defines the desired state of GerritProjectAccess.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritprojectaccessstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectAccessStatus defines the observed state of GerritProjectAccess<br/>
+          GerritProjectAccessStatus defines the observed state of GerritProjectAccess.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1714,7 +1714,7 @@ GerritProjectAccess is the Schema for the gerrit project access API
 
 
 
-GerritProjectAccessSpec defines the desired state of GerritProjectAccess
+GerritProjectAccessSpec defines the desired state of GerritProjectAccess.
 
 <table>
     <thead>
@@ -1838,7 +1838,7 @@ GerritProjectAccessSpec defines the desired state of GerritProjectAccess
 
 
 
-GerritProjectAccessStatus defines the observed state of GerritProjectAccess
+GerritProjectAccessStatus defines the observed state of GerritProjectAccess.
 
 <table>
     <thead>
@@ -1874,7 +1874,7 @@ GerritProjectAccessStatus defines the observed state of GerritProjectAccess
 
 
 
-GerritProject is the Schema for the gerrit project API
+GerritProject is the Schema for the gerrit project API.
 
 <table>
     <thead>
@@ -1906,14 +1906,14 @@ GerritProject is the Schema for the gerrit project API
         <td><b><a href="#gerritprojectspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectSpec defines the desired state of GerritProject<br/>
+          GerritProjectSpec defines the desired state of GerritProject.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritprojectstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritProjectStatus defines the observed state of GerritProject<br/>
+          GerritProjectStatus defines the observed state of GerritProject.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1925,7 +1925,7 @@ GerritProject is the Schema for the gerrit project API
 
 
 
-GerritProjectSpec defines the desired state of GerritProject
+GerritProjectSpec defines the desired state of GerritProject.
 
 <table>
     <thead>
@@ -2015,7 +2015,7 @@ GerritProjectSpec defines the desired state of GerritProject
 
 
 
-GerritProjectStatus defines the observed state of GerritProject
+GerritProjectStatus defines the observed state of GerritProject.
 
 <table>
     <thead>
@@ -2051,7 +2051,7 @@ GerritProjectStatus defines the observed state of GerritProject
 
 
 
-GerritReplicationConfig is the Schema for the gerritreplicationconfigs API
+GerritReplicationConfig is the Schema for the gerritreplicationconfigs API.
 
 <table>
     <thead>
@@ -2083,14 +2083,14 @@ GerritReplicationConfig is the Schema for the gerritreplicationconfigs API
         <td><b><a href="#gerritreplicationconfigspec-1">spec</a></b></td>
         <td>object</td>
         <td>
-          GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig<br/>
+          GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#gerritreplicationconfigstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig<br/>
+          GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2102,7 +2102,7 @@ GerritReplicationConfig is the Schema for the gerritreplicationconfigs API
 
 
 
-GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig
+GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig.
 
 <table>
     <thead>
@@ -2136,7 +2136,7 @@ GerritReplicationConfigSpec defines the desired state of GerritReplicationConfig
 
 
 
-GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig
+GerritReplicationConfigStatus defines the observed state of GerritReplicationConfig.
 
 <table>
     <thead>
@@ -2181,7 +2181,7 @@ GerritReplicationConfigStatus defines the observed state of GerritReplicationCon
 
 
 
-Gerrit is the Schema for the gerrits API
+Gerrit is the Schema for the gerrits API.
 
 <table>
     <thead>
@@ -2220,7 +2220,7 @@ Gerrit is the Schema for the gerrits API
         <td><b><a href="#gerritstatus-1">status</a></b></td>
         <td>object</td>
         <td>
-          GerritStatus defines the observed state of Gerrit<br/>
+          GerritStatus defines the observed state of Gerrit.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2275,7 +2275,7 @@ Gerrit is the Schema for the gerrits API
         <td><b>basePath</b></td>
         <td>string</td>
         <td>
-          gerrit http route base path<br/>
+          <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2378,7 +2378,7 @@ LocalObjectReference contains enough information to let you locate the reference
 
 
 
-GerritSpec defines the desired state of Gerrit
+GerritSpec defines the desired state of Gerrit.
 
 <table>
     <thead>
@@ -2419,7 +2419,7 @@ GerritSpec defines the desired state of Gerrit
 
 
 
-GerritStatus defines the observed state of Gerrit
+GerritStatus defines the observed state of Gerrit.
 
 <table>
     <thead>

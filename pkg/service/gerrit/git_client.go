@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 )

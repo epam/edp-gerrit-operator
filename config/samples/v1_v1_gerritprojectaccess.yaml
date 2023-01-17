@@ -1,0 +1,12 @@
+apiVersion: v1.edp.epam.com/v1
+kind: GerritProjectAccess
+metadata:
+  labels:
+    app.kubernetes.io/name: gerritprojectaccess
+    app.kubernetes.io/instance: gerritprojectaccess-sample
+    app.kubernetes.io/part-of: empty-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: empty-operator
+  name: gerritprojectaccess-sample
+spec:
+  # TODO(user): Add fields here

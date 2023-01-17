@@ -13,8 +13,8 @@ import (
 	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	mock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
 )
 
 type testChild struct{}

@@ -1,0 +1,190 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: manager-role
+  namespace: placeholder
+rules:
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritgroupmembers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritgroupmembers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritgroupmembers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritgroups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritgroups/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritgroups/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritmergerequests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritmergerequests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritmergerequests/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritprojectaccesses
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritprojectaccesses/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritprojectaccesses/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritprojects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritprojects/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritprojects/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritreplicationconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritreplicationconfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerritreplicationconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerrits
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerrits/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - v2.edp.epam.com
+  resources:
+  - gerrits/status
+  verbs:
+  - get
+  - patch
+  - update

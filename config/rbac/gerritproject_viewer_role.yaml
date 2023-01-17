@@ -1,0 +1,27 @@
+# permissions for end users to view gerritprojects.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: gerritproject-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: empty-operator
+    app.kubernetes.io/part-of: empty-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: gerritproject-viewer-role
+rules:
+- apiGroups:
+  - v1.edp.epam.com
+  resources:
+  - gerritprojects
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - v1.edp.epam.com
+  resources:
+  - gerritprojects/status
+  verbs:
+  - get

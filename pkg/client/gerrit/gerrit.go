@@ -14,7 +14,7 @@ import (
 	"gopkg.in/resty.v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"

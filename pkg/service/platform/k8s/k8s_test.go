@@ -11,7 +11,7 @@ import (
 
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 )
 
 func TestK8SService_getKeycloakRootUrl(t *testing.T) {

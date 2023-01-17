@@ -27,7 +27,7 @@ import (
 	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/pkg/apis/v2/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/git"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"

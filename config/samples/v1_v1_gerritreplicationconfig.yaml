@@ -1,0 +1,12 @@
+apiVersion: v1.edp.epam.com/v1
+kind: GerritReplicationConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: gerritreplicationconfig
+    app.kubernetes.io/instance: gerritreplicationconfig-sample
+    app.kubernetes.io/part-of: empty-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: empty-operator
+  name: gerritreplicationconfig-sample
+spec:
+  # TODO(user): Add fields here
