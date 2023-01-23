@@ -2,8 +2,19 @@
 ## [Unreleased]
 
 
+<a name="v2.13.4"></a>
+## [v2.13.4] - 2023-01-23
+### Features
+
+- Custom gerrit rest and ssh url in spec [EPMDEDP-11198](https://jiraeu.epam.com/browse/EPMDEDP-11198)
+
+### Routine
+
+- Update git package version to 2.36.4-r0 [EPMDEDP-11260](https://jiraeu.epam.com/browse/EPMDEDP-11260)
+
+
 <a name="v2.13.3"></a>
-## [v2.13.3] - 2022-12-07
+## [v2.13.3] - 2022-12-17
 ### Bug Fixes
 
 - Gerrit project syncer and controller conflict [EPMDEDP-11142](https://jiraeu.epam.com/browse/EPMDEDP-11142)
@@ -219,7 +230,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...HEAD
+[v2.13.4]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...v2.13.4
 [v2.13.3]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...v2.13.3
 [v2.13.2]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...v2.13.2
 [v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
