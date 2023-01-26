@@ -19,12 +19,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	buildInfo "github.com/epam/edp-common/pkg/config"
-	edpCompApi "github.com/epam/edp-component-operator/api/v1/v1"
+	edpCompApi "github.com/epam/edp-component-operator/api/v1"
 	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
-	gerritAlpha "github.com/epam/edp-gerrit-operator/v2/api/edp/v1alpha1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
+	gerritAlpha "github.com/epam/edp-gerrit-operator/v2/api/v1alpha1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/controllers/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/controllers/gerritgroup"
 	"github.com/epam/edp-gerrit-operator/v2/controllers/gerritgroupmember"

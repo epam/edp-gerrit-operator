@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	"github.com/epam/edp-gerrit-operator/v2/controllers/helper"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"

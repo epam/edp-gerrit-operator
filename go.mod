@@ -3,7 +3,7 @@ module github.com/epam/edp-gerrit-operator/v2
 go 1.19
 
 replace (
-	github.com/epam/edp-component-operator v0.12.0 => github.com/epam/edp-component-operator v0.1.1-0.20230103091554-b9fc602187dc
+	github.com/epam/edp-component-operator v0.12.0 => github.com/epam/edp-component-operator v0.1.1-0.20230118145658-7283b2b5cbf9
 	github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20221220162201-efeef9d83325
 	github.com/openshift/client-go v3.9.0+incompatible => github.com/openshift/client-go v0.0.0-20221213131518-7aec8d54188a
 )
@@ -11,9 +11,9 @@ replace (
 require (
 	github.com/dchest/uniuri v1.2.0
 	github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8
-	github.com/epam/edp-component-operator v0.1.1-0.20230103091554-b9fc602187dc
+	github.com/epam/edp-component-operator v0.1.1-0.20230118145658-7283b2b5cbf9
 	github.com/epam/edp-jenkins-operator/v2 v2.13.1
-	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20220607092017-8aa0376f96c8
+	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800
 	github.com/go-git/go-git/v5 v5.5.1
 	github.com/go-logr/logr v1.2.3
 	github.com/google/uuid v1.3.0
@@ -24,9 +24,9 @@ require (
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/crypto v0.4.0
 	gopkg.in/resty.v1 v1.12.0
-	k8s.io/api v0.26.0
-	k8s.io/apimachinery v0.26.0
-	k8s.io/client-go v0.26.0
+	k8s.io/api v0.26.1
+	k8s.io/apimachinery v0.26.1
+	k8s.io/client-go v0.26.1
 	sigs.k8s.io/controller-runtime v0.14.1
 )
 
@@ -47,7 +47,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
-	github.com/go-openapi/jsonreference v0.20.1 // indirect
+	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -82,11 +82,11 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/oauth2 v0.3.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/term v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/oauth2 v0.4.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -95,11 +95,11 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.26.0 // indirect
-	k8s.io/component-base v0.26.0 // indirect
-	k8s.io/klog/v2 v2.80.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20221207184640-f3cff1453715 // indirect
-	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
+	k8s.io/apiextensions-apiserver v0.26.1 // indirect
+	k8s.io/component-base v0.26.1 // indirect
+	k8s.io/klog/v2 v2.90.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20230123231816-1cb3ae25d79a // indirect
+	k8s.io/utils v0.0.0-20230115233650-391b47cb4029 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

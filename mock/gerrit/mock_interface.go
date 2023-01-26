@@ -4,7 +4,7 @@ package mock
 
 import (
 	context "context"
-	"github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	"github.com/epam/edp-gerrit-operator/v2/api/v1"
 
 	clientgerrit "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 

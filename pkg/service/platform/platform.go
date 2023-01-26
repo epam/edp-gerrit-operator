@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/helpers"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/k8s"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/openshift"

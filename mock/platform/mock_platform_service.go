@@ -3,7 +3,7 @@
 package mock
 
 import (
-	"github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	"github.com/epam/edp-gerrit-operator/v2/api/v1"
 	io "io"
 
 	corev1 "k8s.io/api/core/v1"

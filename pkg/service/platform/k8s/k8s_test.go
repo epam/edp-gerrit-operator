@@ -9,9 +9,9 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 )
 
 func TestK8SService_getKeycloakRootUrl(t *testing.T) {

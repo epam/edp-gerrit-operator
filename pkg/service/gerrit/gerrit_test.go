@@ -23,9 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
-	keycloakApi "github.com/epam/edp-keycloak-operator/pkg/apis/v1/v1"
+	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	pmock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"

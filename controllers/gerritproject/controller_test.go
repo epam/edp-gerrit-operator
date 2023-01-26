@@ -20,7 +20,7 @@ import (
 
 	commonmock "github.com/epam/edp-common/pkg/mock"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	gerritClientMocks "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit/mocks"

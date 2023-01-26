@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/resty.v1"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	platformMock "github.com/epam/edp-gerrit-operator/v2/mock/platform"
 	mock "github.com/epam/edp-gerrit-operator/v2/mock/ssh"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/client/ssh"

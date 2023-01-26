@@ -25,7 +25,7 @@ import (
 
 	commonmock "github.com/epam/edp-common/pkg/mock"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	gerritController "github.com/epam/edp-gerrit-operator/v2/controllers/gerrit"
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"

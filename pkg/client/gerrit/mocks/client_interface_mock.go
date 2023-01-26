@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	"github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	"github.com/epam/edp-gerrit-operator/v2/api/v1"
 	gerrit "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
 	mock "github.com/stretchr/testify/mock"
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/edp/v1"
+	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 )
 
 func TestSetFailureCount(t *testing.T) {
