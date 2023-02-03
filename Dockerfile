@@ -7,7 +7,7 @@ ENV OPERATOR=/usr/local/bin/gerrit-operator \
 
 RUN apk add --no-cache ca-certificates=20220614-r0 \
                        openssh-client==9.0_p1-r2 \
-                       git==2.36.3-r0
+                       git==2.36.4-r0
 
 # install operator binary
 COPY ./dist/go-binary ${OPERATOR}
