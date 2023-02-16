@@ -1,10 +1,44 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Features
+
+- Updated Operator SDK [EPMDEDP-11176](https://jiraeu.epam.com/browse/EPMDEDP-11176)
+- Custom gerrit rest and ssh url in spec [EPMDEDP-11198](https://jiraeu.epam.com/browse/EPMDEDP-11198)
+- Updated EDP components [EPMDEDP-11206](https://jiraeu.epam.com/browse/EPMDEDP-11206)
+- Provide opportunity to use default cluster storageClassName [EPMDEDP-11230](https://jiraeu.epam.com/browse/EPMDEDP-11230)
+
+### Bug Fixes
+
+- Gerrit project syncer and controller conflict [EPMDEDP-11142](https://jiraeu.epam.com/browse/EPMDEDP-11142)
+
 ### Routine
 
+- Update current development version [EPMDEDP-10610](https://jiraeu.epam.com/browse/EPMDEDP-10610)
 - Get gerrit sshPort form global section [EPMDEDP-10642](https://jiraeu.epam.com/browse/EPMDEDP-10642)
 - Update current development version [EPMDEDP-11009](https://jiraeu.epam.com/browse/EPMDEDP-11009)
+
+### Documentation
+
+- Update chart and application version in Readme file [EPMDEDP-11221](https://jiraeu.epam.com/browse/EPMDEDP-11221)
+
+
+<a name="v2.13.4"></a>
+## [v2.13.4] - 2023-01-23
+### Features
+
+- Custom gerrit rest and ssh url in spec [EPMDEDP-11198](https://jiraeu.epam.com/browse/EPMDEDP-11198)
+
+### Routine
+
+- Update git package version to 2.36.4-r0 [EPMDEDP-11260](https://jiraeu.epam.com/browse/EPMDEDP-11260)
+
+
+<a name="v2.13.3"></a>
+## [v2.13.3] - 2022-12-17
+### Bug Fixes
+
+- Gerrit project syncer and controller conflict [EPMDEDP-11142](https://jiraeu.epam.com/browse/EPMDEDP-11142)
 
 
 <a name="v2.13.2"></a>
@@ -57,6 +91,22 @@
 - Upgrade gerrit to version 3.6.2 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
 
 
+<a name="v2.12.1"></a>
+## [v2.12.1] - 2023-02-03
+### Features
+
+- Add base path to gerrit spec [EPMDEDP-11045](https://jiraeu.epam.com/browse/EPMDEDP-11045)
+- Custom gerrit rest and ssh url in spec [EPMDEDP-11198](https://jiraeu.epam.com/browse/EPMDEDP-11198)
+
+### Bug Fixes
+
+- Gerrit project syncer and controller conflict [EPMDEDP-11142](https://jiraeu.epam.com/browse/EPMDEDP-11142)
+
+### Routine
+
+- Update git package version [EPMDEDP-11319](https://jiraeu.epam.com/browse/EPMDEDP-11319)
+
+
 <a name="v2.12.0"></a>
 ## [v2.12.0] - 2022-08-26
 ### Features
@@ -86,8 +136,8 @@
 - Fix Jira Ticket pattern for changelog generator [EPMDEDP-10159](https://jiraeu.epam.com/browse/EPMDEDP-10159)
 - Update alpine base image to 3.16.2 version [EPMDEDP-10274](https://jiraeu.epam.com/browse/EPMDEDP-10274)
 - Update alpine base image version [EPMDEDP-10280](https://jiraeu.epam.com/browse/EPMDEDP-10280)
-- Upgrade gerrit to version 3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
 - Update gerrit to version v3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
+- Upgrade gerrit to version 3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
 - Change 'go get' to 'go install' for git-chglog [EPMDEDP-10337](https://jiraeu.epam.com/browse/EPMDEDP-10337)
 - Use deployments as default deploymentType for OpenShift [EPMDEDP-10344](https://jiraeu.epam.com/browse/EPMDEDP-10344)
 - Update Gerrit to 3.6.1 release version [EPMDEDP-10374](https://jiraeu.epam.com/browse/EPMDEDP-10374)
@@ -131,13 +181,13 @@
 
 ### Testing
 
-- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Add tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Fix unit tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - add tests for git and gerrit client [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
-- fix running in cluster function [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
 - fix gerrit service tests [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
+- fix running in cluster function [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
 
 ### Routine
 
@@ -217,10 +267,13 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...HEAD
+[v2.13.4]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...v2.13.4
+[v2.13.3]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...v2.13.3
 [v2.13.2]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...v2.13.2
 [v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
-[v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.13.0
+[v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.1...v2.13.0
+[v2.12.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.12.1
 [v2.12.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...v2.12.0
 [v2.11.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...v2.11.0
 [v2.10.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.9.0...v2.10.0
