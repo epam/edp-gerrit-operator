@@ -26,6 +26,9 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.affinity | object | `{}` |  |
 | gerrit.annotations | object | `{}` |  |
 | gerrit.basePath | string | `""` | Base path for Nexus URL |
+| gerrit.caCerts.enabled | bool | `false` | Flag for enabling additional CA certificates |
+| gerrit.caCerts.image | string | `"adoptopenjdk/openjdk11:alpine"` | Change init CA certificates container image |
+| gerrit.caCerts.secret | string | `"secret-name"` | Name of the secret containing additional CA certificates |
 | gerrit.deploy | bool | `true` | Flag to enable/disable Gerrit deploy |
 | gerrit.image | string | `"epamedp/edp-gerrit"` | Define gerrit docker image name |
 | gerrit.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied for gerrit deployment |
@@ -33,6 +36,7 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.ingress.annotations | object | `{}` |  |
 | gerrit.ingress.pathType | string | `"Prefix"` | pathType is only for k8s >= 1.1= |
 | gerrit.ingress.tls | list | `[]` | See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress ingressClassName: nginx |
+| gerrit.javaOptions | string | `""` | Values to add to JAVA_OPTIONS |
 | gerrit.name | string | `"gerrit"` | Gerrit name |
 | gerrit.nodeSelector | object | `{}` |  |
 | gerrit.port | string | `"8080"` | HTTP port |

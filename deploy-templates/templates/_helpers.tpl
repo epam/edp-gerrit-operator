@@ -93,3 +93,14 @@ Return if ingress supports pathType.
 {{- define "gerrit.ingress.supportsPathType" -}}
   {{- or (eq (include "gerrit.ingress.isStable" .) "true") (and (eq (include "gerrit.ingress.apiVersion" .) "networking.k8s.io/v1beta1") (semverCompare ">= 1.18-0" .Capabilities.KubeVersion.Version)) -}}
 {{- end -}}
+
+{{/*
+Set gerrit.javaOptions
+*/}}
+{{- define "gerrit.javaOptions" -}}
+{{- if .Values.gerrit.caCerts.enabled -}}
+{{ printf "-Djavax.net.ssl.trustStore=%s/certs/cacerts %s" "/var/gerrit/review_site" .Values.gerrit.javaOptions | trim | quote }}
+{{- else -}}
+{{ printf "%s" .Values.gerrit.javaOptions }}
+{{- end -}}
+{{- end -}}

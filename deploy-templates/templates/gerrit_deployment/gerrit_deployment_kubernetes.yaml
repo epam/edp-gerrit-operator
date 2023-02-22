@@ -25,6 +25,25 @@ spec:
         - name: {{ .Values.gerrit.name }}-data
           persistentVolumeClaim:
             claimName: {{ .Values.gerrit.name }}-data
+      {{- if .Values.gerrit.caCerts.enabled }}
+        - name: ca-certs
+          secret:
+            secretName: {{ .Values.gerrit.caCerts.secret }}
+      {{- end }}
+      initContainers:
+      {{- if .Values.gerrit.caCerts.enabled }}
+        - name: ca-certs
+          image: {{ default "adoptopenjdk/openjdk11:alpine" .Values.gerrit.caCerts.image }}
+          imagePullPolicy: {{ .Values.gerrit.imagePullPolicy  }}
+          command: ["sh"]
+          args: ["-c", "cp -f \"${JAVA_HOME}/lib/security/cacerts\" /tmp/certs/cacerts; if [ \"$(ls /tmp/secrets/ca-certs)\" ]; then for f in /tmp/secrets/ca-certs/*; do keytool -importcert -file \"${f}\" -alias \"$(basename \"${f}\")\" -keystore /tmp/certs/cacerts -storepass changeit -trustcacerts -noprompt; done; fi;"]
+          volumeMounts:
+            - mountPath: /tmp/certs
+              name: {{ .Values.gerrit.name }}-data
+              subPath: certs
+            - mountPath: /tmp/secrets/ca-certs
+              name: ca-certs
+      {{- end }}
       containers:
         - name: {{ .Values.gerrit.name }}
           image: {{ .Values.gerrit.image }}:{{ .Values.gerrit.version }}
@@ -40,11 +59,18 @@ spec:
             - name: GERRIT_INIT_ARGS
               value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
                         --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication --install-plugin=webhooks'
+            - name: JAVA_OPTIONS
+              value: {{ template "gerrit.javaOptions" . }}
           resources:
 {{ toYaml .Values.gerrit.resources | indent 12 }}
           volumeMounts:
             - name: {{ .Values.gerrit.name }}-data
               mountPath: /var/gerrit/review_site
+            {{- if .Values.gerrit.caCerts.enabled }}
+            - name: {{ .Values.gerrit.name }}-data
+              mountPath: /var/gerrit/review_site/certs
+              subPath: certs
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /
