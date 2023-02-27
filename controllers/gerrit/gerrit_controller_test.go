@@ -27,8 +27,10 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const name = "name"
-const namespace = "namespace"
+const (
+	name      = "name"
+	namespace = "namespace"
+)
 
 var nsn = types.NamespacedName{
 	Namespace: namespace,

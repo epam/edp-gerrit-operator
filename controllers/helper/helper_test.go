@@ -35,11 +35,13 @@ func TestTryToDelete(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: instance.Namespace, Name: "ger1"},
+			Namespace: instance.Namespace, Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
@@ -124,11 +126,13 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: instance.Namespace, Name: "ger1"},
+			Namespace: instance.Namespace, Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 	gerritService := gmock.Interface{}
@@ -187,11 +191,13 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: instance.Namespace, Name: "ger1"},
+			Namespace: instance.Namespace, Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
@@ -217,11 +223,13 @@ func TestGetGerritInstance(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: "ns", Name: "ger1"},
+			Namespace: "ns", Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	ctx := context.Background()

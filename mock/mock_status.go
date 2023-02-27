@@ -24,7 +24,6 @@ func (s *StatusWriter) Create(ctx context.Context, obj client.Object, subResourc
 }
 
 func (s *StatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
-
 	called := s.Called()
 	parent, ok := called.Get(0).(client.StatusWriter)
 	if ok {

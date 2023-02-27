@@ -30,20 +30,24 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: "ns", Name: "ger1"},
+			Namespace: "ns", Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+		ObjectMeta: metaV1.ObjectMeta{
+			Namespace: "ns", Name: "prj1",
 			OwnerReferences: []metaV1.OwnerReference{
 				{
 					Kind: g.Kind,
 					UID:  g.UID,
 				},
-			}},
+			},
+		},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
@@ -97,20 +101,24 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: "ns", Name: "ger1"},
+			Namespace: "ns", Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
+		ObjectMeta: metaV1.ObjectMeta{
+			Namespace: "ns", Name: "prj1",
 			OwnerReferences: []metaV1.OwnerReference{
 				{
 					Kind: g.Kind,
 					UID:  g.UID,
 				},
-			}},
+			},
+		},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
@@ -155,11 +163,13 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: "ns", Name: "ger1"},
+			Namespace: "ns", Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	serviceMock := gmock.Interface{}
@@ -207,11 +217,13 @@ func TestSyncBackendProjects(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: "ns", Name: "ger1"},
+			Namespace: "ns", Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	serviceMock := gmock.Interface{}

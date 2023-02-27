@@ -72,7 +72,6 @@ func (gc *Client) UpdateGroup(groupID, description string, visibleToAll bool) er
 			"description": description,
 		}).
 		Put(fmt.Sprintf("groups/%s/description", groupID))
-
 	if err != nil {
 		return errors.Wrap(err, "unable to update group")
 	}
@@ -110,7 +109,6 @@ func (gc *Client) CreateGroup(name, description string, visibleToAll bool) (*Gro
 			"visible_to_all": visibleToAll,
 		}).
 		Put(fmt.Sprintf("groups/%s", name))
-
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create group")
 	}

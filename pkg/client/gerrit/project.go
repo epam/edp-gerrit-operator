@@ -50,7 +50,6 @@ func (gc *Client) GetProject(name string) (*Project, error) {
 	rsp, err := gc.resty.R().
 		SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/%s", url.QueryEscape(name)))
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit project")
 	}
@@ -105,7 +104,6 @@ func (gc *Client) DeleteProject(name string) error {
 func (gc *Client) ListProjects(_type string) ([]Project, error) {
 	rsp, err := gc.resty.R().SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/?type=%s&d=1&t=1", _type))
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit project")
 	}
@@ -136,7 +134,6 @@ func (gc *Client) ListProjects(_type string) ([]Project, error) {
 func (gc *Client) ListProjectBranches(projectName string) ([]Branch, error) {
 	rsp, err := gc.resty.R().SetHeader(acceptHeader, applicationJson).
 		Get(fmt.Sprintf("/projects/%s/branches/", url.QueryEscape(projectName)))
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to get Gerrit project branches")
 	}

@@ -269,8 +269,9 @@ func (gc *Client) getGroupUuid(groupName string) (string, error) {
 	return uuid, nil
 }
 
-func (gc *Client) InitAllProjects(instance *gerritApi.Gerrit, k8sService platform.PlatformService, gerritScriptsPath string,
-	podName string, _ string) error {
+func (gc *Client) InitAllProjects(instance *gerritApi.Gerrit, k8sService platform.PlatformService,
+	gerritScriptsPath string, podName string, _ string,
+) error {
 	initAllProjectsScript, err := os.ReadFile(filepath.FromSlash(fmt.Sprintf("%v/init-all-projects.sh", gerritScriptsPath)))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to read init-all-projects.sh script")
@@ -314,9 +315,11 @@ func (gc *Client) InitAllProjects(instance *gerritApi.Gerrit, k8sService platfor
 	}
 
 	_, _, err = k8sService.ExecInPod(instance.Namespace, podName,
-		[]string{path, containerFlag,
+		[]string{
+			path, containerFlag,
 			fmt.Sprintf("sh /tmp/scripts/init-all-projects.sh \"%v\" \"%v\" \"%v\" \"%v\" \"%v\"",
-				string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid, developersGroupUuid, readOnlyGroupUuid)})
+				string(gerritConfig), ciToolsGroupUuid, projectBootstrappersGroupUuid, developersGroupUuid, readOnlyGroupUuid),
+		})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
 	}

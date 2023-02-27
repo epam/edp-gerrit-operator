@@ -38,11 +38,13 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: prj.Namespace, Name: "ger1"},
+			Namespace: prj.Namespace, Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
@@ -62,7 +64,8 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
+			Name: prj.Name, Namespace: prj.Namespace,
+		}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -78,7 +81,8 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
+			Name: prj.Name, Namespace: prj.Namespace,
+		}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -96,7 +100,8 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 
 	_, err = rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}})
+			Name: prj.Name, Namespace: prj.Namespace,
+		}})
 	require.NoError(t, err)
 
 	err = loggerSink.LastError()
@@ -161,7 +166,8 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
+			Name: prj.Name, Namespace: prj.Namespace,
+		}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -176,7 +182,8 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
+			Name: prj.Name, Namespace: prj.Namespace,
+		}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -194,7 +201,8 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 	_, err = rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}})
+			Name: prj.Name, Namespace: prj.Namespace,
+		}})
 	require.NoError(t, err)
 
 	err = loggerSink.LastError()
@@ -212,8 +220,10 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 func TestIsSpecUpdated(t *testing.T) {
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			DeletionTimestamp: &metaV1.Time{Time: time.Now()}},
+		ObjectMeta: metaV1.ObjectMeta{
+			Namespace: "ns", Name: "prj1",
+			DeletionTimestamp: &metaV1.Time{Time: time.Now()},
+		},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
@@ -228,8 +238,10 @@ func TestReconcile_Reconcile_NotFound(t *testing.T) {
 	utilRuntime.Must(coreV1Api.AddToScheme(scheme))
 
 	prj := gerritApi.GerritProject{
-		ObjectMeta: metaV1.ObjectMeta{Namespace: "ns", Name: "prj1",
-			DeletionTimestamp: &metaV1.Time{Time: time.Now()}},
+		ObjectMeta: metaV1.ObjectMeta{
+			Namespace: "ns", Name: "prj1",
+			DeletionTimestamp: &metaV1.Time{Time: time.Now()},
+		},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
@@ -243,7 +255,8 @@ func TestReconcile_Reconcile_NotFound(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: "nm", Namespace: prj.Namespace}}); err != nil {
+			Name: "nm", Namespace: prj.Namespace,
+		}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -281,7 +294,8 @@ func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
@@ -297,7 +311,8 @@ func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{NamespacedName: types.NamespacedName{
-			Name: prj.Name, Namespace: prj.Namespace}}); err != nil {
+			Name: prj.Name, Namespace: prj.Namespace,
+		}}); err != nil {
 		t.Fatal(err)
 	}
 

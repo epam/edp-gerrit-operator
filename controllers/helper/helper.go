@@ -154,7 +154,8 @@ func GetGerritOwner(references []metaV1.OwnerReference) *metaV1.OwnerReference {
 }
 
 func GetGerritInstance(ctx context.Context, k8sClient client.Client, ownerName *string,
-	namespace string) (*gerritApi.Gerrit, error) {
+	namespace string,
+) (*gerritApi.Gerrit, error) {
 	if ownerName == nil {
 		var list gerritApi.GerritList
 
@@ -204,7 +205,8 @@ func RemoveString(slice []string, s string) (result []string) {
 }
 
 func GetGerritClient(ctx context.Context, cl client.Client, instance client.Object, ownerName string,
-	service gerritService.Interface) (gerritClient.ClientInterface, error) {
+	service gerritService.Interface,
+) (gerritClient.ClientInterface, error) {
 	if !IsInstanceOwnerSet(instance) {
 		ownerReference := FindCROwnerName(ownerName)
 

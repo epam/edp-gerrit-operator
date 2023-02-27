@@ -35,8 +35,10 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const name = "name"
-const namespace = "namespace"
+const (
+	name      = "name"
+	namespace = "namespace"
+)
 
 var nsn = types.NamespacedName{
 	Namespace: namespace,
@@ -47,10 +49,12 @@ func createGerritReplicationConfig(status string) *gerritApi.GerritReplicationCo
 	return &gerritApi.GerritReplicationConfig{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace},
+			Namespace: namespace,
+		},
 		Status: gerritApi.GerritReplicationConfigStatus{
 			Status: status,
-		}}
+		},
+	}
 }
 
 func createGerritByStatus(status string) *gerritApi.Gerrit {
@@ -572,8 +576,10 @@ func Test_configureReplication_saveSshReplicationKeyErr(t *testing.T) {
 	platformMock.On("GetSecret", gerritInstance.Namespace, spec.GerritDefaultVCSKeyName).Return(nil, nil)
 
 	path := fmt.Sprintf("%v/%v", spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
-	tr := []string{"/bin/sh", "-c",
-		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
+	tr := []string{
+		"/bin/sh", "-c",
+		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path),
+	}
 
 	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, errTest)
 
@@ -607,8 +613,10 @@ func Test_configureReplication_InitNewSshClientErr(t *testing.T) {
 	platformMock.On("GetSecret", gerritInstance.Namespace, spec.GerritDefaultVCSKeyName).Return(nil, nil)
 
 	path := fmt.Sprintf("%v/%v", spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
-	tr := []string{"/bin/sh", "-c",
-		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
+	tr := []string{
+		"/bin/sh", "-c",
+		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path),
+	}
 
 	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, nil)
 
@@ -646,7 +654,7 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 		},
 	)
 
-	var keys = map[string][]byte{
+	keys := map[string][]byte{
 		"id_rsa": privkeyPem,
 	}
 
@@ -659,14 +667,18 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 	platformMock.On("GetSecret", gerritInstance.Namespace, spec.GerritDefaultVCSKeyName).Return(nil, nil)
 
 	path := fmt.Sprintf("%v/%v", spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
-	tr := []string{"/bin/sh", "-c",
-		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
+	tr := []string{
+		"/bin/sh", "-c",
+		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path),
+	}
 
 	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, nil)
 
-	tr2 := []string{"/bin/sh", "-c",
+	tr2 := []string{
+		"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
-			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)}
+			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath),
+	}
 	platformMock.On("ExecInPod", namespace, "", tr2).Return(nil, nil, errTest)
 
 	rg := ReconcileGerritReplicationConfig{
@@ -703,7 +715,7 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 		},
 	)
 
-	var keys = map[string][]byte{
+	keys := map[string][]byte{
 		"id_rsa": privkeyPem,
 	}
 
@@ -714,14 +726,18 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 	platformMock.On("GetSecret", gerritInstance.Namespace, spec.GerritDefaultVCSKeyName).Return(nil, nil)
 
 	path := fmt.Sprintf("%v/%v", spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)
-	tr := []string{"/bin/sh", "-c",
-		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path)}
+	tr := []string{
+		"/bin/sh", "-c",
+		fmt.Sprintf("echo \"%v\" > %v && chmod 600 %v", "", path, path),
+	}
 
 	platformMock.On("ExecInPod", namespace, "", tr).Return(nil, nil, nil)
 
-	tr2 := []string{"/bin/sh", "-c",
+	tr2 := []string{
+		"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
-			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)}
+			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath),
+	}
 	platformMock.On("ExecInPod", namespace, "", tr2).Return(nil, nil, nil)
 
 	rg := ReconcileGerritReplicationConfig{
@@ -742,7 +758,6 @@ func Test_reloadReplicationPluginErr(t *testing.T) {
 	gclient.On("ReloadPlugin", "replication").Return(errTest)
 
 	rg := ReconcileGerritReplicationConfig{
-
 		log: logr.Discard(),
 	}
 	err := rg.reloadReplicationPlugin(&gclient)
@@ -756,7 +771,6 @@ func Test_reloadReplicationPlugin(t *testing.T) {
 	gclient.On("ReloadPlugin", "replication").Return(nil)
 
 	rg := ReconcileGerritReplicationConfig{
-
 		log: logr.Discard(),
 	}
 	err := rg.reloadReplicationPlugin(&gclient)
@@ -788,10 +802,12 @@ func Test_createSshConfigErr(t *testing.T) {
 		log:      logr.Discard(),
 	}
 
-	tr := []string{"/bin/sh", "-c",
+	tr := []string{
+		"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")}
+			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config"),
+	}
 
 	platformMock.On("ExecInPod", "", "", tr).Return(nil, nil, errTest)
 
@@ -808,10 +824,12 @@ func Test_createSshConfig(t *testing.T) {
 		log:      logr.Discard(),
 	}
 
-	tr := []string{"/bin/sh", "-c",
+	tr := []string{
+		"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")}
+			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config"),
+	}
 
 	platformMock.On("ExecInPod", "", "", tr).Return(nil, nil, nil)
 
@@ -828,10 +846,12 @@ func Test_updateSshConfig(t *testing.T) {
 		log:      logr.Discard(),
 	}
 
-	tr := []string{"/bin/sh", "-c",
+	tr := []string{
+		"/bin/sh", "-c",
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config")}
+			spec.DefaultGerritSSHConfigPath+"/config", spec.DefaultGerritSSHConfigPath+"/config"),
+	}
 
 	platformMock.On("ExecInPod", name, "", tr).Return(nil, nil, nil)
 
@@ -839,7 +859,7 @@ func Test_updateSshConfig(t *testing.T) {
 		Spec: gerritApi.GerritReplicationConfigSpec{SSHUrl: "@:"},
 	}
 
-	err := rg.updateSshConfig(name, "", config, "", "")
+	err := rg.updateSshConfig(name, "", "", "", config)
 
 	assert.Error(t, err)
 }

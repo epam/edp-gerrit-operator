@@ -236,12 +236,12 @@ func (r *ReconcileGerritReplicationConfig) configureReplication(config *gerritAp
 		return err
 	}
 
-	if err := r.updateReplicationConfig(gerritObj.Namespace, configArgs.gerritPodName, config, gerritTemplatesPath); err != nil {
+	if err := r.updateReplicationConfig(gerritObj.Namespace, configArgs.gerritPodName, gerritTemplatesPath, config); err != nil {
 		return err
 	}
 
-	if err := r.updateSshConfig(gerritObj.Namespace, configArgs.gerritPodName, config, gerritTemplatesPath,
-		filepath.Join(spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName)); err != nil {
+	if err := r.updateSshConfig(gerritObj.Namespace, configArgs.gerritPodName, gerritTemplatesPath,
+		filepath.Join(spec.GerritDefaultVCSKeyPath, spec.GerritDefaultVCSKeyName), config); err != nil {
 		return err
 	}
 
@@ -287,9 +287,11 @@ func (r *ReconcileGerritReplicationConfig) getConfigurationArgs(gerritObj *gerri
 }
 
 func (r *ReconcileGerritReplicationConfig) createReplicationConfig(namespace, podName string) error {
-	command := []string{bin, containerFlag,
+	command := []string{
+		bin, containerFlag,
 		fmt.Sprintf("[[ -f %v ]] || printf '%%s\n  %%s\n' '[gerrit]' 'defaultForceUpdate = true' > %v && chown -R gerrit2:gerrit2 %v",
-			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath)}
+			spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath, spec.DefaultGerritReplicationConfigPath),
+	}
 
 	_, _, err := r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
@@ -300,10 +302,12 @@ func (r *ReconcileGerritReplicationConfig) createReplicationConfig(namespace, po
 }
 
 func (r *ReconcileGerritReplicationConfig) createSshConfig(namespace, podName string) error {
-	command := []string{bin, containerFlag,
+	command := []string{
+		bin, containerFlag,
 		fmt.Sprintf("[[ -f %v ]] || mkdir -p %v && touch %v && chown -R gerrit2:gerrit2 %v",
 			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath,
-			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath+config)}
+			spec.DefaultGerritSSHConfigPath+config, spec.DefaultGerritSSHConfigPath+config),
+	}
 
 	_, _, err := r.platform.ExecInPod(namespace, podName, command)
 	if err != nil {
@@ -325,8 +329,10 @@ func (r *ReconcileGerritReplicationConfig) saveSshReplicationKey(namespace, podN
 	return nil
 }
 
-func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, podName string,
-	grc *gerritApi.GerritReplicationConfig, templatePath string) error {
+func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(
+	namespace, podName, templatePath string,
+	grc *gerritApi.GerritReplicationConfig,
+) error {
 	config, err := resolveReplicationTemplate(grc, templatePath, "replication-conf.tmpl")
 	if err != nil {
 		return err
@@ -342,9 +348,11 @@ func (r *ReconcileGerritReplicationConfig) updateReplicationConfig(namespace, po
 	return nil
 }
 
-func (r *ReconcileGerritReplicationConfig) updateSshConfig(namespace, podName string, grc *gerritApi.GerritReplicationConfig, templatePath, keyPath string) error {
-	err := r.createSshConfig(namespace, podName)
-	if err != nil {
+func (r *ReconcileGerritReplicationConfig) updateSshConfig(
+	namespace, podName, templatePath, keyPath string,
+	grc *gerritApi.GerritReplicationConfig,
+) error {
+	if err := r.createSshConfig(namespace, podName); err != nil {
 		return err
 	}
 

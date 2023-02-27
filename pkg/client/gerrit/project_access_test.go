@@ -28,7 +28,8 @@ func TestClient_AddAccessRights(t *testing.T) {
 			Max:            2,
 			Force:          false,
 			Action:         "ALLOW",
-		}}); err != nil {
+		},
+	}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -52,7 +53,8 @@ func TestClient_UpdateAccessRights(t *testing.T) {
 			Max:            2,
 			Force:          false,
 			Action:         "ALLOW",
-		}}); err != nil {
+		},
+	}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -76,7 +78,8 @@ func TestClient_DeleteAccessRights(t *testing.T) {
 			Max:            2,
 			Force:          false,
 			Action:         "ALLOW",
-		}}); err != nil {
+		},
+	}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -100,7 +103,8 @@ func TestClient_DeleteAccessRightsFailure(t *testing.T) {
 			Max:            2,
 			Force:          false,
 			Action:         "ALLOW",
-		}}); err == nil {
+		},
+	}); err == nil {
 		t.Fatal("no error returned")
 	}
 }

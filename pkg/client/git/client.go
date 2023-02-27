@@ -232,7 +232,8 @@ func (c *Client) createRemoteWithCredential(repo *git.Repository, baseRemoteName
 	originURL.User = url.UserPassword(c.username, c.password)
 
 	newRemote, err := repo.CreateRemote(&config.RemoteConfig{
-		Name: newRemoteName, URLs: []string{originURL.String()}})
+		Name: newRemoteName, URLs: []string{originURL.String()},
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create remote")
 	}

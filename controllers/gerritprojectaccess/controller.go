@@ -163,7 +163,8 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 }
 
 func (*Reconcile) makeDeletionFunc(gc gerritClient.ClientInterface, projectName string,
-	refs []gerritApi.Reference) func() error {
+	refs []gerritApi.Reference,
+) func() error {
 	return func() error {
 		if err := gc.DeleteAccessRights(projectName, prepareAccessInfo(refs)); err != nil {
 			return errors.Wrap(err, "unable to delete access rights")

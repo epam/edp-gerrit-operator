@@ -314,16 +314,15 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 		return instance, errors.Wrapf(err, "Failed to init Gerrit SSH client")
 	}
 
-	ciUserSecretName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	ciUserSecretName := formatSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
-	projectCreatorSecretKeyName := createSecretName(instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
+	projectCreatorSecretKeyName := formatSecretName(instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
 	projectCreatorSecretPasswordName := fmt.Sprintf("%s-%s-%s", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, password)
 
-	err = s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
+	if err = s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
 		user:     []byte(spec.GerritDefaultCiUserUser),
 		password: []byte(uniuri.New()),
-	})
-	if err != nil {
+	}); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
 	}
 
@@ -362,8 +361,11 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 	}
 
 	if s.jenkinsEnabled(ctx, instance.Namespace) {
-		err = s.PlatformService.CreateJenkinsServiceAccount(instance.Namespace, ciUserSshSecretName, "ssh")
-		if err != nil {
+		log.Info("Creating Jenkins Service Account for Gerrit")
+
+		if err = s.PlatformService.CreateJenkinsServiceAccount(
+			instance.Namespace, ciUserSshSecretName, "ssh",
+		); err != nil {
 			return instance, errors.Wrapf(err, "Failed to create Jenkins Service Account %s", ciUserSshSecretName)
 		}
 	}
@@ -399,8 +401,10 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 	}
 
 	userGroups := map[string][]string{
-		spec.GerritDefaultCiUserUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup,
-			spec.GerritCIToolsGroupName, spec.GerritServiceUsersGroup},
+		spec.GerritDefaultCiUserUser: {
+			spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup,
+			spec.GerritCIToolsGroupName, spec.GerritServiceUsersGroup,
+		},
 		spec.GerritDefaultProjectCreatorUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup},
 	}
 
@@ -436,7 +440,7 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 			"clientSecret": []byte(secret.String()),
 		}
 
-		identityServiceSecretName := createSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
+		identityServiceSecretName := formatSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
 
 		err = s.PlatformService.CreateSecret(instance, identityServiceSecretName, identityServiceClientCredentials)
 		if err != nil {
@@ -444,7 +448,7 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 		}
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
-		s.setAnnotation(instance, annotationKey, createSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
+		s.setAnnotation(instance, annotationKey, formatSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix))
 
 		err = s.client.Update(ctx, instance)
 		if err != nil {
@@ -557,8 +561,9 @@ func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Ger
 	}
 
 	if s.jenkinsEnabled(ctx, instance.Namespace) {
-		err = s.configureGerritPluginInJenkins(instance, h, sc)
-		if err != nil {
+		log.Info("Configuring Gerrit plugin in Jenkins")
+
+		if err := s.configureGerritPluginInJenkins(instance, h, sc); err != nil {
 			return nil, err
 		}
 	}
@@ -765,8 +770,11 @@ func (s ComponentService) createSSHKeyPairs(instance *gerritApi.Gerrit, secretNa
 	return
 }
 
-func (s ComponentService) setGerritAdminUserPassword(instance *gerritApi.Gerrit, gerritUrl, gerritAdminPassword,
-	gerritApiUrl string, sshPortService int32) error {
+func (s ComponentService) setGerritAdminUserPassword(
+	instance *gerritApi.Gerrit,
+	gerritUrl, gerritAdminPassword, gerritApiUrl string,
+	sshPortService int32,
+) error {
 	gerritAdminSshKeys, err := s.PlatformService.GetSecret(instance.Namespace, instance.Name+admin)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Gerrit admin secret for %s/%s", instance.Namespace, instance.Name)
@@ -837,14 +845,14 @@ func (ComponentService) setAnnotation(instance *gerritApi.Gerrit, key, value str
 func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Gerrit, host, scheme string) error {
 	sshPort, err := s.GetServicePort(instance)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)
+		return fmt.Errorf("failed to get SSH port for %v/%v: %w", instance.Namespace, instance.Name, err)
 	}
 
-	ciUserCredentialsName := createSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
+	ciUserCredentialsName := formatSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserCredentialsName)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get Secret for CI user for %s/%s", instance.Namespace, instance.Name)
+		return fmt.Errorf("failed to get Secret for CI user for %s/%s: %w", instance.Namespace, instance.Name, err)
 	}
 
 	externalUrl := fmt.Sprintf("%s://%s", scheme, host)
@@ -860,7 +868,7 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Ger
 		return fmt.Errorf("failed to parse template for %q: %w", instance.Name, err)
 	}
 
-	jenkinsPluginConfigurationName := createSecretName(instance.Name, spec.JenkinsPluginConfigPostfix)
+	jenkinsPluginConfigurationName := formatSecretName(instance.Name, spec.JenkinsPluginConfigPostfix)
 	configMapData := map[string]string{
 		jenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
 	}
@@ -878,7 +886,7 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Ger
 	return nil
 }
 
-func createSecretName(name, postfix string) string {
+func formatSecretName(name, postfix string) string {
 	return fmt.Sprintf("%s-%s", name, postfix)
 }
 
@@ -886,16 +894,26 @@ func (s ComponentService) jenkinsEnabled(ctx context.Context, namespace string) 
 	jenkinsList := &jenkinsApi.JenkinsList{}
 
 	if err := s.client.List(ctx, jenkinsList, &client.ListOptions{Namespace: namespace}); err != nil {
+		log.Error(err, "Failed to list Jenkins instances, assuming Jenkins is not enabled", "namespace", namespace)
+
 		return false
 	}
 
-	return len(jenkinsList.Items) != 0
+	if len(jenkinsList.Items) == 0 {
+		log.Info("Jenkins is not enabled", "namespace", namespace)
+
+		return false
+	}
+
+	log.Info("Jenkins is enabled", "namespace", namespace)
+
+	return true
 }
 
 // exposeArgoCDConfiguration creates argocd user in Gerrit and adds this user to the ReadOnly group.
 // It generates login/password and ssh private/public and stores them in secrets.
 func (s *ComponentService) exposeArgoCDConfiguration(_ context.Context, gerrit *gerritApi.Gerrit) error {
-	argoUserSecretName := createSecretName(gerrit.Name, spec.GerritArgoUserSecretPostfix)
+	argoUserSecretName := formatSecretName(gerrit.Name, spec.GerritArgoUserSecretPostfix)
 	argoUserSecretData := map[string][]byte{
 		user:     []byte(spec.GerritArgoUser),
 		password: []byte(uniuri.New()),

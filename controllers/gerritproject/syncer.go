@@ -56,7 +56,8 @@ func (r *Reconcile) syncBackendProjectsTick() error {
 }
 
 func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *gerritApi.Gerrit,
-	allK8sGerritProjects []gerritApi.GerritProject) error {
+	allK8sGerritProjects []gerritApi.GerritProject,
+) error {
 	cl, err := r.service.GetRestClient(gr)
 	if err != nil {
 		return errors.Wrap(err, "unable to init gerrit client")
@@ -87,7 +88,8 @@ func (r *Reconcile) syncGerritInstance(ctx context.Context, gr *gerritApi.Gerrit
 }
 
 func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerritClient.ClientInterface,
-	k8sProject *gerritApi.GerritProject) error {
+	k8sProject *gerritApi.GerritProject,
+) error {
 	branches, err := cl.ListProjectBranches(k8sProject.Spec.Name)
 	if err != nil {
 		return errors.Wrap(err, "unable to list project branches")
@@ -115,7 +117,8 @@ func (r *Reconcile) syncProjectBranches(ctx context.Context, cl gerritClient.Cli
 }
 
 func (r *Reconcile) createGerritProject(ctx context.Context, gr *gerritApi.Gerrit,
-	backendProject *gerritClient.Project) (*gerritApi.GerritProject, error) {
+	backendProject *gerritClient.Project,
+) (*gerritApi.GerritProject, error) {
 	prj := gerritApi.GerritProject{
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      strings.ToLower(fmt.Sprintf("%s-%s", gr.Name, backendProject.SlugifyName())),

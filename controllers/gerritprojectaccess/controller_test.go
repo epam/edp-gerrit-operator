@@ -29,8 +29,10 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const name = "name"
-const namespace = "namespace"
+const (
+	name      = "name"
+	namespace = "namespace"
+)
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -94,11 +96,13 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 	nn := types.NamespacedName{
 		Name:      projectAccessInstance.Name,
-		Namespace: projectAccessInstance.Namespace}
+		Namespace: projectAccessInstance.Namespace,
+	}
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -121,7 +125,8 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -151,11 +156,13 @@ func TestReconcile_ReconcileFailure(t *testing.T) {
 
 	nn := types.NamespacedName{
 		Name:      "foo",
-		Namespace: "bar"}
+		Namespace: "bar",
+	}
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -191,11 +198,13 @@ func TestReconcile_ReconcileFailure(t *testing.T) {
 
 	nn = types.NamespacedName{
 		Name:      projectAccessInstance.Name,
-		Namespace: projectAccessInstance.Namespace}
+		Namespace: projectAccessInstance.Namespace,
+	}
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 }

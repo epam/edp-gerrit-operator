@@ -48,8 +48,10 @@ func TestComponentService_GetGitClient_Failure(t *testing.T) {
 	assert.EqualError(t, err,
 		"unable to get parent gerrit: gerrits.v2.edp.epam.com \"gerrit\" not found")
 
-	rootGerrit := gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{Name: testCh.OwnerName(),
-		Namespace: testCh.GetNamespace()}}
+	rootGerrit := gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{
+		Name:      testCh.OwnerName(),
+		Namespace: testCh.GetNamespace(),
+	}}
 	s.client = fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build()
 	plt.On("GetSecretData", testCh.GetNamespace(), fmt.Sprintf("%v-admin-password", rootGerrit.Name)).
 		Return(nil, errors.New("secret fatal")).Once()
@@ -71,8 +73,10 @@ func TestComponentService_GetGitClient(t *testing.T) {
 	utilRuntime.Must(gerritApi.AddToScheme(sch))
 
 	testCh := testChild{}
-	rootGerrit := gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{Name: testCh.OwnerName(),
-		Namespace: testCh.GetNamespace()}}
+	rootGerrit := gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{
+		Name:      testCh.OwnerName(),
+		Namespace: testCh.GetNamespace(),
+	}}
 
 	s := ComponentService{
 		PlatformService: &plt,

@@ -433,7 +433,9 @@ func TestComponentService_Configure_createSSHKeyPairsAdminErr(t *testing.T) {
 	}
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metaV1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{},
+		}},
+	}
 
 	errTest := errors.New("test")
 
@@ -469,7 +471,9 @@ func TestComponentService_Configure_createSSHKeyPairsProjectCreatorErr(t *testin
 	}
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metaV1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{},
+		}},
+	}
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
@@ -506,7 +510,9 @@ func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 	}
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metaV1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{},
+		}},
+	}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
 	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
@@ -1024,7 +1030,9 @@ func TestComponentService_Configure_CreateGroups(t *testing.T) {
 
 	podList := &coreV1Api.PodList{
 		Items: []coreV1Api.Pod{{
-			TypeMeta: metaV1.TypeMeta{}}}}
+			TypeMeta: metaV1.TypeMeta{},
+		}},
+	}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
 	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)

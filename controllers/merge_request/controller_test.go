@@ -51,8 +51,11 @@ func (s *ControllerTestSuite) SetupTest() {
 	s.gerritClient = &gerritClientMocks.ClientInterface{}
 
 	s.rootGerrit = &gerritApi.Gerrit{ObjectMeta: metaV1.ObjectMeta{Name: "gerrit", Namespace: "ns"}}
-	s.mergeRequest = &gerritApi.GerritMergeRequest{ObjectMeta: metaV1.ObjectMeta{Name: "mr1",
-		Namespace: s.rootGerrit.Namespace},
+	s.mergeRequest = &gerritApi.GerritMergeRequest{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      "mr1",
+			Namespace: s.rootGerrit.Namespace,
+		},
 		Spec: gerritApi.GerritMergeRequestSpec{
 			SourceBranch:        "rev123",
 			OwnerName:           s.rootGerrit.Name,
@@ -60,7 +63,8 @@ func (s *ControllerTestSuite) SetupTest() {
 			AuthorEmail:         "john.doe@example.com",
 			AuthorName:          "John Doe",
 			AdditionalArguments: []string{"-q"},
-		}}
+		},
+	}
 }
 
 func (s *ControllerTestSuite) TearDownTest() {

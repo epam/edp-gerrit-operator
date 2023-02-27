@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const gid = "123"
-const username = "user"
-const groupName = "gr1"
+const (
+	gid       = "123"
+	username  = "user"
+	groupName = "gr1"
+)
 
 func TestErrAlreadyExists_Error(t *testing.T) {
 	t.Parallel()
@@ -221,14 +223,16 @@ func TestClient_CreateGroup(t *testing.T) {
 		resty: restyClient,
 	}
 	desc := "desc"
-	group := Group{ID: "123",
+	group := Group{
+		ID:      "123",
 		GroupID: 12,
 		Members: []GroupMember{
 			{
 				Email:    "t@t.cow",
 				Username: username,
 			},
-		}}
+		},
+	}
 
 	rawGroups, err := json.Marshal(group)
 	require.NoError(t, err)

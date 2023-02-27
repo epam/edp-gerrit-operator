@@ -18,8 +18,10 @@ type Child interface {
 
 func (s ComponentService) GetGitClient(ctx context.Context, child Child, workDir string) (*git.Client, error) {
 	var g gerritApi.Gerrit
-	if err := s.client.Get(ctx, types.NamespacedName{Name: child.OwnerName(),
-		Namespace: child.GetNamespace()}, &g); err != nil {
+	if err := s.client.Get(ctx, types.NamespacedName{
+		Name:      child.OwnerName(),
+		Namespace: child.GetNamespace(),
+	}, &g); err != nil {
 		return nil, errors.Wrap(err, "unable to get parent gerrit")
 	}
 

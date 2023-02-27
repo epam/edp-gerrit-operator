@@ -70,7 +70,8 @@ type MRConfigMapFile struct {
 }
 
 func NewReconcile(k8sClient client.Client, log logr.Logger,
-	opts ...OptionFunc) helper.Controller {
+	opts ...OptionFunc,
+) helper.Controller {
 	r := &Reconcile{
 		k8sClient: k8sClient,
 		log:       log,
@@ -174,8 +175,7 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 
 	if requeue, err := r.tryReconcile(ctx, &instance); err != nil {
 		instance.Status.Value = err.Error()
-		result.RequeueAfter =
-			time.Second * helper.DefaultRequeueTime
+		result.RequeueAfter = time.Second * helper.DefaultRequeueTime
 
 		reqLogger.Error(err, "an error has occurred while handling GerritMergeRequest", "name",
 			request.Name)
@@ -226,7 +226,8 @@ func (r *Reconcile) tryReconcile(ctx context.Context, instance *gerritApi.Gerrit
 }
 
 func (r *Reconcile) createChange(ctx context.Context,
-	instance *gerritApi.GerritMergeRequest) (status *gerritApi.GerritMergeRequestStatus, retErr error) {
+	instance *gerritApi.GerritMergeRequest,
+) (status *gerritApi.GerritMergeRequestStatus, retErr error) {
 	// init git client
 	gitClient, err := r.getGitClient(ctx, instance, r.gitWorkDir)
 	if err != nil {

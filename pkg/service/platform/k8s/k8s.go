@@ -239,7 +239,8 @@ func (s *K8SService) getKeycloakRealm(instance *gerritApi.Gerrit) (*keycloakApi.
 		listOpts := k8sClient.ListOptions{Namespace: instance.Namespace}
 
 		k8sClient.MatchingLabels(map[string]string{
-			"targetRealm": instance.Spec.KeycloakSpec.Realm}).ApplyToList(&listOpts)
+			"targetRealm": instance.Spec.KeycloakSpec.Realm,
+		}).ApplyToList(&listOpts)
 
 		if err := s.client.List(ctx, &realmList, &listOpts); err != nil {
 			return nil, errors.Wrap(err, "unable to get reams by label")
@@ -608,12 +609,16 @@ func (s *K8SService) CreateJenkinsScript(namespace, configMap string) error {
 
 	_, err := s.getJenkinsScript(configMap, namespace)
 	if err == nil {
+		log.Info("Jenkins script already exists, skipping creation")
+
 		return nil
 	}
 
 	if !k8sErrors.IsNotFound(err) {
 		return err
 	}
+
+	log.Info("Did not find Jenkins script, creating it.")
 
 	js := &jenkinsV1Api.JenkinsScript{
 		TypeMeta: metaV1.TypeMeta{},
@@ -626,8 +631,7 @@ func (s *K8SService) CreateJenkinsScript(namespace, configMap string) error {
 		},
 	}
 
-	err = s.client.Create(ctx, js)
-	if err != nil {
+	if err = s.client.Create(ctx, js); err != nil {
 		return fmt.Errorf("failed to create 'JenkinsScript' resource with name: %q, in namespace: %q: %w", configMap, namespace, err)
 	}
 

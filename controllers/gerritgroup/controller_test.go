@@ -29,8 +29,10 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const name = "name"
-const namespace = "namespace"
+const (
+	name      = "name"
+	namespace = "namespace"
+)
 
 func createGerritGroupByOwner(owner []metav1.OwnerReference) *gerritApi.GerritGroup {
 	return &gerritApi.GerritGroup{

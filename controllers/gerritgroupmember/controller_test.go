@@ -31,8 +31,10 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
-const name = "name"
-const namespace = "namespace"
+const (
+	name      = "name"
+	namespace = "namespace"
+)
 
 func TestReconcile_Reconcile(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -78,11 +80,13 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 	nn := types.NamespacedName{
 		Name:      groupMember.Name,
-		Namespace: groupMember.Namespace}
+		Namespace: groupMember.Namespace,
+	}
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -105,7 +109,8 @@ func TestReconcile_Reconcile(t *testing.T) {
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -135,11 +140,13 @@ func TestReconcile_ReconcileFailure1(t *testing.T) {
 
 	nn := types.NamespacedName{
 		Name:      "foo",
-		Namespace: "bar"}
+		Namespace: "bar",
+	}
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -162,11 +169,13 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 
 	g := gerritApi.Gerrit{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: groupMember.Namespace, Name: "ger1"},
+			Namespace: groupMember.Namespace, Name: "ger1",
+		},
 		TypeMeta: metaV1.TypeMeta{
 			APIVersion: "v2.edp.epam.com/v1",
 			Kind:       "Gerrit",
-		}}
+		},
+	}
 
 	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
@@ -184,11 +193,13 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 
 	nn := types.NamespacedName{
 		Name:      groupMember.Name,
-		Namespace: groupMember.Namespace}
+		Namespace: groupMember.Namespace,
+	}
 
 	if _, err := rcn.Reconcile(context.Background(),
 		reconcile.Request{
-			NamespacedName: nn}); err != nil {
+			NamespacedName: nn,
+		}); err != nil {
 		t.Fatal(err)
 	}
 
