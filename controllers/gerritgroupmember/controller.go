@@ -3,7 +3,9 @@ package gerritgroupmember
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -24,7 +26,8 @@ import (
 )
 
 const (
-	finalizerName = "gerritgroupmember.gerrit.finalizer.name"
+	finalizerName   = "gerritgroupmember.gerrit.finalizer.name"
+	syncIntervalEnv = "GERRIT_GROUP_MEMBER_SYNC_INTERVAL"
 )
 
 type Reconcile struct {
@@ -102,9 +105,20 @@ func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (r
 	if err := r.tryToReconcile(ctx, &instance); err != nil {
 		reqLogger.Error(err, "unable to reconcile GerritGroupMember")
 		instance.Status.Value = err.Error()
-		requeueTime := helper.SetFailureCount(&instance)
 
-		return reconcile.Result{RequeueAfter: requeueTime}, nil
+		expRequeueTime := helper.SetFailureCount(&instance)
+
+		constTimeout, isSet := getSyncInterval(syncIntervalEnv)
+		if !isSet {
+			reqLogger.Info("Unable to get sync interval from env. Requeue time will be set using the exponential formula")
+			reqLogger.Info("Requeue time", "time", expRequeueTime.String())
+
+			return reconcile.Result{RequeueAfter: expRequeueTime}, nil
+		}
+
+		reqLogger.Info("Requeue time", "time", constTimeout.String())
+
+		return reconcile.Result{RequeueAfter: constTimeout}, nil
 	}
 
 	helper.SetSuccessStatus(&instance)
@@ -137,4 +151,22 @@ func (*Reconcile) makeDeletionFunc(cl gerritClient.ClientInterface, instance *ge
 
 		return nil
 	}
+}
+
+func getSyncInterval(envVarName string) (time.Duration, bool) {
+	value, ok := os.LookupEnv(envVarName)
+	if !ok {
+		return 0, false
+	}
+
+	interval, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, false
+	}
+
+	if interval <= 0 {
+		return 0, false
+	}
+
+	return interval, true
 }

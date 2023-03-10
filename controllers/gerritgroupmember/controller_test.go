@@ -3,8 +3,8 @@ package gerritgroupmember
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -127,6 +127,8 @@ func TestReconcile_Reconcile(t *testing.T) {
 }
 
 func TestReconcile_ReconcileFailure1(t *testing.T) {
+	t.Parallel()
+
 	scheme := runtime.NewScheme()
 	utilRuntime.Must(gerritApi.AddToScheme(scheme))
 	utilRuntime.Must(coreV1.AddToScheme(scheme))
@@ -143,12 +145,9 @@ func TestReconcile_ReconcileFailure1(t *testing.T) {
 		Namespace: "bar",
 	}
 
-	if _, err := rcn.Reconcile(context.Background(),
-		reconcile.Request{
-			NamespacedName: nn,
-		}); err != nil {
-		t.Fatal(err)
-	}
+	_, err := rcn.Reconcile(context.Background(), reconcile.Request{NamespacedName: nn})
+
+	assert.NoError(t, err)
 }
 
 func TestReconcile_ReconcileFailure2(t *testing.T) {
@@ -156,65 +155,103 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 	utilRuntime.Must(gerritApi.AddToScheme(scheme))
 	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
-	groupMember := gerritApi.GerritGroupMember{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      "mem1",
-			Namespace: "ns1",
+	tests := []struct {
+		name            string
+		prepareFunc     func(t *testing.T)
+		wantRequeueTime time.Duration
+	}{
+		{
+			name:            "GERRIT_GROUP_MEMBER_SYNC_INTERVAL env var is not set",
+			prepareFunc:     func(t *testing.T) {},
+			wantRequeueTime: time.Duration(float64(time.Second) * math.Pow(math.E, 1.0)),
 		},
-		Spec: gerritApi.GerritGroupMemberSpec{
-			AccountID: "acc1",
-			GroupID:   "gr1",
+		{
+			name:            "GERRIT_GROUP_MEMBER_SYNC_INTERVAL env var is empty",
+			prepareFunc:     func(t *testing.T) { t.Setenv("GERRIT_GROUP_MEMBER_SYNC_INTERVAL", "") },
+			wantRequeueTime: time.Duration(float64(time.Second) * math.Pow(math.E, 1.0)),
+		},
+		{
+			name:            "GERRIT_GROUP_MEMBER_SYNC_INTERVAL env var is not a time value",
+			prepareFunc:     func(t *testing.T) { t.Setenv("GERRIT_GROUP_MEMBER_SYNC_INTERVAL", "foo") },
+			wantRequeueTime: time.Duration(float64(time.Second) * math.Pow(math.E, 1.0)),
+		},
+		{
+			name:            "GERRIT_GROUP_MEMBER_SYNC_INTERVAL env var is a negative number",
+			prepareFunc:     func(t *testing.T) { t.Setenv("GERRIT_GROUP_MEMBER_SYNC_INTERVAL", "-1h") },
+			wantRequeueTime: time.Duration(float64(time.Second) * math.Pow(math.E, 1.0)),
+		},
+		{
+			name:            "GERRIT_GROUP_MEMBER_SYNC_INTERVAL env var is a zero number",
+			prepareFunc:     func(t *testing.T) { t.Setenv("GERRIT_GROUP_MEMBER_SYNC_INTERVAL", "0h") },
+			wantRequeueTime: time.Duration(float64(time.Second) * math.Pow(math.E, 1.0)),
+		},
+		{
+			name:            "GERRIT_GROUP_MEMBER_SYNC_INTERVAL env var is correct",
+			prepareFunc:     func(t *testing.T) { t.Setenv("GERRIT_GROUP_MEMBER_SYNC_INTERVAL", "30m") },
+			wantRequeueTime: 30 * time.Minute,
 		},
 	}
 
-	g := gerritApi.Gerrit{
-		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: groupMember.Namespace, Name: "ger1",
-		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.prepareFunc(t)
+
+			groupMember := gerritApi.GerritGroupMember{
+				ObjectMeta: metaV1.ObjectMeta{
+					Name:      "mem1",
+					Namespace: "ns1",
+				},
+				Spec: gerritApi.GerritGroupMemberSpec{
+					AccountID: "acc1",
+					GroupID:   "gr1",
+				},
+			}
+
+			g := gerritApi.Gerrit{
+				ObjectMeta: metaV1.ObjectMeta{
+					Namespace: groupMember.Namespace,
+					Name:      "ger1",
+				},
+				TypeMeta: metaV1.TypeMeta{
+					APIVersion: "v2.edp.epam.com/v1",
+					Kind:       "Gerrit",
+				},
+			}
+
+			client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
+
+			nn := types.NamespacedName{
+				Name:      groupMember.Name,
+				Namespace: groupMember.Namespace,
+			}
+
+			serviceMock := gmock.Interface{}
+			clientMock := gerritClientMocks.ClientInterface{}
+
+			serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
+			clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))
+
+			rcn := Reconcile{
+				client:  client,
+				log:     commonmock.NewLogr(),
+				service: &serviceMock,
+			}
+
+			result, err := rcn.Reconcile(context.Background(), reconcile.Request{NamespacedName: nn})
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantRequeueTime, result.RequeueAfter)
+
+			var updateInstance gerritApi.GerritGroupMember
+
+			assert.NoError(t, client.Get(context.Background(), nn, &updateInstance))
+
+			assert.Contains(t, updateInstance.Status.Value, "AddUserToGroup fatal")
+
+			serviceMock.AssertExpectations(t)
+			clientMock.AssertExpectations(t)
+		})
 	}
-
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
-
-	serviceMock := gmock.Interface{}
-	clientMock := gerritClientMocks.ClientInterface{}
-
-	serviceMock.On("GetRestClient", &g).Return(&clientMock, nil)
-	clientMock.On("AddUserToGroup", groupMember.Spec.GroupID, groupMember.Spec.AccountID).Return(errors.New("AddUserToGroup fatal"))
-
-	rcn := Reconcile{
-		client:  client,
-		log:     commonmock.NewLogr(),
-		service: &serviceMock,
-	}
-
-	nn := types.NamespacedName{
-		Name:      groupMember.Name,
-		Namespace: groupMember.Namespace,
-	}
-
-	if _, err := rcn.Reconcile(context.Background(),
-		reconcile.Request{
-			NamespacedName: nn,
-		}); err != nil {
-		t.Fatal(err)
-	}
-
-	var updateInstance gerritApi.GerritGroupMember
-	if err := client.Get(context.Background(), nn, &updateInstance); err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(updateInstance.Status.Value, "AddUserToGroup fatal") {
-		t.Log(updateInstance.Status.Value)
-		t.Fatal("wrong instance status")
-	}
-
-	serviceMock.AssertExpectations(t)
-	clientMock.AssertExpectations(t)
 }
 
 func TestReconcile_IsSpecUpdated(t *testing.T) {

@@ -37,6 +37,10 @@ imagePullPolicy: "IfNotPresent"
 # --  Format: golang time.Duration-formatted string
 projectSyncInterval: 1h
 
+# -- Define constant requeue interval for GerritGroupMember controller
+# -- If not defined the exponential formula with the max value of 1hr will be used
+groupMemberSyncInterval: 30m
+
 resources:
   limits:
     memory: 192Mi

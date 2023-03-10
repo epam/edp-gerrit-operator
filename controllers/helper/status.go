@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	StatusOK = "OK"
-	TimeOut  = 10 * time.Second
+	StatusOK   = "OK"
+	TimeOut    = 1 * time.Second
+	MaxTimeOut = 1 * time.Hour
 )
 
 type FailureCountable interface {
@@ -35,7 +36,13 @@ func SetFailureCount(fc FailureCountable) time.Duration {
 }
 
 func getTimeout(factor int64, baseDuration time.Duration) time.Duration {
-	return time.Duration(float64(baseDuration) * math.Pow(math.E, float64(factor+1)))
+	expTimeout := time.Duration(float64(baseDuration) * math.Pow(math.E, float64(factor+1)))
+
+	if expTimeout > MaxTimeOut || expTimeout <= 0 {
+		return MaxTimeOut
+	}
+
+	return expTimeout
 }
 
 func SetSuccessStatus(el StatusValueFailureCountable) {
