@@ -54,6 +54,7 @@ A Helm chart for EDP Gerrit Operator
 | global.gerritSSHPort | string | `"30022"` | Gerrit SSH node port |
 | global.openshift.deploymentType | string | `"deployments"` | Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
 | global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |
+| groupMemberSyncInterval | string | `"30m"` | If not defined the exponential formula with the max value of 1hr will be used |
 | image.repository | string | `"epamedp/gerrit-operator"` | EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
 | image.tag | string | `nil` | EDP gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |
 | imagePullPolicy | string | `"IfNotPresent"` |  |

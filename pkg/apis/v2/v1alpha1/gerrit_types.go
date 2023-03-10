@@ -36,7 +36,9 @@ type GerritSpec struct {
 	Volumes []GerritVolumes `json:"volumes,omitempty"`
 
 	// +optional
-	SshPort  int32  `json:"sshPort,omitempty"`
+	SshPort int32 `json:"sshPort,omitempty"`
+
+	// +optional
 	BasePath string `json:"basePath"`
 }
 

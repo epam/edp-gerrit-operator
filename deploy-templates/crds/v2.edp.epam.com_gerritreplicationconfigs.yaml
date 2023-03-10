@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: gerritreplicationconfigs.v2.edp.epam.com
 spec:
@@ -19,7 +19,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: GerritReplicationConfig is the Schema for the gerrit replication
-          config API
+          config API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -35,7 +35,7 @@ spec:
             type: object
           spec:
             description: GerritReplicationConfigSpec defines the desired state of
-              GerritReplicationConfig
+              GerritReplicationConfig.
             properties:
               owner_name:
                 type: string
@@ -46,7 +46,7 @@ spec:
             type: object
           status:
             description: GerritReplicationConfigStatus defines the observed state
-              of GerritReplicationConfig
+              of GerritReplicationConfig.
             properties:
               available:
                 type: boolean
@@ -66,7 +66,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: GerritReplicationConfig is the Schema for the gerritreplicationconfigs
-          API
+          API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -82,7 +82,7 @@ spec:
             type: object
           spec:
             description: GerritReplicationConfigSpec defines the desired state of
-              GerritReplicationConfig
+              GerritReplicationConfig.
             properties:
               owner_name:
                 type: string
@@ -93,7 +93,7 @@ spec:
             type: object
           status:
             description: GerritReplicationConfigStatus defines the observed state
-              of GerritReplicationConfig
+              of GerritReplicationConfig.
             properties:
               available:
                 type: boolean

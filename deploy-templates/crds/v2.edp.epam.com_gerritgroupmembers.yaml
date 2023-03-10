@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: gerritgroupmembers.v2.edp.epam.com
 spec:
@@ -18,7 +18,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: GerritGroupMember is the Schema for the gerrit group member API
+        description: GerritGroupMember is the Schema for the gerrit group member API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: GerritGroupMemberSpec defines the desired state of GerritGroupMember
+            description: GerritGroupMemberSpec defines the desired state of GerritGroupMember.
             properties:
               accountId:
                 type: string
@@ -49,7 +49,7 @@ spec:
             - groupId
             type: object
           status:
-            description: GerritGroupMemberStatus defines the observed state of GerritGroupMember
+            description: GerritGroupMemberStatus defines the observed state of GerritGroupMember.
             properties:
               failureCount:
                 description: Preserves Number of Failures during reconciliation phase.
@@ -68,7 +68,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: GerritGroupMember is the Schema for the gerrit group member API
+        description: GerritGroupMember is the Schema for the gerrit group member API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -83,7 +83,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: GerritGroupMemberSpec defines the desired state of GerritGroupMember
+            description: GerritGroupMemberSpec defines the desired state of GerritGroupMember.
             properties:
               accountId:
                 type: string
@@ -99,7 +99,7 @@ spec:
             - groupId
             type: object
           status:
-            description: GerritGroupMemberStatus defines the observed state of GerritGroupMember
+            description: GerritGroupMemberStatus defines the observed state of GerritGroupMember.
             properties:
               value:
                 type: string
