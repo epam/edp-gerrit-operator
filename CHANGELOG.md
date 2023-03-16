@@ -2,6 +2,13 @@
 ## [Unreleased]
 
 
+<a name="v2.13.5"></a>
+## [v2.13.5] - 2023-03-10
+### Features
+
+- Added ability to set constant requeue time in GroupMember Reconciler [EPMDEDP-11690](https://jiraeu.epam.com/browse/EPMDEDP-11690)
+
+
 <a name="v2.13.4"></a>
 ## [v2.13.4] - 2023-01-23
 ### Features
@@ -68,6 +75,22 @@
 - Upgrade gerrit to version 3.7.0 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
 - Upgrade gerrit to version 3.6.2 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
 - Upgrade gerrit to version 3.6.2 [EPMDEDP-10752](https://jiraeu.epam.com/browse/EPMDEDP-10752)
+
+
+<a name="v2.12.1"></a>
+## [v2.12.1] - 2023-02-03
+### Features
+
+- Add base path to gerrit spec [EPMDEDP-11045](https://jiraeu.epam.com/browse/EPMDEDP-11045)
+- Custom gerrit rest and ssh url in spec [EPMDEDP-11198](https://jiraeu.epam.com/browse/EPMDEDP-11198)
+
+### Bug Fixes
+
+- Gerrit project syncer and controller conflict [EPMDEDP-11142](https://jiraeu.epam.com/browse/EPMDEDP-11142)
+
+### Routine
+
+- Update git package version [EPMDEDP-11319](https://jiraeu.epam.com/browse/EPMDEDP-11319)
 
 
 <a name="v2.12.0"></a>
@@ -230,12 +253,14 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.5...HEAD
+[v2.13.5]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...v2.13.5
 [v2.13.4]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...v2.13.4
 [v2.13.3]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...v2.13.3
 [v2.13.2]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...v2.13.2
 [v2.13.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.0...v2.13.1
-[v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.13.0
+[v2.13.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.1...v2.13.0
+[v2.12.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.12.0...v2.12.1
 [v2.12.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.11.0...v2.12.0
 [v2.11.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.10.0...v2.11.0
 [v2.10.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.9.0...v2.10.0
