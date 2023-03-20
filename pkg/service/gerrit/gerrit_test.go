@@ -718,33 +718,6 @@ func TestComponentService_GetRestClientNotNilResty(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestComponentService_getUrlErr(t *testing.T) {
-	instance := CreateGerritInstance()
-
-	errTest := errors.New("test")
-	ps := &pmock.PlatformService{}
-	CS := ComponentService{PlatformService: ps}
-
-	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", errTest)
-
-	_, err := CS.getUrl(instance)
-	assert.ErrorIs(t, err, errTest)
-}
-
-func TestComponentService_getUrl(t *testing.T) {
-	instance := CreateGerritInstance()
-	url := fmt.Sprintf("%v://%v", sc, h)
-
-	ps := &pmock.PlatformService{}
-	CS := ComponentService{PlatformService: ps}
-
-	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
-
-	u, err := CS.getUrl(instance)
-	assert.NoError(t, err)
-	assert.Equal(t, url, *u)
-}
-
 func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	instance := CreateGerritInstance()
 	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)

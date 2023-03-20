@@ -3,7 +3,6 @@ module github.com/epam/edp-gerrit-operator/v2
 go 1.19
 
 replace (
-	github.com/epam/edp-component-operator v0.12.0 => github.com/epam/edp-component-operator v0.1.1-0.20230118145658-7283b2b5cbf9
 	github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20221220162201-efeef9d83325
 	github.com/openshift/client-go v3.9.0+incompatible => github.com/openshift/client-go v0.0.0-20221213131518-7aec8d54188a
 )
@@ -11,7 +10,6 @@ replace (
 require (
 	github.com/dchest/uniuri v1.2.0
 	github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8
-	github.com/epam/edp-component-operator v0.1.1-0.20230118145658-7283b2b5cbf9
 	github.com/epam/edp-jenkins-operator/v2 v2.13.1
 	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800
 	github.com/go-git/go-git/v5 v5.5.1

@@ -104,25 +104,29 @@ func (s *OpenshiftService) Init(config *rest.Config, scheme *runtime.Scheme) err
 	return nil
 }
 
-func (s *OpenshiftService) GetExternalEndpoint(namespace, name string) (host, scheme string, err error) {
+// GetExternalEndpoint returns host and scheme associated with the object.
+func (s *OpenshiftService) GetExternalEndpoint(namespace, name string) (string, string, error) {
 	ctx := context.Background()
 
 	route, err := s.routeClient.Routes(namespace).Get(ctx, name, metaV1.GetOptions{})
-	if err != nil && k8sErrors.IsNotFound(err) {
-		log.Printf("Route %v in namespace %v not found", name, namespace)
-		return "", "", fmt.Errorf("didn't found route %q in namespace %q: %w", name, namespace, err)
-	} else if err != nil {
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			log.Printf("Route %v in namespace %v not found", name, namespace)
+
+			return "", "", fmt.Errorf("didn't found route %q in namespace %q: %w", name, namespace, err)
+		}
+
 		return "", "", fmt.Errorf("failed to Get OpenShift route %q: %w", name, err)
 	}
 
-	host = route.Spec.Host
-	scheme = platformHelper.RouteHTTPScheme
+	host := route.Spec.Host
+	scheme := platformHelper.RouteHTTPScheme
 
 	if route.Spec.TLS.Termination != "" {
 		scheme = platformHelper.RouteHTTPSScheme
 	}
 
-	return
+	return host, scheme, nil
 }
 
 func (s *OpenshiftService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, error) {

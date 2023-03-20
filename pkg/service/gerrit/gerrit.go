@@ -1,13 +1,9 @@
 package gerrit
 
 import (
-	"bufio"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -24,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
-	jenPlatformHelper "github.com/epam/edp-jenkins-operator/v2/pkg/service/platform/helper"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
@@ -39,8 +34,6 @@ import (
 var log = ctrl.Log.WithName("service_gerrit")
 
 const (
-	imgFolder                        = "img"
-	gerritIcon                       = "gerrit.svg"
 	jenkinsDefaultScriptConfigMapKey = "context"
 	user                             = "user"
 	password                         = "password"
@@ -456,70 +449,7 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 		}
 	}
 
-	err = s.createEDPComponent(instance)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create EDP component")
-	}
-
-	return instance, err
-}
-
-func (s ComponentService) createEDPComponent(gerritObj *gerritApi.Gerrit) error {
-	vLog := log.WithValues("name", gerritObj.Name)
-	vLog.Info("creating EDP component")
-
-	url, err := s.getUrl(gerritObj)
-	if err != nil {
-		return err
-	}
-
-	icon, err := getIcon()
-	if err != nil {
-		return err
-	}
-
-	err = s.PlatformService.CreateEDPComponentIfNotExist(gerritObj, *url, *icon)
-	if err != nil {
-		return fmt.Errorf("failed to check EDP component: %w", err)
-	}
-
-	return nil
-}
-
-func (s ComponentService) getUrl(gerritObj *gerritApi.Gerrit) (*string, error) {
-	h, sc, err := s.PlatformService.GetExternalEndpoint(gerritObj.Namespace, gerritObj.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get external endpoint for gerrit %q: %w", gerritObj.Name, err)
-	}
-
-	url := fmt.Sprintf("%v://%v", sc, h)
-
-	return &url, nil
-}
-
-func getIcon() (*string, error) {
-	p, err := jenPlatformHelper.CreatePathToTemplateDirectory(imgFolder)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get img folder: %w", err)
-	}
-
-	fp := fmt.Sprintf("%v/%v", p, gerritIcon)
-
-	f, err := os.Open(fp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open icon %q: %w", fp, err)
-	}
-
-	reader := bufio.NewReader(f)
-
-	content, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read icon %q: %w", fp, err)
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(content)
-
-	return &encoded, nil
+	return instance, nil
 }
 
 // Integrate applies actions required for the integration with the other EDP Components.

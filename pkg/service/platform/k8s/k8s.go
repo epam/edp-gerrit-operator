@@ -26,7 +26,6 @@ import (
 	k8sClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	edpCompApi "github.com/epam/edp-component-operator/api/v1"
 	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
@@ -52,20 +51,23 @@ type K8SService struct {
 	client           k8sClient.Client
 }
 
-func (s *K8SService) GetExternalEndpoint(namespace, name string) (host, scheme string, err error) {
+// GetExternalEndpoint returns host and scheme of an Ingress.
+func (s *K8SService) GetExternalEndpoint(namespace, name string) (string, string, error) {
 	ctx := context.Background()
 
-	i, err := s.networkingClient.Ingresses(namespace).Get(ctx, name, metaV1.GetOptions{})
-	if err != nil && k8sErrors.IsNotFound(err) {
-		return "", "", fmt.Errorf("ingress %v in namespace %v not found", name, namespace)
-	} else if err != nil {
+	ingress, err := s.networkingClient.Ingresses(namespace).Get(ctx, name, metaV1.GetOptions{})
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return "", "", fmt.Errorf("ingress %v in namespace %v not found", name, namespace)
+		}
+
 		return "", "", fmt.Errorf("failed to Get Ingress %q: %w", name, err)
 	}
 
-	host = i.Spec.Rules[0].Host
-	scheme = platformHelper.RouteHTTPSScheme
+	host := ingress.Spec.Rules[0].Host
+	scheme := platformHelper.RouteHTTPSScheme
 
-	return
+	return host, scheme, nil
 }
 
 func (s *K8SService) IsDeploymentReady(gerrit *gerritApi.Gerrit) (bool, error) {
@@ -651,64 +653,4 @@ func (s *K8SService) getJenkinsScript(name, namespace string) (*jenkinsV1Api.Jen
 	}
 
 	return js, nil
-}
-
-func (s *K8SService) CreateEDPComponentIfNotExist(gerrit *gerritApi.Gerrit, url, icon string) error {
-	vLog := log.WithValues(nameKey, gerrit.Name)
-	vLog.Info("creating EDP component")
-
-	if _, err := s.getEDPComponent(gerrit.Name, gerrit.Namespace); err != nil {
-		if k8sErrors.IsNotFound(err) {
-			return s.createEDPComponent(gerrit, url, icon)
-		}
-
-		return errors.Wrapf(err, "failed to get edp component: %v", gerrit.Name)
-	}
-
-	vLog.Info("edp component already exists")
-
-	return nil
-}
-
-func (s *K8SService) getEDPComponent(name, namespace string) (*edpCompApi.EDPComponent, error) {
-	ctx := context.Background()
-	c := &edpCompApi.EDPComponent{}
-
-	err := s.client.Get(ctx, types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}, c)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get EDPComponent resource by name: %q: %w", name, err)
-	}
-
-	return c, nil
-}
-
-func (s *K8SService) createEDPComponent(gerrit *gerritApi.Gerrit, url, icon string) error {
-	ctx := context.Background()
-	obj := &edpCompApi.EDPComponent{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      gerrit.Name,
-			Namespace: gerrit.Namespace,
-		},
-		Spec: edpCompApi.EDPComponentSpec{
-			Type:    "gerrit",
-			Url:     url,
-			Icon:    icon,
-			Visible: true,
-		},
-	}
-
-	if err := controllerutil.SetControllerReference(gerrit, obj, s.Scheme); err != nil {
-		return fmt.Errorf("failed to set controller reference for gerrit: %w", err)
-	}
-
-	if err := s.client.Create(ctx, obj); err != nil {
-		return fmt.Errorf("failed to create k8s object witn name: %q: %w", obj.Name, err)
-	}
-
-	log.Info("edp component has been created.", nameKey, gerrit.Name)
-
-	return nil
 }

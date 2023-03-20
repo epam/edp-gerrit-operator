@@ -49,8 +49,6 @@ github.com/envoyproxy/go-control-plane v0.9.9-0.20210512163311-63b5d3c536b0/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8 h1:Yu3L0n5+InqUHwLM5Am7ZgCR/YeWG1jMztV2zc/wGtc=
 github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8/go.mod h1:fBJOEpuQC0Bi69gJILqYajwY53Sp8C1V872wU/5k5fE=
-github.com/epam/edp-component-operator v0.1.1-0.20230118145658-7283b2b5cbf9 h1:JW+BPXS3AfW/mCKxGGz/MsMyoEAU1vTzNiNZdbkZVzk=
-github.com/epam/edp-component-operator v0.1.1-0.20230118145658-7283b2b5cbf9/go.mod h1:HkT0L+dswHFhCqMD1lFNMsbyLkDqg3ZbCmEdEfRnMxY=
 github.com/epam/edp-jenkins-operator/v2 v2.13.1 h1:yAMtG4JHKOn47a5Vvcq5Nwh5Rm9T/rbvZjdiOckNalo=
 github.com/epam/edp-jenkins-operator/v2 v2.13.1/go.mod h1:l1kfOeifqBIXCENW9Cw/q0HEHkqlwVXYGjqFs3JoLZg=
 github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800 h1:ZaS4MScUXGXRwUoRS6CoN6EcpQOm8gtifYoLi/M2MoQ=

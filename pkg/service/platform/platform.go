@@ -26,21 +26,35 @@ const (
 // PlatformService defines common behavior of the services for the supported platforms.
 type PlatformService interface {
 	GetPods(namespace string, filter *metav1.ListOptions) (*coreV1Api.PodList, error)
+
+	// GetExternalEndpoint returns host and scheme associated with the object.
 	GetExternalEndpoint(namespace, name string) (string, string, error)
+
 	ExecInPod(namespace, podName string, command []string) (io.Reader, io.Reader, error)
+
 	GetSecretData(namespace, name string) (map[string][]byte, error)
+
 	CreateSecret(gerrit *gerritApi.Gerrit, name string, data map[string][]byte) error
+
 	GetSecret(namespace, name string) (map[string][]byte, error)
+
 	IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error)
+
 	PatchDeploymentEnv(gerrit *gerritApi.Gerrit, env []coreV1Api.EnvVar) error
+
 	GetDeploymentSSHPort(gerrit *gerritApi.Gerrit) (int32, error)
+
 	GetService(namespace, name string) (*coreV1Api.Service, error)
+
 	UpdateService(svc *coreV1Api.Service, port int32) error
+
 	GenerateKeycloakSettings(instance *gerritApi.Gerrit) ([]coreV1Api.EnvVar, error)
+
 	CreateJenkinsServiceAccount(namespace, secretName, serviceAccountType string) error
+
 	CreateJenkinsScript(namespace, configMap string) error
+
 	CreateConfigMap(instance *gerritApi.Gerrit, configMapName string, configMapData map[string]string) error
-	CreateEDPComponentIfNotExist(gerrit *gerritApi.Gerrit, url, icon string) error
 }
 
 // NewService creates a new instance of the platform.Service type using scheme parameter provided.
