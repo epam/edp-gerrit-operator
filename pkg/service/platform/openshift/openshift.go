@@ -38,7 +38,7 @@ type OpenshiftService struct {
 	projectClient  *projectV1Client.ProjectV1Client
 	securityClient *securityV1Client.SecurityV1Client
 	appClient      *appsV1client.AppsV1Client
-	routeClient    *routeV1Client.RouteV1Client
+	routeClient    routeV1Client.RouteV1Interface
 }
 
 const (
@@ -113,7 +113,7 @@ func (s *OpenshiftService) GetExternalEndpoint(namespace, name string) (string, 
 		if k8sErrors.IsNotFound(err) {
 			log.Printf("Route %v in namespace %v not found", name, namespace)
 
-			return "", "", fmt.Errorf("didn't found route %q in namespace %q: %w", name, namespace, err)
+			return "", "", fmt.Errorf("failed to find route %q in namespace %q: %w", name, namespace, err)
 		}
 
 		return "", "", fmt.Errorf("failed to Get OpenShift route %q: %w", name, err)
