@@ -3,10 +3,28 @@
 
 ### Features
 
+- Move EDP Component creation to deploy-templates [EPMDEDP-11726](https://jiraeu.epam.com/browse/EPMDEDP-11726)
+
+### Testing
+
+- Add GetExternalEndpoint test suites [EPMDEDP-11726](https://jiraeu.epam.com/browse/EPMDEDP-11726)
+
+### Routine
+
+- Upgrade alpine image version to 3.16.4 [EPMDEDP-11764](https://jiraeu.epam.com/browse/EPMDEDP-11764)
+
+
+<a name="v2.14.0"></a>
+## [v2.14.0] - 2023-03-25
+### Features
+
 - Updated Operator SDK [EPMDEDP-11176](https://jiraeu.epam.com/browse/EPMDEDP-11176)
 - Custom gerrit rest and ssh url in spec [EPMDEDP-11198](https://jiraeu.epam.com/browse/EPMDEDP-11198)
 - Updated EDP components [EPMDEDP-11206](https://jiraeu.epam.com/browse/EPMDEDP-11206)
 - Provide opportunity to use default cluster storageClassName [EPMDEDP-11230](https://jiraeu.epam.com/browse/EPMDEDP-11230)
+- Improved Jenkins-related logging [EPMDEDP-11479](https://jiraeu.epam.com/browse/EPMDEDP-11479)
+- Add the ability to add additional certs to Gerrit [EPMDEDP-11529](https://jiraeu.epam.com/browse/EPMDEDP-11529)
+- Added ability to set constant requeue time in GroupMember Reconciler to master branch [EPMDEDP-11690](https://jiraeu.epam.com/browse/EPMDEDP-11690)
 
 ### Bug Fixes
 
@@ -17,10 +35,20 @@
 - Update current development version [EPMDEDP-10610](https://jiraeu.epam.com/browse/EPMDEDP-10610)
 - Get gerrit sshPort form global section [EPMDEDP-10642](https://jiraeu.epam.com/browse/EPMDEDP-10642)
 - Update current development version [EPMDEDP-11009](https://jiraeu.epam.com/browse/EPMDEDP-11009)
+- Update git-chglog for gerrit-operator [EPMDEDP-11518](https://jiraeu.epam.com/browse/EPMDEDP-11518)
+- Bump golang.org/x/net from 0.5.0 to 0.8.0 [EPMDEDP-11578](https://jiraeu.epam.com/browse/EPMDEDP-11578)
+- Upgrade alpine image version to 3.16.4 [EPMDEDP-11764](https://jiraeu.epam.com/browse/EPMDEDP-11764)
 
 ### Documentation
 
 - Update chart and application version in Readme file [EPMDEDP-11221](https://jiraeu.epam.com/browse/EPMDEDP-11221)
+
+
+<a name="v2.13.5"></a>
+## [v2.13.5] - 2023-03-16
+### Features
+
+- Added ability to set constant requeue time in GroupMember Reconciler [EPMDEDP-11690](https://jiraeu.epam.com/browse/EPMDEDP-11690)
 
 
 <a name="v2.13.4"></a>
@@ -136,8 +164,8 @@
 - Fix Jira Ticket pattern for changelog generator [EPMDEDP-10159](https://jiraeu.epam.com/browse/EPMDEDP-10159)
 - Update alpine base image to 3.16.2 version [EPMDEDP-10274](https://jiraeu.epam.com/browse/EPMDEDP-10274)
 - Update alpine base image version [EPMDEDP-10280](https://jiraeu.epam.com/browse/EPMDEDP-10280)
-- Update gerrit to version v3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
 - Upgrade gerrit to version 3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
+- Update gerrit to version v3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
 - Change 'go get' to 'go install' for git-chglog [EPMDEDP-10337](https://jiraeu.epam.com/browse/EPMDEDP-10337)
 - Use deployments as default deploymentType for OpenShift [EPMDEDP-10344](https://jiraeu.epam.com/browse/EPMDEDP-10344)
 - Update Gerrit to 3.6.1 release version [EPMDEDP-10374](https://jiraeu.epam.com/browse/EPMDEDP-10374)
@@ -181,13 +209,13 @@
 
 ### Testing
 
+- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Add tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Fix unit tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
-- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - add tests for git and gerrit client [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
-- fix gerrit service tests [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
 - fix running in cluster function [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
+- fix gerrit service tests [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
 
 ### Routine
 
@@ -267,7 +295,9 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.14.0...HEAD
+[v2.14.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.5...v2.14.0
+[v2.13.5]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...v2.13.5
 [v2.13.4]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...v2.13.4
 [v2.13.3]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.2...v2.13.3
 [v2.13.2]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.1...v2.13.2
