@@ -178,11 +178,6 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 		return instance, false, errors.Wrapf(err, "failed to create Gerrit admin SSH keypair %v/%v", instance.Namespace, instance.Name)
 	}
 
-	_, _, err = s.createSSHKeyPairs(instance, instance.Name+"-project-creator")
-	if err != nil {
-		return instance, false, errors.Wrapf(err, "failed to create Gerrit project-creator SSH keypair %v/%v", instance.Namespace, instance.Name)
-	}
-
 	err = s.gerritClient.InitNewRestClient(instance, gerritApiUrl, spec.GerritDefaultAdminUser, gerritAdminPassword)
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "failed to initialize Gerrit REST client for %v/%v", instance.Namespace, instance.Name)
@@ -309,8 +304,6 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 
 	ciUserSecretName := formatSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
-	projectCreatorSecretKeyName := formatSecretName(instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix)
-	projectCreatorSecretPasswordName := fmt.Sprintf("%s-%s-%s", instance.Name, spec.GerritDefaultProjectCreatorSecretPostfix, password)
 
 	if err = s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
 		user:     []byte(spec.GerritDefaultCiUserUser),
@@ -321,17 +314,6 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 
 	ciUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUserSuffix)
 	s.setAnnotation(instance, ciUserAnnotationKey, ciUserSecretName)
-
-	err = s.PlatformService.CreateSecret(instance, projectCreatorSecretPasswordName, map[string][]byte{
-		user:     []byte(spec.GerritDefaultProjectCreatorUser),
-		password: []byte(uniuri.New()),
-	})
-	if err != nil {
-		return instance, errors.Wrapf(err, "Failed to create project-creator Secret %v for Gerrit", projectCreatorSecretPasswordName)
-	}
-
-	projectCreatorUserAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorUserSuffix)
-	s.setAnnotation(instance, projectCreatorUserAnnotationKey, projectCreatorSecretPasswordName)
 
 	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserSecretName)
 	if err != nil {
@@ -366,39 +348,14 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
 	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, ciUserSshSecretName)
 
-	projectCreatorUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpProjectCreatorSshKeySuffix)
-	s.setAnnotation(instance, projectCreatorUserSshKeyAnnotationKey, instance.Name+"-project-creator")
-
 	err = s.gerritClient.CreateUser(spec.GerritDefaultCiUserUser, string(ciUserCredentials[password]),
 		"EDP CI bot", string(publicKey))
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user %v in Gerrit", spec.GerritDefaultCiUserUser)
 	}
 
-	projectCreatorCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, projectCreatorSecretPasswordName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Secret %v for %v/%v", projectCreatorSecretPasswordName,
-			instance.Namespace, instance.Name)
-	}
-
-	projectCreatorKeys, err := s.PlatformService.GetSecretData(instance.Namespace, projectCreatorSecretKeyName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Secret %v for %v/%v", projectCreatorSecretKeyName,
-			instance.Namespace, instance.Name)
-	}
-
-	err = s.gerritClient.CreateUser(spec.GerritDefaultProjectCreatorUser, string(projectCreatorCredentials[password]),
-		"Project Creator", string(projectCreatorKeys[rsaIDFile]))
-	if err != nil {
-		return instance, errors.Wrapf(err, "Failed to create project-creator user %v in Gerrit", spec.GerritDefaultProjectCreatorUser)
-	}
-
 	userGroups := map[string][]string{
-		spec.GerritDefaultCiUserUser: {
-			spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup,
-			spec.GerritCIToolsGroupName, spec.GerritServiceUsersGroup,
-		},
-		spec.GerritDefaultProjectCreatorUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup},
+		spec.GerritDefaultCiUserUser: {spec.GerritProjectBootstrappersGroupName, spec.GerritAdministratorsGroup},
 	}
 
 	for _, userValue := range reflect.ValueOf(userGroups).MapKeys() {

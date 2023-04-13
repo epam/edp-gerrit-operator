@@ -65,15 +65,11 @@ const (
 
 	GerritProjectBootstrappersGroupDescription = "Grants all the permissions needed to set up a new project"
 
-	GerritServiceUsersGroup = "Service Users"
-
 	GerritAdministratorsGroup = "Administrators"
 
 	GerritDefaultCiUserUser = "edp-ci"
 
 	GerritArgoUser = "argocd"
-
-	GerritDefaultProjectCreatorUser = "project-creator"
 
 	GerritDefaultCiUserSecretPostfix = "ciuser-password"
 
@@ -89,13 +85,7 @@ const (
 
 	EdpArgoUserSshKeySuffix string = "argocd-sshkey"
 
-	GerritDefaultProjectCreatorSecretPostfix = "project-creator"
-
 	JenkinsPluginConfigPostfix = "jenkins-plugin-config"
-
-	EdpProjectCreatorUserSuffix string = "project-creator-credentials"
-
-	EdpProjectCreatorSshKeySuffix string = "project-creator-sshkey"
 
 	DefaultGerritReplicationConfigPath = "/var/gerrit/review_site/etc/replication.config"
 
