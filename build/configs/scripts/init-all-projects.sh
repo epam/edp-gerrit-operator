@@ -25,6 +25,10 @@ cat << EOF > \"webhooks.config\"
 [remote \"patchsetcreated\"]
   url = http://el-gerrit-listener:8080
   event = patchset-created
+
+[remote \"commentadded\"]
+  url = http://el-gerrit-listener:8080
+  event = comment-added
 EOF
 
 git add .
