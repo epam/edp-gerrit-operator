@@ -1,9 +1,18 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.15.0"></a>
+## [v2.15.0] - 2023-05-25
 ### Features
 
 - Move EDP Component creation to deploy-templates [EPMDEDP-11726](https://jiraeu.epam.com/browse/EPMDEDP-11726)
+- Add commentadded event to the webhook [EPMDEDP-11899](https://jiraeu.epam.com/browse/EPMDEDP-11899)
+
+### Bug Fixes
+
+- Remove project-creator user [EPMDEDP-11871](https://jiraeu.epam.com/browse/EPMDEDP-11871)
+- Exclude Gerrit configs from test coverage [EPMDEDP-11899](https://jiraeu.epam.com/browse/EPMDEDP-11899)
 
 ### Testing
 
@@ -11,7 +20,10 @@
 
 ### Routine
 
+- Update current development version [EPMDEDP-11472](https://jiraeu.epam.com/browse/EPMDEDP-11472)
 - Upgrade alpine image version to 3.16.4 [EPMDEDP-11764](https://jiraeu.epam.com/browse/EPMDEDP-11764)
+- Add templates for github issues [EPMDEDP-11928](https://jiraeu.epam.com/browse/EPMDEDP-11928)
+- Upgrade alpine image version to 3.18.0 [EPMDEDP-12085](https://jiraeu.epam.com/browse/EPMDEDP-12085)
 
 
 <a name="v2.14.0"></a>
@@ -295,7 +307,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.14.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.15.0...HEAD
+[v2.15.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.14.0...v2.15.0
 [v2.14.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.5...v2.14.0
 [v2.13.5]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...v2.13.5
 [v2.13.4]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...v2.13.4
