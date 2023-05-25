@@ -1,9 +1,18 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.15.0"></a>
+## [v2.15.0] - 2023-05-24
 ### Features
 
 - Move EDP Component creation to deploy-templates [EPMDEDP-11726](https://jiraeu.epam.com/browse/EPMDEDP-11726)
+- Add commentadded event to the webhook [EPMDEDP-11899](https://jiraeu.epam.com/browse/EPMDEDP-11899)
+
+### Bug Fixes
+
+- Remove project-creator user [EPMDEDP-11871](https://jiraeu.epam.com/browse/EPMDEDP-11871)
+- Exclude Gerrit configs from test coverage [EPMDEDP-11899](https://jiraeu.epam.com/browse/EPMDEDP-11899)
 
 ### Testing
 
@@ -11,7 +20,10 @@
 
 ### Routine
 
+- Update current development version [EPMDEDP-11472](https://jiraeu.epam.com/browse/EPMDEDP-11472)
 - Upgrade alpine image version to 3.16.4 [EPMDEDP-11764](https://jiraeu.epam.com/browse/EPMDEDP-11764)
+- Add templates for github issues [EPMDEDP-11928](https://jiraeu.epam.com/browse/EPMDEDP-11928)
+- Upgrade alpine image version to 3.18.0 [EPMDEDP-12085](https://jiraeu.epam.com/browse/EPMDEDP-12085)
 
 
 <a name="v2.14.0"></a>
@@ -164,8 +176,8 @@
 - Fix Jira Ticket pattern for changelog generator [EPMDEDP-10159](https://jiraeu.epam.com/browse/EPMDEDP-10159)
 - Update alpine base image to 3.16.2 version [EPMDEDP-10274](https://jiraeu.epam.com/browse/EPMDEDP-10274)
 - Update alpine base image version [EPMDEDP-10280](https://jiraeu.epam.com/browse/EPMDEDP-10280)
-- Upgrade gerrit to version 3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
 - Update gerrit to version v3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
+- Upgrade gerrit to version 3.6.1 [EPMDEDP-10335](https://jiraeu.epam.com/browse/EPMDEDP-10335)
 - Change 'go get' to 'go install' for git-chglog [EPMDEDP-10337](https://jiraeu.epam.com/browse/EPMDEDP-10337)
 - Use deployments as default deploymentType for OpenShift [EPMDEDP-10344](https://jiraeu.epam.com/browse/EPMDEDP-10344)
 - Update Gerrit to 3.6.1 release version [EPMDEDP-10374](https://jiraeu.epam.com/browse/EPMDEDP-10374)
@@ -209,13 +221,13 @@
 
 ### Testing
 
-- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Add tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - Fix unit tests [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
+- Add tests and mocks [EPMDEDP-7992](https://jiraeu.epam.com/browse/EPMDEDP-7992)
 - add tests for git and gerrit client [EPMDEDP-8162](https://jiraeu.epam.com/browse/EPMDEDP-8162)
-- fix running in cluster function [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
 - fix gerrit service tests [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
+- fix running in cluster function [EPMDEDP-8222](https://jiraeu.epam.com/browse/EPMDEDP-8222)
 
 ### Routine
 
@@ -295,7 +307,8 @@ Update gerrit config according to groups.
 <a name="v2.7.0"></a>
 ## [v2.7.0] - 2021-12-03
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.14.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.15.0...HEAD
+[v2.15.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.14.0...v2.15.0
 [v2.14.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.5...v2.14.0
 [v2.13.5]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.4...v2.13.5
 [v2.13.4]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.3...v2.13.4
