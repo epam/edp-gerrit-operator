@@ -24,6 +24,9 @@ type GerritSpec struct {
 
 	// BasePath gerrit http route base path.
 	BasePath string `json:"basePath,omitempty"`
+
+	// ExternalURL gerrit full external url for keycloak or other integrations
+	ExternalURL string `json:"externalURL,omitempty"`
 }
 
 type KeycloakSpec struct {

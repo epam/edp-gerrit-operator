@@ -1078,6 +1078,13 @@ GerritSpec defines the desired state of Gerrit.
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>externalURL</b></td>
+        <td>string</td>
+        <td>
+          ExternalURL gerrit full external url for keycloak or other integrations<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>restAPIUrl</b></td>
         <td>string</td>
         <td>

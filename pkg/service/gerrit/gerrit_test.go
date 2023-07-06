@@ -492,6 +492,22 @@ func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 	assert.False(t, b)
 }
 
+func TestComponentService_ExternalURL(t *testing.T) {
+	instance := CreateGerritInstance()
+	instance.Spec.ExternalURL = "large-external-url"
+	instance.Spec.KeycloakSpec.Enabled = true
+	ps := &pmock.PlatformService{}
+	errTest := errors.New("test")
+	ps.On("GenerateKeycloakSettings", instance).Return(nil, errTest)
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{},
+		&keycloakApi.KeycloakClient{}, &jenkinsV1Api.Jenkins{}, &jenkinsV1Api.JenkinsList{})
+	k8sClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	CS := ComponentService{PlatformService: ps, client: k8sClient}
+	_, err := CS.Integrate(context.Background(), instance)
+	assert.ErrorIs(t, err, errTest)
+}
+
 func TestComponentService_Integrate_GetExternalEndpointErr(t *testing.T) {
 	instance := CreateGerritInstance()
 	errTest := errors.New("test")

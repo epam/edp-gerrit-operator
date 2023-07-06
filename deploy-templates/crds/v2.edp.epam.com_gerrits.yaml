@@ -38,6 +38,10 @@ spec:
               basePath:
                 description: BasePath gerrit http route base path.
                 type: string
+              externalURL:
+                description: ExternalURL gerrit full external url for keycloak or
+                  other integrations
+                type: string
               keycloakSpec:
                 properties:
                   enabled:
