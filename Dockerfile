@@ -1,13 +1,13 @@
-FROM alpine:3.16.2
+FROM alpine:3.18.3
 
 ENV OPERATOR=/usr/local/bin/gerrit-operator \
     USER_UID=1001 \
     USER_NAME=gerrit-operator \
     HOME=/home/gerrit-operator
 
-RUN apk add --no-cache ca-certificates=20220614-r0 \
-                       openssh-client==9.0_p1-r2 \
-                       git==2.36.5-r0
+RUN apk add --no-cache ca-certificates==20230506-r0 \
+                       openssh-client==9.3_p2-r0 \
+                       git==2.40.1-r0
 
 # install operator binary
 COPY ./dist/go-binary ${OPERATOR}

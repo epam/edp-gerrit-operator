@@ -520,12 +520,10 @@ func getIcon() (*string, error) {
 
 // Integrate applies actions required for the integration with the other EDP Components.
 func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
-	h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
+	externalUrl, err := s.getExternalUrl(instance)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
 	}
-
-	externalUrl := fmt.Sprintf("%v://%v", sc, h)
 
 	if instance.Spec.KeycloakSpec.Enabled {
 		var keycloakClient *keycloakApi.KeycloakClient
@@ -557,13 +555,27 @@ func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Ger
 	}
 
 	if s.jenkinsEnabled(ctx, instance.Namespace) {
-		err = s.configureGerritPluginInJenkins(instance, h, sc)
-		if err != nil {
+		log.Info("Configuring Gerrit plugin in Jenkins")
+
+		if err := s.configureGerritPluginInJenkins(instance, externalUrl); err != nil {
 			return nil, err
 		}
 	}
 
 	return instance, nil
+}
+
+func (s ComponentService) getExternalUrl(instance *gerritApi.Gerrit) (string, error) {
+	if instance.Spec.ExternalURL != "" {
+		return instance.Spec.ExternalURL, nil
+	}
+
+	h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
+	}
+
+	return fmt.Sprintf("%v://%v", sc, h), nil
 }
 
 func (s ComponentService) getKeycloakClient(ctx context.Context, instance *gerritApi.Gerrit) (*keycloakApi.KeycloakClient, error) {
@@ -834,7 +846,7 @@ func (ComponentService) setAnnotation(instance *gerritApi.Gerrit, key, value str
 	}
 }
 
-func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Gerrit, host, scheme string) error {
+func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Gerrit, externalUrl string) error {
 	sshPort, err := s.GetServicePort(instance)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get SSH port for %v/%v", instance.Namespace, instance.Name)
@@ -847,7 +859,6 @@ func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Ger
 		return errors.Wrapf(err, "Failed to get Secret for CI user for %s/%s", instance.Namespace, instance.Name)
 	}
 
-	externalUrl := fmt.Sprintf("%s://%s", scheme, host)
 	jenkinsPluginInfo := platformHelper.InitNewJenkinsPluginInfo()
 	jenkinsPluginInfo.ServerName = instance.Name
 	jenkinsPluginInfo.ExternalUrl = externalUrl

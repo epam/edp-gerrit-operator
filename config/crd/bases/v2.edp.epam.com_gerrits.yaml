@@ -36,7 +36,7 @@ spec:
             description: GerritSpec defines the desired state of Gerrit.
             properties:
               basePath:
-                description: BasePath gerrit http route base path
+                description: BasePath gerrit http route base path.
                 type: string
               externalURL:
                 description: ExternalURL gerrit full external url for keycloak or
@@ -54,13 +54,13 @@ spec:
                 - enabled
                 type: object
               restAPIUrl:
-                description: RestAPIUrl gerrit http full api url
+                description: RestAPIUrl gerrit http full api url.
                 type: string
               sshPort:
                 format: int32
                 type: integer
               sshUrl:
-                description: SSHUrl gerrit ssh url
+                description: SSHUrl gerrit ssh url.
                 type: string
             required:
             - keycloakSpec
@@ -119,6 +119,7 @@ spec:
                         TODO: Add other useful fields. apiVersion, kind, uid?'
                       type: string
                   type: object
+                  x-kubernetes-map-type: atomic
                 nullable: true
                 type: array
               keycloakSpec:
