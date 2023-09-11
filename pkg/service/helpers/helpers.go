@@ -5,10 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/binary"
 	"encoding/pem"
 	"fmt"
 	"log"
-	mathrand "math/rand"
 
 	"golang.org/x/crypto/ssh"
 
@@ -112,9 +112,14 @@ func GenerateSSHED25519KeyPairs() (privateKey, publicKey []byte, err error) {
 		return nil, nil, fmt.Errorf("failed to generate ssh public key: %w", err)
 	}
 
+	ED25519PrivateKey, err := marshalED25519PrivateKey(privKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate ed25519 private key: %w", err)
+	}
+
 	pemKey := &pem.Block{
 		Type:  "OPENSSH PRIVATE KEY",
-		Bytes: marshalED25519PrivateKey(privKey),
+		Bytes: ED25519PrivateKey,
 	}
 	pemPrivateKey := pem.EncodeToMemory(pemKey)
 	authorizedKey := ssh.MarshalAuthorizedKey(sshPublicKey)
@@ -124,10 +129,11 @@ func GenerateSSHED25519KeyPairs() (privateKey, publicKey []byte, err error) {
 
 // marshalED25519PrivateKey writes ed25519 private keys into the OpenSSH private key format.
 // The x509 package does not support marshaling ed25519 key types in the format used by openssh.
-// It is taken from https://github.com/mikesmitty/edkey/blob/master/edkey.go.
-// See related topic https://stackoverflow.com/questions/71850135/generate-ed25519-key-pair-compatible-with-openssh.
+// After https://go-review.googlesource.com/c/crypto/+/218620 will be released, we can use it.
+// Temporary solution is taken from https://github.com/mikesmitty/edkey/blob/master/edkey.go.
 // nolint:all Disabled all linters for this function to make it the same as in GitHub repository.
-func marshalED25519PrivateKey(key ed25519.PrivateKey) []byte {
+// The difference is that we use crypto random instead of math random for check bytes.
+func marshalED25519PrivateKey(key ed25519.PrivateKey) ([]byte, error) {
 	// Add our key header (followed by a null byte)
 	magic := append([]byte("openssh-key-v1"), 0)
 
@@ -151,17 +157,21 @@ func marshalED25519PrivateKey(key ed25519.PrivateKey) []byte {
 		Pad     []byte `ssh:"rest"`
 	}{}
 
-	// Set our check ints
-	ci := mathrand.Uint32()
-	pk1.Check1 = ci
-	pk1.Check2 = ci
+	// Random check bytes.
+	var check uint32
+	if err := binary.Read(rand.Reader, binary.BigEndian, &check); err != nil {
+		return nil, err
+	}
+
+	pk1.Check1 = check
+	pk1.Check2 = check
 	// Set our key type
 	pk1.Keytype = ssh.KeyAlgoED25519
 
 	// Add the pubkey to the optionally-encrypted block
 	pk, ok := key.Public().(ed25519.PublicKey)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("invalid public key type: %T", key.Public())
 	}
 
 	pubKey := []byte(pk)
@@ -200,5 +210,5 @@ func marshalED25519PrivateKey(key ed25519.PrivateKey) []byte {
 
 	magic = append(magic, ssh.Marshal(w)...)
 
-	return magic
+	return magic, nil
 }
