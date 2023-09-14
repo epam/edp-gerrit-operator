@@ -12,7 +12,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-    host: {{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}gerrit-{{ .Values.global.edpName }}.{{.Values.global.dnsWildCard}}{{end}}
+    host: {{if .Values.gerrit.basePath}}{{.Values.global.dnsWildCard}}{{else}}gerrit-{{ .Release.Namespace }}.{{.Values.global.dnsWildCard}}{{end}}
     path: {{if .Values.gerrit.basePath}}/{{.Values.gerrit.basePath}}(/|$)(.*){{else}}/{{end}}
     port:
         targetPort: {{.Values.gerrit.port}}

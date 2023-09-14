@@ -23,7 +23,7 @@ spec:
 {{ tpl (toYaml .Values.gerrit.ingress.tls) $ | indent 4 }}
 {{- end }}
   rules:
-    - host: {{if .Values.gerrit.basePath}}{{ .Values.global.dnsWildCard }}{{else}}gerrit-{{ .Values.global.edpName }}.{{ .Values.global.dnsWildCard }}{{end}}
+    - host: {{if .Values.gerrit.basePath}}{{ .Values.global.dnsWildCard }}{{else}}gerrit-{{ .Release.Namespace }}.{{ .Values.global.dnsWildCard }}{{end}}
       http:
         paths:
           - path: {{if .Values.gerrit.basePath}}/{{.Values.gerrit.basePath}}(/|$)(.*){{else}}/{{end}}

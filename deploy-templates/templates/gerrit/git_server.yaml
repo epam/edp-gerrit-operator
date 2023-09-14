@@ -4,7 +4,7 @@ kind: GitServer
 metadata:
   name: {{.Values.gitServer.name}}
 spec:
-  gitHost: 'gerrit.{{ .Values.global.edpName }}'
+  gitHost: 'gerrit.{{ .Release.Namespace }}'
   gitUser: {{.Values.gitServer.user}}
   httpsPort: {{.Values.gitServer.httpsPort}}
   nameSshKeySecret: {{.Values.gitServer.nameSshKeySecret}}

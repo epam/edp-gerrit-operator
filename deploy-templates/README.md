@@ -53,7 +53,6 @@ A Helm chart for EDP Gerrit Operator
 | global.admins | list | `["stub_user_one@example.com"]` | Administrators of your tenant |
 | global.developers | list | `["stub_user_one@example.com","stub_user_two@example.com"]` | Developers of your tenant |
 | global.dnsWildCard | string | `nil` | a cluster DNS wildcard name |
-| global.edpName | string | `""` | namespace or a project name (in case of OpenShift) |
 | global.gerritSSHPort | string | `"30022"` | Gerrit SSH node port |
 | global.openshift.deploymentType | string | `"deployments"` | Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
 | global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |

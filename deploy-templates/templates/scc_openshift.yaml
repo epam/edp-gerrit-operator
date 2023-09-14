@@ -20,7 +20,7 @@ metadata:
     {{- include "gerrit-operator.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": "pre-install"
-  name: {{.Values.gerrit.name}}-{{.Values.global.edpName}}
+  name: {{.Values.gerrit.name}}-{{.Release.Namespace}}
 priority: 1
 readOnlyRootFilesystem: false
 requiredDropCapabilities: []
@@ -32,7 +32,7 @@ seLinuxContext:
 supplementalGroups:
   type: RunAsAny
 users:
-  - system:serviceaccount:{{.Values.global.edpName}}:{{.Values.gerrit.name}}
+  - system:serviceaccount:{{.Release.Namespace}}:{{.Values.gerrit.name}}
 volumes:
   - configMap
   - downwardAPI
