@@ -1,6 +1,6 @@
 module github.com/epam/edp-gerrit-operator/v2
 
-go 1.19
+go 1.20
 
 replace (
 	github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20221220162201-efeef9d83325
