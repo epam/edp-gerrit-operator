@@ -10,7 +10,6 @@ replace (
 require (
 	github.com/dchest/uniuri v1.2.0
 	github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8
-	github.com/epam/edp-jenkins-operator/v2 v2.13.1
 	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800
 	github.com/go-git/go-git/v5 v5.5.1
 	github.com/go-logr/logr v1.2.3

@@ -1,11 +1,9 @@
 package helper
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
-	"text/template"
 
 	"github.com/pkg/errors"
 	coreV1Api "k8s.io/api/core/v1"
@@ -26,55 +24,12 @@ const (
 
 	LocalScriptsRelativePath = DefaultConfigFilesAbsolutePath + LocalConfigsRelativePath + "/" + DefaultScriptsDirectory
 
-	JenkinsPluginConfigFileName = "config-gerrit-plugin.tmpl"
-
 	RouteHTTPSScheme = "https"
 
 	RouteHTTPScheme = "http"
 
 	inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 )
-
-type JenkinsPluginData struct {
-	ServerName   string
-	ExternalUrl  string
-	SshPort      int32
-	UserName     string
-	HttpPassword string
-}
-
-func InitNewJenkinsPluginInfo() JenkinsPluginData {
-	return JenkinsPluginData{}
-}
-
-func ParseDefaultTemplate(data JenkinsPluginData) (bytes.Buffer, error) {
-	var ScriptContext bytes.Buffer
-
-	executableFilePath, err := GetExecutableFilePath()
-	if err != nil {
-		return bytes.Buffer{}, errors.Wrapf(err, "Unable to get executable file path")
-	}
-
-	templatesDirectoryPath := LocalTemplatesRelativePath
-	if !RunningInCluster() {
-		templatesDirectoryPath = fmt.Sprintf("%v/../%v/%v", executableFilePath, LocalConfigsRelativePath, DefaultTemplatesDirectory)
-	}
-
-	templateAbsolutePath := fmt.Sprintf("%v/%v", templatesDirectoryPath, JenkinsPluginConfigFileName)
-	if !fileExists(templateAbsolutePath) {
-		errMsg := fmt.Sprintf("Template file not found in path specified! Path: %s", templateAbsolutePath)
-		return bytes.Buffer{}, errors.New(errMsg)
-	}
-
-	t := template.Must(template.New(JenkinsPluginConfigFileName).ParseFiles(templateAbsolutePath))
-
-	err = t.Execute(&ScriptContext, data)
-	if err != nil {
-		return bytes.Buffer{}, errors.Wrapf(err, "Couldn't parse template %v", JenkinsPluginConfigFileName)
-	}
-
-	return ScriptContext, nil
-}
 
 func fileExists(filename string) bool {
 	info, err := os.Stat(filename)

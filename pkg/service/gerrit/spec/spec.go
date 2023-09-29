@@ -53,7 +53,7 @@ const (
 
 	GerritCIToolsGroupName = "Continuous Integration Tools"
 
-	GerritCIToolsGroupDescription = "Contains Jenkins and any other CI tools that get +2/-2 access on reviews"
+	GerritCIToolsGroupDescription = "Contains CI tools that get +2/-2 access on reviews"
 
 	GerritProjectDevelopersGroupName = "Developers"
 
@@ -84,8 +84,6 @@ const (
 	EdpCiUSerSshKeySuffix string = "ci-sshkey"
 
 	EdpArgoUserSshKeySuffix string = "argocd-sshkey"
-
-	JenkinsPluginConfigPostfix = "jenkins-plugin-config"
 
 	DefaultGerritReplicationConfigPath = "/var/gerrit/review_site/etc/replication.config"
 

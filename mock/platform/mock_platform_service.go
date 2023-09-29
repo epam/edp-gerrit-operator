@@ -46,34 +46,6 @@ func (_m *PlatformService) CreateEDPComponentIfNotExist(gerrit *v1.Gerrit, url s
 	return r0
 }
 
-// CreateJenkinsScript provides a mock function with given fields: namespace, configMap
-func (_m *PlatformService) CreateJenkinsScript(namespace string, configMap string) error {
-	ret := _m.Called(namespace, configMap)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(namespace, configMap)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// CreateJenkinsServiceAccount provides a mock function with given fields: namespace, secretName, serviceAccountType
-func (_m *PlatformService) CreateJenkinsServiceAccount(namespace string, secretName string, serviceAccountType string) error {
-	ret := _m.Called(namespace, secretName, serviceAccountType)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(namespace, secretName, serviceAccountType)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // CreateSecret provides a mock function with given fields: gerrit, name, data
 func (_m *PlatformService) CreateSecret(gerrit *v1.Gerrit, name string, data map[string][]byte) error {
 	ret := _m.Called(gerrit, name, data)

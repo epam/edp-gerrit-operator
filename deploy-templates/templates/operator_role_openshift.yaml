@@ -46,8 +46,6 @@ rules:
     - keycloakclients/status
     - keycloakrealms
     - keycloakrealms/status
-    - jenkinsserviceaccounts
-    - jenkinsscripts
     - edpcomponents
     - gerritgroups
     - gerritgroups/status
@@ -75,12 +73,4 @@ rules:
     - get
     - list
     - update
-- apiGroups:
-    - v2.edp.epam.com
-  resources:
-    - jenkins
-  verbs:
-    - get
-    - list
-    - watch
 {{ end }}

@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
@@ -504,7 +503,7 @@ func TestComponentService_ExternalURL(t *testing.T) {
 
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{},
-		&keycloakApi.KeycloakClient{}, &jenkinsV1Api.Jenkins{}, &jenkinsV1Api.JenkinsList{})
+		&keycloakApi.KeycloakClient{})
 
 	k8sClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
@@ -524,59 +523,6 @@ func TestComponentService_Integrate_GetExternalEndpointErr(t *testing.T) {
 	_, err := CS.Integrate(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), errTest.Error()))
-}
-
-func TestComponentService_Integrate_ParseDefaultTemplateErr(t *testing.T) {
-	instance := &gerritApi.Gerrit{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      "name",
-			Namespace: "namespace",
-		},
-		Spec: gerritApi.GerritSpec{
-			KeycloakSpec: gerritApi.KeycloakSpec{
-				Enabled: true,
-			},
-		},
-	}
-	kc := &keycloakApi.KeycloakClient{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      "name",
-			Namespace: "namespace",
-		},
-	}
-	jenkins := &jenkinsV1Api.Jenkins{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      "jenkins",
-			Namespace: "namespace",
-		},
-	}
-
-	service := CreateService(servicePort)
-	ciUserCredentialsName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
-	secretData := map[string][]byte{
-		"password": {'o'},
-		"user":     {'a'},
-	}
-
-	ps := &pmock.PlatformService{}
-	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{},
-		&keycloakApi.KeycloakClient{}, &jenkinsV1Api.Jenkins{}, &jenkinsV1Api.JenkinsList{})
-
-	k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(kc, jenkins).Build()
-	CS := ComponentService{PlatformService: ps, client: k8sClient}
-
-	var envs []coreV1Api.EnvVar
-
-	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("GenerateKeycloakSettings", instance).Return(envs, nil)
-	ps.On("PatchDeploymentEnv", instance, envs).Return(nil)
-	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
-	ps.On("GetSecretData", instance.Namespace, ciUserCredentialsName).Return(secretData, nil)
-
-	_, err := CS.Integrate(context.Background(), instance)
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Template file not found in path specified!"))
 }
 
 func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
@@ -714,21 +660,10 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 		"id_rsa":   pkey,
 	}
 	service := CreateService(servicePort)
-
 	scheme := runtime.NewScheme()
-	err = jenkinsV1Api.AddToScheme(scheme)
-	require.NoError(t, err)
-
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithObjects(
-			&jenkinsV1Api.Jenkins{
-				ObjectMeta: metaV1.ObjectMeta{
-					Namespace: instance.Namespace,
-					Name:      "jenkins",
-				},
-			},
-		).
+		WithObjects().
 		Build()
 
 	ps := &pmock.PlatformService{}
@@ -741,7 +676,6 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
 	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
-	ps.On("CreateJenkinsServiceAccount", instance.Namespace, ciUserSshSecretName, "ssh").Return(nil)
 
 	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
@@ -877,56 +811,6 @@ func TestComponentService_ExposeConfiguration_CreateSecretErr(t *testing.T) {
 	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to create Secret with SSH key pairs for Gerrit"))
-}
-
-func TestComponentService_ExposeConfiguration_CreateJenkinsServiceAccountErr(t *testing.T) {
-	instance := CreateGerritInstance()
-	ciUserSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.GerritDefaultCiUserSecretPostfix)
-	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
-
-	secretName := fmt.Sprintf("%v-admin-password", instance.Name)
-	pkey, err := GenPkey()
-	require.NoError(t, err)
-
-	secretData := map[string][]byte{
-		"password": {'o'},
-		"id_rsa":   pkey,
-	}
-
-	service := CreateService(servicePort)
-	errTest := errors.New("test")
-
-	scheme := runtime.NewScheme()
-	err = jenkinsV1Api.AddToScheme(scheme)
-	require.NoError(t, err)
-
-	k8sClient := fake.NewClientBuilder().
-		WithScheme(scheme).
-		WithObjects(
-			&jenkinsV1Api.Jenkins{
-				ObjectMeta: metaV1.ObjectMeta{
-					Namespace: instance.Namespace,
-					Name:      "jenkins",
-				},
-			},
-		).
-		Build()
-
-	ps := &pmock.PlatformService{}
-	CS := ComponentService{PlatformService: ps, gerritClient: &gerrit.Client{}, client: k8sClient}
-
-	ps.On("GetSecretData", instance.Namespace, secretName).Return(secretData, nil)
-	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
-	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
-	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
-	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(nil)
-	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
-	ps.On("CreateJenkinsServiceAccount", instance.Namespace, ciUserSshSecretName, "ssh").Return(errTest)
-
-	_, err = CS.ExposeConfiguration(context.Background(), instance)
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Failed to create Jenkins Service Account"))
 }
 
 func TestComponentService_Configure_CreateGroups(t *testing.T) {

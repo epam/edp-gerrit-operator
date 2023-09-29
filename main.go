@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	buildInfo "github.com/epam/edp-common/pkg/config"
-	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
@@ -78,7 +77,6 @@ func main() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(gerritApi.AddToScheme(scheme))
 	utilruntime.Must(gerritAlpha.AddToScheme(scheme))
-	utilruntime.Must(jenkinsApi.AddToScheme(scheme))
 	utilruntime.Must(keycloakApi.AddToScheme(scheme))
 
 	mgr, err := initManager(metricsAddr, probeAddr, enableLeaderElection)

@@ -26,7 +26,6 @@ import (
 	k8sClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	jenkinsV1Api "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
@@ -552,105 +551,4 @@ func (s *K8SService) CreateConfigMap(instance *gerritApi.Gerrit, configMapName s
 	log.Info(fmt.Sprintf("ConfigMap %s/%s has been created", cm.Namespace, cm.Name))
 
 	return nil
-}
-
-func (s *K8SService) CreateJenkinsServiceAccount(namespace, secretName, serviceAccountType string) error {
-	ctx := context.Background()
-
-	vLog := log.WithValues(nameKey, secretName, "service account type", serviceAccountType)
-	vLog.Info("creating jenkins service account")
-
-	_, err := s.getJenkinsServiceAccount(secretName, namespace)
-	if err == nil {
-		vLog.Info("jenkins service account already exists.")
-		return nil
-	}
-
-	if !k8sErrors.IsNotFound(err) {
-		return err
-	}
-
-	jsa := &jenkinsV1Api.JenkinsServiceAccount{
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-		Spec: jenkinsV1Api.JenkinsServiceAccountSpec{
-			Type:        serviceAccountType,
-			Credentials: secretName,
-		},
-	}
-
-	err = s.client.Create(ctx, jsa)
-	if err != nil {
-		return fmt.Errorf("failed to create 'JenkinsServiceAccount' resource with name %q: %w", secretName, err)
-	}
-
-	vLog.Info("jenkins service account has been created.")
-
-	return nil
-}
-
-func (s *K8SService) getJenkinsServiceAccount(name, namespace string) (*jenkinsV1Api.JenkinsServiceAccount, error) {
-	ctx := context.Background()
-	jsa := &jenkinsV1Api.JenkinsServiceAccount{}
-
-	err := s.client.Get(ctx, types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}, jsa)
-	if err != nil {
-		return nil, fmt.Errorf("failed to GET 'JenkinsServiceAccount' by name: %q in namespace: %q: %w", name, namespace, err)
-	}
-
-	return jsa, nil
-}
-
-func (s *K8SService) CreateJenkinsScript(namespace, configMap string) error {
-	ctx := context.Background()
-
-	_, err := s.getJenkinsScript(configMap, namespace)
-	if err == nil {
-		log.Info("Jenkins script already exists, skipping creation")
-
-		return nil
-	}
-
-	if !k8sErrors.IsNotFound(err) {
-		return err
-	}
-
-	log.Info("Did not find Jenkins script, creating it.")
-
-	js := &jenkinsV1Api.JenkinsScript{
-		TypeMeta: metaV1.TypeMeta{},
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      configMap,
-			Namespace: namespace,
-		},
-		Spec: jenkinsV1Api.JenkinsScriptSpec{
-			SourceCmName: configMap,
-		},
-	}
-
-	if err = s.client.Create(ctx, js); err != nil {
-		return fmt.Errorf("failed to create 'JenkinsScript' resource with name: %q, in namespace: %q: %w", configMap, namespace, err)
-	}
-
-	return nil
-}
-
-func (s *K8SService) getJenkinsScript(name, namespace string) (*jenkinsV1Api.JenkinsScript, error) {
-	ctx := context.Background()
-	js := &jenkinsV1Api.JenkinsScript{}
-
-	err := s.client.Get(ctx, types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}, js)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get JenkinsScript resource by name: %s: %w", name, err)
-	}
-
-	return js, nil
 }

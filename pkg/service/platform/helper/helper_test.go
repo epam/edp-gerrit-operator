@@ -36,12 +36,6 @@ func TestGetExecutableFilePath(t *testing.T) {
 	}
 }
 
-func TestParseDefaultTemplate(t *testing.T) {
-	data := JenkinsPluginData{}
-	_, err := ParseDefaultTemplate(data)
-	assert.Error(t, err)
-}
-
 func TestGenerateLabels(t *testing.T) {
 	labels := GenerateLabels(name)
 	assert.Equal(t, map[string]string{"app": name}, labels)
@@ -92,8 +86,4 @@ func Test_UpdateEnv(t *testing.T) {
 	}
 	sum := UpdateEnv(env1, env2)
 	assert.Equal(t, env1, sum)
-}
-
-func TestInitNewJenkinsPluginInfo(t *testing.T) {
-	assert.Equal(t, JenkinsPluginData{}, InitNewJenkinsPluginInfo())
 }

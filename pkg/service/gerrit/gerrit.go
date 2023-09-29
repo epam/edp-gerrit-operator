@@ -19,7 +19,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	jenkinsApi "github.com/epam/edp-jenkins-operator/v2/pkg/apis/v2/v1"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
@@ -34,12 +33,11 @@ import (
 var log = ctrl.Log.WithName("service_gerrit")
 
 const (
-	jenkinsDefaultScriptConfigMapKey = "context"
-	user                             = "user"
-	password                         = "password"
-	rsaID                            = "id_rsa"
-	rsaIDFile                        = "id_rsa.pub"
-	admin                            = "-admin"
+	user      = "user"
+	password  = "password"
+	rsaID     = "id_rsa"
+	rsaIDFile = "id_rsa.pub"
+	admin     = "-admin"
 )
 
 // Interface expresses behavior of the Gerrit EDP Component.
@@ -335,16 +333,6 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
 
-	if s.jenkinsEnabled(ctx, instance.Namespace) {
-		log.Info("Creating Jenkins Service Account for Gerrit")
-
-		if err = s.PlatformService.CreateJenkinsServiceAccount(
-			instance.Namespace, ciUserSshSecretName, "ssh",
-		); err != nil {
-			return instance, errors.Wrapf(err, "Failed to create Jenkins Service Account %s", ciUserSshSecretName)
-		}
-	}
-
 	ciUserSshKeyAnnotationKey := helpers.GenerateAnnotationKey(spec.EdpCiUSerSshKeySuffix)
 	s.setAnnotation(instance, ciUserSshKeyAnnotationKey, ciUserSshSecretName)
 
@@ -443,14 +431,6 @@ func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Ger
 		}
 	} else {
 		log.V(1).Info("Keycloak integration not enabled.")
-	}
-
-	if s.jenkinsEnabled(ctx, instance.Namespace) {
-		log.Info("Configuring Gerrit plugin in Jenkins")
-
-		if err := s.configureGerritPluginInJenkins(instance, externalUrl); err != nil {
-			return nil, err
-		}
 	}
 
 	return instance, nil
@@ -740,71 +720,8 @@ func (ComponentService) setAnnotation(instance *gerritApi.Gerrit, key, value str
 	}
 }
 
-func (s ComponentService) configureGerritPluginInJenkins(instance *gerritApi.Gerrit, externalUrl string) error {
-	sshPort, err := s.GetServicePort(instance)
-	if err != nil {
-		return fmt.Errorf("failed to get SSH port for %v/%v: %w", instance.Namespace, instance.Name, err)
-	}
-
-	ciUserCredentialsName := formatSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
-
-	ciUserCredentials, err := s.PlatformService.GetSecretData(instance.Namespace, ciUserCredentialsName)
-	if err != nil {
-		return fmt.Errorf("failed to get Secret for CI user for %s/%s: %w", instance.Namespace, instance.Name, err)
-	}
-
-	jenkinsPluginInfo := platformHelper.InitNewJenkinsPluginInfo()
-	jenkinsPluginInfo.ServerName = instance.Name
-	jenkinsPluginInfo.ExternalUrl = externalUrl
-	jenkinsPluginInfo.SshPort = sshPort
-	jenkinsPluginInfo.UserName = string(ciUserCredentials[user])
-	jenkinsPluginInfo.HttpPassword = string(ciUserCredentials[password])
-
-	jenkinsScriptContext, err := platformHelper.ParseDefaultTemplate(jenkinsPluginInfo)
-	if err != nil {
-		return fmt.Errorf("failed to parse template for %q: %w", instance.Name, err)
-	}
-
-	jenkinsPluginConfigurationName := formatSecretName(instance.Name, spec.JenkinsPluginConfigPostfix)
-	configMapData := map[string]string{
-		jenkinsDefaultScriptConfigMapKey: jenkinsScriptContext.String(),
-	}
-
-	err = s.PlatformService.CreateConfigMap(instance, jenkinsPluginConfigurationName, configMapData)
-	if err != nil {
-		return fmt.Errorf("failed to create config map %q: %w", jenkinsPluginConfigurationName, err)
-	}
-
-	err = s.PlatformService.CreateJenkinsScript(instance.Namespace, jenkinsPluginConfigurationName)
-	if err != nil {
-		return fmt.Errorf("failed to create jenkins script for config %q: %w", jenkinsPluginConfigurationName, err)
-	}
-
-	return nil
-}
-
 func formatSecretName(name, postfix string) string {
 	return fmt.Sprintf("%s-%s", name, postfix)
-}
-
-func (s ComponentService) jenkinsEnabled(ctx context.Context, namespace string) bool {
-	jenkinsList := &jenkinsApi.JenkinsList{}
-
-	if err := s.client.List(ctx, jenkinsList, &client.ListOptions{Namespace: namespace}); err != nil {
-		log.Error(err, "Failed to list Jenkins instances, assuming Jenkins is not enabled", "namespace", namespace)
-
-		return false
-	}
-
-	if len(jenkinsList.Items) == 0 {
-		log.Info("Jenkins is not enabled", "namespace", namespace)
-
-		return false
-	}
-
-	log.Info("Jenkins is enabled", "namespace", namespace)
-
-	return true
 }
 
 // exposeArgoCDConfiguration creates argocd user in Gerrit and adds this user to the ReadOnly group.
