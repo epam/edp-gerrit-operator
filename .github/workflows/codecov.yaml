@@ -19,9 +19,6 @@ jobs:
         with:
           go-version: ${{ env.GOLANG_VERSION }}
 
-      - name: Build
-        run: make build
-
       - name: Test
         run: make test
 
