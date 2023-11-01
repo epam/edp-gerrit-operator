@@ -119,10 +119,15 @@ func (s ComponentService) Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerr
 		gerritScriptsPath = filepath.FromSlash(fmt.Sprintf("%v/../%v/%v", executableFilePath, platformHelper.LocalConfigsRelativePath, platformHelper.DefaultScriptsDirectory))
 	}
 
-	err = s.PlatformService.CreateSecret(instance, instance.Name+"-admin-password", map[string][]byte{
-		user:     []byte(spec.GerritDefaultAdminUser),
-		password: []byte(uniuri.New()),
-	})
+	err = s.PlatformService.CreateSecret(
+		instance,
+		instance.Name+"-admin-password",
+		map[string][]byte{
+			user:     []byte(spec.GerritDefaultAdminUser),
+			password: []byte(uniuri.New()),
+		},
+		map[string]string{},
+	)
 	if err != nil {
 		return instance, false, errors.Wrapf(err, "failed to create admin Secret %s for Gerrit", instance.Name+"-admin-password")
 	}
@@ -303,10 +308,15 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 	ciUserSecretName := formatSecretName(instance.Name, spec.GerritDefaultCiUserSecretPostfix)
 	ciUserSshSecretName := fmt.Sprintf("%s-ciuser%s", instance.Name, spec.SshKeyPostfix)
 
-	if err = s.PlatformService.CreateSecret(instance, ciUserSecretName, map[string][]byte{
-		user:     []byte(spec.GerritDefaultCiUserUser),
-		password: []byte(uniuri.New()),
-	}); err != nil {
+	if err = s.PlatformService.CreateSecret(
+		instance,
+		ciUserSecretName,
+		map[string][]byte{
+			user:     []byte(spec.GerritDefaultCiUserUser),
+			password: []byte(uniuri.New()),
+		},
+		map[string]string{},
+	); err != nil {
 		return instance, errors.Wrapf(err, "Failed to create ci user Secret %v for Gerrit", ciUserSecretName)
 	}
 
@@ -324,11 +334,18 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 		return instance, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
 	}
 
-	err = s.PlatformService.CreateSecret(instance, ciUserSshSecretName, map[string][]byte{
-		"username": []byte(spec.GerritDefaultCiUserUser),
-		rsaID:      privateKey,
-		rsaIDFile:  publicKey,
-	})
+	err = s.PlatformService.CreateSecret(
+		instance,
+		ciUserSshSecretName,
+		map[string][]byte{
+			"username": []byte(spec.GerritDefaultCiUserUser),
+			rsaID:      privateKey,
+			rsaIDFile:  publicKey,
+		},
+		map[string]string{
+			"app.edp.epam.com/secret-type": "repository",
+		},
+	)
 	if err != nil {
 		return instance, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
@@ -380,7 +397,12 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 
 		identityServiceSecretName := formatSecretName(instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
 
-		err = s.PlatformService.CreateSecret(instance, identityServiceSecretName, identityServiceClientCredentials)
+		err = s.PlatformService.CreateSecret(
+			instance,
+			identityServiceSecretName,
+			identityServiceClientCredentials,
+			map[string]string{},
+		)
 		if err != nil {
 			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to create secret %v", identityServiceSecretName))
 		}
@@ -638,10 +660,15 @@ func (s ComponentService) createSSHKeyPairs(instance *gerritApi.Gerrit, secretNa
 		return nil, nil, errors.Wrapf(err, "Unable to generate SSH key pairs for Gerrit")
 	}
 
-	if err := s.PlatformService.CreateSecret(instance, secretName, map[string][]byte{
-		rsaID:     privateKey,
-		rsaIDFile: publicKey,
-	}); err != nil {
+	if err := s.PlatformService.CreateSecret(
+		instance,
+		secretName,
+		map[string][]byte{
+			rsaID:     privateKey,
+			rsaIDFile: publicKey,
+		},
+		map[string]string{},
+	); err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to create Secret with SSH key pairs for Gerrit")
 	}
 
@@ -733,7 +760,12 @@ func (s *ComponentService) exposeArgoCDConfiguration(_ context.Context, gerrit *
 		password: []byte(uniuri.New()),
 	}
 
-	err := s.PlatformService.CreateSecret(gerrit, argoUserSecretName, argoUserSecretData)
+	err := s.PlatformService.CreateSecret(
+		gerrit,
+		argoUserSecretName,
+		argoUserSecretData,
+		map[string]string{},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create secret %s: %w", argoUserSecretName, err)
 	}
@@ -755,7 +787,9 @@ func (s *ComponentService) exposeArgoCDConfiguration(_ context.Context, gerrit *
 			"username": []byte(spec.GerritArgoUser),
 			rsaID:      privateKey,
 			rsaIDFile:  publicKey,
-		})
+		},
+		map[string]string{},
+	)
 	if err != nil {
 		return fmt.Errorf("unable to create secret for Gerrit ArgoCD user: %w", err)
 	}

@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,7 +45,7 @@ var log = ctrl.Log.WithName("platform")
 // K8SService implements platform.Service interface (k8s platform integration).
 type K8SService struct {
 	Scheme           *runtime.Scheme
-	CoreClient       *coreV1Client.CoreV1Client
+	CoreClient       coreV1Client.CoreV1Interface
 	appsV1Client     *appsV1Client.AppsV1Client
 	networkingClient networkingClient.NetworkingV1Interface
 	client           k8sClient.Client
@@ -388,7 +389,7 @@ func (s *K8SService) ExecInPod(namespace, podName string, command []string) (std
 }
 
 // CreateSecret creates a new Secret Resource for a Gerrit EDP Component.
-func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, data map[string][]byte) error {
+func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, data map[string][]byte, labels map[string]string) error {
 	ctx := context.Background()
 	vLog := log.WithValues(nameKey, secretName)
 	vLog.Info("creating secret")
@@ -405,6 +406,8 @@ func (s *K8SService) CreateSecret(gerrit *gerritApi.Gerrit, secretName string, d
 	log.Info("Creating a new Secret for Gerrit", nameKey, secretName)
 
 	gerritSecretObject := newGerritSecret(secretName, gerrit.Name, gerrit.Namespace, data)
+
+	maps.Copy(gerritSecretObject.Labels, labels)
 
 	err = controllerutil.SetControllerReference(gerrit, gerritSecretObject, s.Scheme)
 	if err != nil {

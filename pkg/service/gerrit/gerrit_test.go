@@ -237,7 +237,7 @@ func TestComponentService_Configure_CreateSecretErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(errTest)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(errTest)
 
 	configure, b, err := CS.Configure(instance)
 	assert.Error(t, err)
@@ -256,7 +256,7 @@ func TestComponentService_Configure_GetServicePortErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, errTest)
 
 	configure, b, err := CS.Configure(instance)
@@ -276,7 +276,7 @@ func TestComponentService_Configure_GetDeploymentSSHPortErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, errTest)
 
@@ -297,7 +297,7 @@ func TestComponentService_Configure_GetServiceErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil).Once()
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, errTest)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
@@ -319,7 +319,7 @@ func TestComponentService_Configure_UpdateServiceErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, port).Return(errTest)
@@ -347,7 +347,7 @@ func TestComponentService_Configure_updateDeploymentConfigPortErr(t *testing.T) 
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, servicePort).Return(nil)
@@ -375,7 +375,7 @@ func TestComponentService_Configure_updateDeploymentConfigPortTrue(t *testing.T)
 	}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, servicePort).Return(nil)
@@ -402,7 +402,7 @@ func TestComponentService_Configure_GetPodsErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, port).Return(nil)
@@ -439,7 +439,7 @@ func TestComponentService_Configure_createSSHKeyPairsAdminErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, port).Return(nil)
@@ -476,7 +476,7 @@ func TestComponentService_Configure_CheckCredentialsErr(t *testing.T) {
 	}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, port).Return(nil)
@@ -673,8 +673,8 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
-	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
 
 	_, err = CS.ExposeConfiguration(context.Background(), instance)
@@ -744,7 +744,7 @@ func TestComponentService_ExposeConfiguration_FirstCreateSecretErr(t *testing.T)
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(errTest)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything, mock.Anything).Return(errTest)
 
 	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
@@ -773,7 +773,7 @@ func TestComponentService_ExposeConfiguration_GetSecretErr(t *testing.T) {
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, errTest)
 
 	_, err = CS.ExposeConfiguration(context.Background(), instance)
@@ -804,9 +804,9 @@ func TestComponentService_ExposeConfiguration_CreateSecretErr(t *testing.T) {
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return(h, sc, nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetSecret", instance.Namespace, instance.Name+"-admin").Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, ciUserSecretName, mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetSecretData", instance.Namespace, ciUserSecretName).Return(secretData, nil)
-	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything).Return(errTest)
+	ps.On("CreateSecret", instance, ciUserSshSecretName, mock.Anything, mock.Anything).Return(errTest)
 
 	_, err = CS.ExposeConfiguration(context.Background(), instance)
 	assert.Error(t, err)
@@ -835,7 +835,7 @@ func TestComponentService_Configure_CreateGroups(t *testing.T) {
 	}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
-	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything).Return(nil)
+	ps.On("CreateSecret", instance, instance.Name+"-admin-password", mock.Anything, mock.Anything).Return(nil)
 	ps.On("GetService", instance.Namespace, instance.Name).Return(service, nil)
 	ps.On("GetDeploymentSSHPort", instance).Return(port, nil)
 	ps.On("UpdateService", service, port).Return(nil)
@@ -918,7 +918,7 @@ func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
 			name: "success expose argocd configuration",
 			PlatformService: func(t *testing.T) platform.PlatformService {
 				serviceMock := &pmock.PlatformService{}
-				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(nil)
 
 				return serviceMock
@@ -938,7 +938,7 @@ func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
 			name: "failed to create user secret",
 			PlatformService: func(t *testing.T) platform.PlatformService {
 				serviceMock := &pmock.PlatformService{}
-				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(errors.New("failed to create secret"))
 
 				return serviceMock
@@ -955,10 +955,10 @@ func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
 			name: "failed to create ssh secret",
 			PlatformService: func(t *testing.T) platform.PlatformService {
 				serviceMock := &pmock.PlatformService{}
-				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Once().
 					Return(nil).
-					On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+					On("CreateSecret", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Once().
 					Return(errors.New("failed to create ssh secret"))
 
@@ -976,7 +976,7 @@ func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
 			name: "failed to create user",
 			PlatformService: func(t *testing.T) platform.PlatformService {
 				serviceMock := &pmock.PlatformService{}
-				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(nil)
 
 				return serviceMock
@@ -995,7 +995,7 @@ func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
 			name: "failed to add user to groups",
 			PlatformService: func(t *testing.T) platform.PlatformService {
 				serviceMock := &pmock.PlatformService{}
-				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything).
+				serviceMock.On("CreateSecret", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(nil)
 
 				return serviceMock

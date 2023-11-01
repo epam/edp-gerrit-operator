@@ -34,7 +34,7 @@ type PlatformService interface {
 
 	GetSecretData(namespace, name string) (map[string][]byte, error)
 
-	CreateSecret(gerrit *gerritApi.Gerrit, name string, data map[string][]byte) error
+	CreateSecret(gerrit *gerritApi.Gerrit, name string, data map[string][]byte, labels map[string]string) error
 
 	GetSecret(namespace, name string) (map[string][]byte, error)
 

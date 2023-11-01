@@ -47,12 +47,12 @@ func (_m *PlatformService) CreateEDPComponentIfNotExist(gerrit *v1.Gerrit, url s
 }
 
 // CreateSecret provides a mock function with given fields: gerrit, name, data
-func (_m *PlatformService) CreateSecret(gerrit *v1.Gerrit, name string, data map[string][]byte) error {
-	ret := _m.Called(gerrit, name, data)
+func (_m *PlatformService) CreateSecret(gerrit *v1.Gerrit, name string, data map[string][]byte, labels map[string]string) error {
+	ret := _m.Called(gerrit, name, data, labels)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*v1.Gerrit, string, map[string][]byte) error); ok {
-		r0 = rf(gerrit, name, data)
+	if rf, ok := ret.Get(0).(func(*v1.Gerrit, string, map[string][]byte, map[string]string) error); ok {
+		r0 = rf(gerrit, name, data, labels)
 	} else {
 		r0 = ret.Error(0)
 	}

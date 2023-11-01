@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	fakeClient "k8s.io/client-go/kubernetes/fake"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
@@ -110,6 +111,60 @@ func TestK8SService_GetExternalEndpoint(t *testing.T) {
 
 			assert.Equal(t, tt.want.host, gotHost)
 			assert.Equal(t, tt.want.scheme, gotScheme)
+		})
+	}
+}
+
+func TestK8SService_CreateSecret(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		gerrit     *gerritApi.Gerrit
+		secretName string
+		data       map[string][]byte
+		labels     map[string]string
+	}
+
+	tests := []struct {
+		name       string
+		coreClient func(t *testing.T) corev1.CoreV1Interface
+		args       args
+		wantErr    require.ErrorAssertionFunc
+	}{
+		{
+			name: "should create secret",
+			coreClient: func(t *testing.T) corev1.CoreV1Interface {
+				return fakeClient.NewSimpleClientset().
+					CoreV1()
+			},
+			args: args{
+				gerrit: &gerritApi.Gerrit{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "default",
+					},
+				},
+				secretName: "ssh-key",
+				data:       map[string][]byte{"ssh-key": []byte("test")},
+				labels:     map[string]string{"test-label": "test-label-value"},
+			},
+			wantErr: require.NoError,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			scheme := runtime.NewScheme()
+			require.NoError(t, gerritApi.AddToScheme(scheme))
+
+			s := &K8SService{
+				CoreClient: tt.coreClient(t),
+				Scheme:     scheme,
+			}
+			tt.wantErr(t, s.CreateSecret(tt.args.gerrit, tt.args.secretName, tt.args.data, tt.args.labels))
 		})
 	}
 }

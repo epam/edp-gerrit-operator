@@ -21,6 +21,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/crypto v0.14.0
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	gopkg.in/resty.v1 v1.12.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
