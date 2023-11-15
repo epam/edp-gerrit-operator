@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -241,9 +242,14 @@ func (c *Client) createRemoteWithCredential(repo *git.Repository, baseRemoteName
 }
 
 func (*Client) GenerateChangeID() (string, error) {
+	changeID, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate uuid, %w", err)
+	}
+
 	h := sha1.New()
-	if _, err := h.Write([]byte(time.Now().Format(time.RFC3339))); err != nil {
-		return "", errors.Wrap(err, "unable to write hash")
+	if _, err := h.Write([]byte(changeID.String())); err != nil {
+		return "", fmt.Errorf("failed to write to hash: %w", err)
 	}
 
 	return fmt.Sprintf("I%x", h.Sum(nil)), nil
