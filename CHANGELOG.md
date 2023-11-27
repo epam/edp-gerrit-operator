@@ -2,8 +2,8 @@
 ## [Unreleased]
 
 
-<a name="v2.13.6"></a>
-## v2.13.6 - 2023-07-06
+<a name="v2.13.7"></a>
+## v2.13.7 - 2023-11-15
 ### Features
 
 - Switch to use V1 apis of EDP components [EPMDEDP-10082](https://jiraeu.epam.com/browse/EPMDEDP-10082)
@@ -138,4 +138,4 @@ Update gerrit config according to groups.
 * Align permission for groups.
 
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.6...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.13.7...HEAD

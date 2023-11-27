@@ -3,8 +3,8 @@ description: A Helm chart for EDP Gerrit Operator
 home: https://epam.github.io/edp-install/
 name: gerrit-operator
 type: application
-version: 2.13.6
-appVersion: 2.13.6
+version: 2.13.7
+appVersion: 2.13.7
 icon: https://epam.github.io/edp-install/assets/logo.png
 keywords:
   - edp
