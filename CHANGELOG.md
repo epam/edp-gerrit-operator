@@ -2,6 +2,19 @@
 ## [Unreleased]
 
 
+<a name="v2.19.0"></a>
+## [v2.19.0] - 2023-12-18
+### Bug Fixes
+
+- Generate ChangeIDs using UUID ([#16](https://github.com/epam/edp-gerrit-operator/issues/16))
+
+### Routine
+
+- Update openssl package for operator container ([#16](https://github.com/epam/edp-gerrit-operator/issues/16))
+- Update release flow for GH Actions ([#16](https://github.com/epam/edp-gerrit-operator/issues/16))
+- Update current development version ([#15](https://github.com/epam/edp-gerrit-operator/issues/15))
+
+
 <a name="v2.18.0"></a>
 ## [v2.18.0] - 2023-11-03
 ### Features
@@ -48,7 +61,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.18.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.19.0...HEAD
+[v2.19.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.18.0...v2.19.0
 [v2.18.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.17.1...v2.18.0
 [v2.17.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.17.0...v2.17.1
 [v2.17.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.16.0...v2.17.0
