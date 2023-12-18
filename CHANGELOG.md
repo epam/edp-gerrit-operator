@@ -3,7 +3,7 @@
 
 
 <a name="v2.19.0"></a>
-## v2.19.0 - 2023-11-15
+## v2.19.0 - 2023-12-18
 ### Features
 
 - Add label to the secret gerrit-ciuser-sshkey ([#14](https://github.com/epam/edp-gerrit-operator/issues/14))
