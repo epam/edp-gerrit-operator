@@ -19,15 +19,15 @@ printf \"\$5\\tReadOnly\\n\" >> groups
 
 cat << EOF > \"webhooks.config\"
 [remote \"changemerged\"]
-  url = http://el-gerrit-listener:8080
+  url = http://el-edp:8080
   event = change-merged
 
 [remote \"patchsetcreated\"]
-  url = http://el-gerrit-listener:8080
+  url = http://el-edp:8080
   event = patchset-created
 
 [remote \"commentadded\"]
-  url = http://el-gerrit-listener:8080
+  url = http://el-edp:8080
   event = comment-added
 EOF
 
