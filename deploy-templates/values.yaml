@@ -72,6 +72,7 @@ gerrit:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # Provide external endpoint access. Default Ingress/Route host pattern: gerrit-{{ .Release.Namespace }}.{{ .Values.global.dnsWildCard }}
   ingress:
     annotations: {}
     # --  pathType is only for k8s >= 1.1=
@@ -82,7 +83,7 @@ gerrit:
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:
-    #      - chart-example.local
+    #      - gerrit-edp.example.com
 
   resources:
     limits:
