@@ -35,7 +35,6 @@ rules:
     - keycloakclients/status
     - keycloakrealms
     - keycloakrealms/status
-    - edpcomponents
     - gerritgroups
     - gerritgroups/status
     - gerritgroupmembers

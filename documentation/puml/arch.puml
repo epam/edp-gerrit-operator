@@ -44,7 +44,6 @@ package com.epam.edp.gerrit {
 Gerrit -u-> JenkinsScript : creates (jenkins-plugin-config)
 Gerrit -u-> JenkinsServiceAccount : creates (gerrit-ciuser-sshkey)
 Gerrit -u-> KeycloakClient : creates
-Gerrit -u-> EDPComponent : creates, owner
 Gerrit .u.> GitServer : creates
 class LocalObjectReference {
     String name
