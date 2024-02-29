@@ -104,13 +104,3 @@ gerrit:
 
   # -- Values to add to JAVA_OPTIONS
   javaOptions: ""
-
-gitServer:
-  # -- GitServer CR name
-  name: "gerrit"
-  # -- Git user to connect
-  user: "edp-ci"
-  # -- HTTPS port
-  httpsPort: 443
-  # -- Name of secret with credentials to Git server
-  nameSshKeySecret: "gerrit-ciuser-sshkey"
