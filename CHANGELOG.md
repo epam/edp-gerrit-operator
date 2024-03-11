@@ -2,6 +2,36 @@
 ## [Unreleased]
 
 
+<a name="v2.20.0"></a>
+## [v2.20.0] - 2024-03-11
+### Features
+
+- Align to the Tekton EventListener endpoint ([#24](https://github.com/epam/edp-gerrit-operator/issues/24))
+- Add QuickLink Custom Resource ([#22](https://github.com/epam/edp-gerrit-operator/issues/22))
+
+### Bug Fixes
+
+- Update webhook url ([#21](https://github.com/epam/edp-gerrit-operator/issues/21))
+
+### Code Refactoring
+
+- QuickLink is managed by edp-tekton helm chart ([#24](https://github.com/epam/edp-gerrit-operator/issues/24))
+
+### Routine
+
+- Remove gitserver CR ([#168](https://github.com/epam/edp-gerrit-operator/issues/168))
+- Remove edpcomponent creation from operator logic ([#23](https://github.com/epam/edp-gerrit-operator/issues/23))
+- Bump github.com/go-git/go-git/v5 from 5.5.1 to 5.11.0 ([#19](https://github.com/epam/edp-gerrit-operator/issues/19))
+- Bump github.com/cloudflare/circl from 1.3.3 to 1.3.7 ([#20](https://github.com/epam/edp-gerrit-operator/issues/20))
+- Bump golang.org/x/crypto from 0.14.0 to 0.17.0 ([#18](https://github.com/epam/edp-gerrit-operator/issues/18))
+- Update current development version ([#17](https://github.com/epam/edp-gerrit-operator/issues/17))
+
+### Documentation
+
+- Define name convention for ingress objects ([#23](https://github.com/epam/edp-gerrit-operator/issues/23))
+- Update README md and Dockerfile ([#132](https://github.com/epam/edp-gerrit-operator/issues/132))
+
+
 <a name="v2.19.0"></a>
 ## [v2.19.0] - 2023-12-18
 ### Bug Fixes
@@ -61,7 +91,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.19.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...HEAD
+[v2.20.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.19.0...v2.20.0
 [v2.19.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.18.0...v2.19.0
 [v2.18.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.17.1...v2.18.0
 [v2.17.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.17.0...v2.17.1
