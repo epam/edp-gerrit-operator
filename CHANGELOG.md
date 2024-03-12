@@ -1,6 +1,18 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Routine
+
+- Bump alpine version ([#27](https://github.com/epam/edp-gerrit-operator/issues/27))
+- Update current development version ([#26](https://github.com/epam/edp-gerrit-operator/issues/26))
+
+
+<a name="v2.20.1"></a>
+## [v2.20.1] - 2024-03-12
+### Routine
+
+- Bump alpine version ([#27](https://github.com/epam/edp-gerrit-operator/issues/27))
+
 
 <a name="v2.20.0"></a>
 ## [v2.20.0] - 2024-03-11
@@ -91,7 +103,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...HEAD
+[v2.20.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...v2.20.1
 [v2.20.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.19.0...v2.20.0
 [v2.19.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.18.0...v2.19.0
 [v2.18.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.17.1...v2.18.0
