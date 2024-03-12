@@ -1,4 +1,4 @@
-FROM alpine:3.18.3
+FROM alpine:3.18.6
 
 ENV OPERATOR=/usr/local/bin/gerrit-operator \
     USER_UID=1001 \
