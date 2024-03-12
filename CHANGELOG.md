@@ -2,8 +2,8 @@
 ## [Unreleased]
 
 
-<a name="v2.20.0"></a>
-## v2.20.0 - 2024-02-29
+<a name="v2.20.1"></a>
+## v2.20.1 - 2024-03-12
 ### Features
 
 - Align to the Tekton EventListener endpoint ([#24](https://github.com/epam/edp-gerrit-operator/issues/24))
@@ -23,6 +23,7 @@
 
 ### Routine
 
+- Bump alpine version ([#27](https://github.com/epam/edp-gerrit-operator/issues/27))
 - Remove gitserver CR ([#168](https://github.com/epam/edp-gerrit-operator/issues/168))
 - Remove edpcomponent creation from operator logic ([#23](https://github.com/epam/edp-gerrit-operator/issues/23))
 - Bump github.com/go-git/go-git/v5 from 5.5.1 to 5.11.0 ([#19](https://github.com/epam/edp-gerrit-operator/issues/19))
@@ -47,4 +48,4 @@
 - Fix bage path for the build GH Action ([#8](https://github.com/epam/edp-gerrit-operator/issues/8))
 
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...HEAD
