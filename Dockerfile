@@ -5,7 +5,7 @@ ENV OPERATOR=/usr/local/bin/gerrit-operator \
     USER_NAME=gerrit-operator \
     HOME=/home/gerrit-operator
 
-RUN apk add --no-cache ca-certificates==20230506-r0 \
+RUN apk add --no-cache ca-certificates==20240226-r0 \
                        openssh-client==9.3_p2-r1 \
                        openssl==3.1.4-r5 \
                        git==2.40.1-r0

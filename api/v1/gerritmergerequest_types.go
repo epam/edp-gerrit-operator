@@ -8,28 +8,52 @@ import (
 
 // GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
 type GerritMergeRequestSpec struct {
-	// OwnerName indicates which gerrit CR should be taken to initialize correct client.
-	// +nullable
+	// OwnerName is the name of Gerrit CR, which should be used to initialize the client.
+	// If empty, the operator will get first Gerrit CR from the namespace.
+	// +optional
+	// +kubebuilder:example:=`gerrit`
 	OwnerName string `json:"ownerName"`
 
 	// ProjectName is gerrit project name.
+	// +required
+	// +kubebuilder:example:=`my-project`
 	ProjectName string `json:"projectName"`
 
+	// AuthorName is the name of the user who creates the merge request.
+	// +required
+	// +kubebuilder:example:=`John Doe`
 	AuthorName string `json:"authorName"`
 
+	// AuthorEmail is the email of the user who creates the merge request.
+	// +required
+	// +kubebuilder:example:=`john.foe@mail.com`
 	AuthorEmail string `json:"authorEmail"`
 
-	// TargetBranch default value is master.
+	// TargetBranch is the name of the branch to which the changes should be merged.
+	// If changesConfigMap is set, the targetBranch can be only the origin HEAD branch.
 	// +optional
+	// +kubebuilder:default=master
+	// +kubebuilder:example:=master
 	TargetBranch string `json:"targetBranch,omitempty"`
 
+	// SourceBranch is the name of the branch from which the changes should be merged.
+	// If empty, changesConfigMap should be set.
 	// +optional
+	// +kubebuilder:example:=new-feature
 	SourceBranch string `json:"sourceBranch,omitempty"`
 
+	// CommitMessage is the commit message for the merge request.
+	// If empty, the operator will generate the commit message.
 	// +optional
+	// +kubebuilder:example:=`merge new-feature to master`
 	CommitMessage string `json:"commitMessage,omitempty"`
 
+	// ChangesConfigMap is the name of the ConfigMap, which contains files contents that should be merged.
+	// ConfigMap should eny data keys with content in the json format: {"path": "/controllers/user.go", "contents": "some code here"}.
+	// If files already exist in the project, they will be overwritten.
+	// If empty, sourceBranch should be set.
 	// +optional
+	// +kubebuilder:example:=`config-map-new-feature`
 	ChangesConfigMap string `json:"changesConfigMap,omitempty"`
 
 	// AdditionalArguments contains merge command additional command line arguments.
