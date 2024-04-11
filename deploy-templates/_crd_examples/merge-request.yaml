@@ -10,3 +10,30 @@ spec:
   commitMessage: kawabunga
   authorName: John Doe
   authorEmail: john.doe@example.com
+
+---
+
+apiVersion: v2.edp.epam.com/v1
+kind: GerritMergeRequest
+metadata:
+  name: test-commit
+spec:
+  ownerName: gerrit
+  targetBranch: feature1
+  projectName: app1
+  commitMessage: Add txt2.txt file
+  authorName: John Doe
+  authorEmail: john.doe@example.com
+  changesConfigMap: test-merge-changes
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-merge-changes
+data:
+  changes: |
+    {
+      "path": "txt2.txt",
+      "contents": "Hello, World!"
+    }

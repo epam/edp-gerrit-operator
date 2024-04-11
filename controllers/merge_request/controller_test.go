@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	coreV1 "k8s.io/api/core/v1"
@@ -228,9 +229,15 @@ func (s *ControllerTestSuite) TestConfigMap() {
 	err := coreV1.AddToScheme(s.scheme)
 	require.NoError(s.T(), err)
 
-	cm := coreV1.ConfigMap{Data: map[string]string{"test.txt": `{"path": "test.txt", "contents": "test"}`}, ObjectMeta: metaV1.ObjectMeta{
-		Name: s.mergeRequest.Spec.ChangesConfigMap, Namespace: s.mergeRequest.Namespace,
-	}}
+	cm := coreV1.ConfigMap{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name: s.mergeRequest.Spec.ChangesConfigMap, Namespace: s.mergeRequest.Namespace,
+		},
+		Data: map[string]string{
+			"create file": `{"path": "test.txt", "contents": "test"}`,
+			"remove file": `{"path": "test2.txt"}`,
+		},
+	}
 
 	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).
 		WithRuntimeObjects(s.rootGerrit, s.mergeRequest, &cm).Build()
@@ -243,8 +250,14 @@ func (s *ControllerTestSuite) TestConfigMap() {
 	s.gitClient.On("CheckoutBranch", s.mergeRequest.Spec.ProjectName, s.mergeRequest.TargetBranch()).
 		Return(nil)
 	s.gitClient.On("SetFileContents", s.mergeRequest.Spec.ProjectName, "test.txt", "test").Return(nil)
-	s.gitClient.On("Commit", s.mergeRequest.Spec.ProjectName, commitMessage(s.mergeRequest.CommitMessage(),
-		changeID), []string{"test.txt"},
+	s.gitClient.On("RemoveFile", s.mergeRequest.Spec.ProjectName, "test2.txt").Return(true, nil)
+	s.gitClient.On("Commit",
+		s.mergeRequest.Spec.ProjectName,
+		commitMessage(s.mergeRequest.CommitMessage(), changeID),
+		mock.MatchedBy(func(files []string) bool {
+			return assert.Contains(s.T(), files, "test.txt") &&
+				assert.Contains(s.T(), files, "test2.txt")
+		}),
 		&git.User{Name: s.mergeRequest.Spec.AuthorName, Email: s.mergeRequest.Spec.AuthorEmail}).Return(nil)
 
 	rec := Reconcile{

@@ -65,6 +65,22 @@ func (c *Client) SetFileContents(projectName, filePath, contents string) error {
 	return nil
 }
 
+func (c *Client) RemoveFile(projectName, filePath string) (bool, error) {
+	projectPath := c.projectPath(projectName)
+	filePath = path.Join(projectPath, filePath)
+
+	err := os.Remove(filePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return false, errors.Wrapf(err, "unable to remove file: %s", filePath)
+		}
+
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (c *Client) Clone(projectName string) (projectPath string, err error) {
 	projectPath = c.projectPath(projectName)
 	_, err = git.PlainClone(

@@ -57,6 +57,7 @@ type GitClient interface {
 	CheckoutBranch(projectName, branch string) error
 	Commit(projectName, message string, files []string, user *git.User) error
 	SetFileContents(projectName, filePath, contents string) error
+	RemoveFile(projectName, filePath string) (bool, error)
 }
 
 type GerritClient interface {
@@ -65,8 +66,8 @@ type GerritClient interface {
 }
 
 type MRConfigMapFile struct {
-	Path     string `json:"path"`
-	Contents string `json:"contents"`
+	Path     string  `json:"path"`
+	Contents *string `json:"contents"`
 }
 
 func NewReconcile(k8sClient client.Client, log logr.Logger,
@@ -302,11 +303,24 @@ func (r *Reconcile) commitFiles(ctx context.Context, instance *gerritApi.GerritM
 			return errors.Wrap(err, "unable to decode file")
 		}
 
-		if err := gitClient.SetFileContents(instance.Spec.ProjectName, mrFile.Path, mrFile.Contents); err != nil {
-			return errors.Wrap(err, "unable to set file contents")
+		fileChanged := true
+
+		if mrFile.Contents != nil {
+			if err := gitClient.SetFileContents(instance.Spec.ProjectName, mrFile.Path, *mrFile.Contents); err != nil {
+				return errors.Wrap(err, "unable to set file contents")
+			}
+		} else {
+			var err error
+
+			fileChanged, err = gitClient.RemoveFile(instance.Spec.ProjectName, mrFile.Path)
+			if err != nil {
+				return errors.Wrap(err, "unable to remove file")
+			}
 		}
 
-		addFiles = append(addFiles, mrFile.Path)
+		if fileChanged {
+			addFiles = append(addFiles, mrFile.Path)
+		}
 	}
 
 	gitUser := &git.User{Name: instance.Spec.AuthorName, Email: instance.Spec.AuthorEmail}

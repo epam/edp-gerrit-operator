@@ -372,21 +372,14 @@ GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
         <td><b>authorEmail</b></td>
         <td>string</td>
         <td>
-          <br/>
+          AuthorEmail is the email of the user who creates the merge request.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>authorName</b></td>
         <td>string</td>
         <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>ownerName</b></td>
-        <td>string</td>
-        <td>
-          OwnerName indicates which gerrit CR should be taken to initialize correct client.<br/>
+          AuthorName is the name of the user who creates the merge request.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -407,28 +400,37 @@ GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
         <td><b>changesConfigMap</b></td>
         <td>string</td>
         <td>
-          <br/>
+          ChangesConfigMap is the name of the ConfigMap, which contains files contents that should be merged. ConfigMap should contain eny data keys with content in the json format: {"path": "/controllers/user.go", "contents": "some code here"} - to add file or format: {"path": "/controllers/user.go"} - to remove file. If files already exist in the project, they will be overwritten. If empty, sourceBranch should be set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>commitMessage</b></td>
         <td>string</td>
         <td>
-          <br/>
+          CommitMessage is the commit message for the merge request. If empty, the operator will generate the commit message.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ownerName</b></td>
+        <td>string</td>
+        <td>
+          OwnerName is the name of Gerrit CR, which should be used to initialize the client. If empty, the operator will get first Gerrit CR from the namespace.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>sourceBranch</b></td>
         <td>string</td>
         <td>
-          <br/>
+          SourceBranch is the name of the branch from which the changes should be merged. If empty, changesConfigMap should be set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>targetBranch</b></td>
         <td>string</td>
         <td>
-          TargetBranch default value is master.<br/>
+          TargetBranch is the name of the branch to which the changes should be merged. If changesConfigMap is set, the targetBranch can be only the origin HEAD branch.<br/>
+          <br/>
+            <i>Default</i>: master<br/>
         </td>
         <td>false</td>
       </tr></tbody>
