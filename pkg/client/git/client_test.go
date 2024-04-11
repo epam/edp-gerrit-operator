@@ -204,3 +204,52 @@ func removeAllWithErrCapture(t *testing.T, p string) {
 	err := os.RemoveAll(p)
 	require.NoError(t, err)
 }
+
+func TestClient_RemoveFile(t *testing.T) {
+	t.Parallel()
+
+	tmp := t.TempDir()
+	projectDir := path.Join(tmp, "test")
+	require.NoError(t, os.MkdirAll(projectDir, 0o777))
+
+	tests := []struct {
+		name     string
+		filePath string
+		prepare  func(t *testing.T)
+		want     bool
+		wantErr  require.ErrorAssertionFunc
+	}{
+		{
+			name:     "file exists",
+			filePath: "test.txt",
+			prepare: func(t *testing.T) {
+				_, err := os.Create(path.Join(projectDir, "test.txt"))
+				require.NoError(t, err)
+			},
+			want:    true,
+			wantErr: require.NoError,
+		},
+		{
+			name:     "file does not exist",
+			filePath: "test.txt",
+			prepare: func(t *testing.T) {
+			},
+			want:    false,
+			wantErr: require.NoError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.prepare(t)
+
+			c := &Client{
+				workingDir: tmp,
+			}
+
+			got, err := c.RemoveFile("test", tt.filePath)
+			tt.wantErr(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

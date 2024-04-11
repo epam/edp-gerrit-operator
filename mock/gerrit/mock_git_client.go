@@ -146,6 +146,26 @@ func (_m *GitClient) SetFileContents(projectName string, filePath string, conten
 	return r0
 }
 
+func (_m *GitClient) RemoveFile(projectName, filePath string) (bool, error) {
+	ret := _m.Called(projectName, filePath)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
+		r0 = rf(projectName, filePath)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(projectName, filePath)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SetProjectUser provides a mock function with given fields: projectName, user
 func (_m *GitClient) SetProjectUser(projectName string, user *git.User) error {
 	ret := _m.Called(projectName, user)

@@ -49,7 +49,9 @@ type GerritMergeRequestSpec struct {
 	CommitMessage string `json:"commitMessage,omitempty"`
 
 	// ChangesConfigMap is the name of the ConfigMap, which contains files contents that should be merged.
-	// ConfigMap should eny data keys with content in the json format: {"path": "/controllers/user.go", "contents": "some code here"}.
+	// ConfigMap should contain eny data keys with content in the json
+	// format: {"path": "/controllers/user.go", "contents": "some code here"} - to add file
+	// or format: {"path": "/controllers/user.go"} - to remove file.
 	// If files already exist in the project, they will be overwritten.
 	// If empty, sourceBranch should be set.
 	// +optional
