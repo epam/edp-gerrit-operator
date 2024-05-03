@@ -80,6 +80,11 @@ gerrit:
     # --  For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
     # --  See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
     # ingressClassName: nginx
+    # -- Defines the base URL for the portal.
+    # -- If hosts not defined the will create by pattern "gerrit-[namespace].[global DNS wildcard]"
+    host: ""
+    # -- Ingress TLS configuration
+    # -- If hosts not defined the will create by pattern "gerrit-[namespace].[global DNS wildcard]"
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:

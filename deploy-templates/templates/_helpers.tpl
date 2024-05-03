@@ -104,3 +104,14 @@ Set gerrit.javaOptions
 {{ printf "%s" .Values.gerrit.javaOptions }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Define gerrit-operator URL
+*/}}
+{{- define "gerrit.url" -}}
+{{- if .Values.gerrit.basePath -}}
+{{ .Values.global.dnsWildCard }}
+{{- else -}}
+gerrit-{{ .Release.Namespace }}.{{ .Values.global.dnsWildCard }}
+{{- end }}
+{{- end }}

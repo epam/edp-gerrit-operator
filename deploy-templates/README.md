@@ -34,8 +34,9 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied for gerrit deployment |
 | gerrit.imagePullSecrets | string | `nil` | Secrets to pull from private Docker registry; |
 | gerrit.ingress.annotations | object | `{}` |  |
+| gerrit.ingress.host | string | `""` | If hosts not defined the will create by pattern "gerrit-[namespace].[global DNS wildcard]" |
 | gerrit.ingress.pathType | string | `"Prefix"` | pathType is only for k8s >= 1.1= |
-| gerrit.ingress.tls | list | `[]` | See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress ingressClassName: nginx |
+| gerrit.ingress.tls | list | `[]` | If hosts not defined the will create by pattern "gerrit-[namespace].[global DNS wildcard]" |
 | gerrit.javaOptions | string | `""` | Values to add to JAVA_OPTIONS |
 | gerrit.name | string | `"gerrit"` | Gerrit name |
 | gerrit.nodeSelector | object | `{}` |  |
