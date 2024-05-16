@@ -400,35 +400,44 @@ GerritMergeRequestSpec defines the desired state of GerritMergeRequest.
         <td><b>changesConfigMap</b></td>
         <td>string</td>
         <td>
-          ChangesConfigMap is the name of the ConfigMap, which contains files contents that should be merged. ConfigMap should contain eny data keys with content in the json format: {"path": "/controllers/user.go", "contents": "some code here"} - to add file or format: {"path": "/controllers/user.go"} - to remove file. If files already exist in the project, they will be overwritten. If empty, sourceBranch should be set.<br/>
+          ChangesConfigMap is the name of the ConfigMap, which contains files contents that should be merged.
+ConfigMap should contain eny data keys with content in the json
+format: {"path": "/controllers/user.go", "contents": "some code here"} - to add file
+or format: {"path": "/controllers/user.go"} - to remove file.
+If files already exist in the project, they will be overwritten.
+If empty, sourceBranch should be set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>commitMessage</b></td>
         <td>string</td>
         <td>
-          CommitMessage is the commit message for the merge request. If empty, the operator will generate the commit message.<br/>
+          CommitMessage is the commit message for the merge request.
+If empty, the operator will generate the commit message.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>ownerName</b></td>
         <td>string</td>
         <td>
-          OwnerName is the name of Gerrit CR, which should be used to initialize the client. If empty, the operator will get first Gerrit CR from the namespace.<br/>
+          OwnerName is the name of Gerrit CR, which should be used to initialize the client.
+If empty, the operator will get first Gerrit CR from the namespace.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>sourceBranch</b></td>
         <td>string</td>
         <td>
-          SourceBranch is the name of the branch from which the changes should be merged. If empty, changesConfigMap should be set.<br/>
+          SourceBranch is the name of the branch from which the changes should be merged.
+If empty, changesConfigMap should be set.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>targetBranch</b></td>
         <td>string</td>
         <td>
-          TargetBranch is the name of the branch to which the changes should be merged. If changesConfigMap is set, the targetBranch can be only the origin HEAD branch.<br/>
+          TargetBranch is the name of the branch to which the changes should be merged.
+If changesConfigMap is set, the targetBranch can be only the origin HEAD branch.<br/>
           <br/>
             <i>Default</i>: master<br/>
         </td>
@@ -2360,7 +2369,8 @@ Gerrit is the Schema for the gerrits API.
 
 
 
-LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
+LocalObjectReference contains enough information to let you locate the
+referenced object inside the same namespace.
 
 <table>
     <thead>
@@ -2375,7 +2385,9 @@ LocalObjectReference contains enough information to let you locate the reference
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?<br/>
+          Name of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+TODO: Add other useful fields. apiVersion, kind, uid?<br/>
         </td>
         <td>false</td>
       </tr></tbody>

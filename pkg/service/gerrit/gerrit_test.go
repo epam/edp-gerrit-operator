@@ -1024,6 +1024,7 @@ func TestComponentService_exposeArgoCDConfiguration(t *testing.T) {
 			err := s.exposeArgoCDConfiguration(context.Background(), gerritInstance)
 
 			tt.wantErr(t, err)
+
 			if tt.errContains != "" {
 				assert.Contains(t, err.Error(), tt.errContains)
 			}

@@ -124,7 +124,7 @@ func initManager(metricsAddr, probeAddr string, enableLeaderElection bool) (ctrl
 		Port:                   serverPort,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       gerritOperatorLock,
-		MapperProvider: func(c *rest.Config) (meta.RESTMapper, error) {
+		MapperProvider: func(_ *rest.Config) (meta.RESTMapper, error) {
 			return apiutil.NewDynamicRESTMapper(cfg)
 		},
 		Namespace: ns,

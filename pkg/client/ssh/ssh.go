@@ -83,7 +83,7 @@ func SshInit(userName string, privateKey []byte, host string, port int32, log lo
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		HostKeyCallback: ssh.HostKeyCallback(func(_ string, _ net.Addr, _ ssh.PublicKey) error {
 			return nil
 		}),
 	}
