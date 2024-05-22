@@ -30,6 +30,7 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.caCerts.image | string | `"adoptopenjdk/openjdk11:alpine"` | Change init CA certificates container image |
 | gerrit.caCerts.secret | string | `"secret-name"` | Name of the secret containing additional CA certificates |
 | gerrit.deploy | bool | `true` | Flag to enable/disable Gerrit deploy |
+| gerrit.extraEnv | list | `[]` | Additional environment variables |
 | gerrit.image | string | `"epamedp/edp-gerrit"` | Define gerrit docker image name |
 | gerrit.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied for gerrit deployment |
 | gerrit.imagePullSecrets | string | `nil` | Secrets to pull from private Docker registry; |

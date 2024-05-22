@@ -5,6 +5,7 @@ metadata:
   name: {{.Values.gerrit.name}}
 spec:
   keycloakSpec:
-    enabled: true
+    # SSO enabled is deprecated and we configure Keycloak via Helm chart
+    enabled: false
   sshPort: {{ .Values.global.gerritSSHPort }}
 {{end}}

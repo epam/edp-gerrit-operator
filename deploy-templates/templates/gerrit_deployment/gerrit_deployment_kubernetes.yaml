@@ -61,6 +61,9 @@ spec:
                         --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication --install-plugin=webhooks'
             - name: JAVA_OPTIONS
               value: {{ template "gerrit.javaOptions" . }}
+            {{- with .Values.gerrit.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources:
 {{ toYaml .Values.gerrit.resources | indent 12 }}
           volumeMounts:
