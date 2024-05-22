@@ -41,6 +41,9 @@ spec:
             - name: GERRIT_INIT_ARGS
               value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
                         --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication --install-plugin=webhooks'
+            {{- with .Values.gerrit.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
           image: {{.Values.gerrit.image}}:{{.Values.gerrit.version}}
           imagePullPolicy: "{{ .Values.gerrit.imagePullPolicy }}"
           name: {{ .Values.gerrit.name }}
