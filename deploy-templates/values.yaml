@@ -117,7 +117,7 @@ gerrit:
     # - name: OAUTH_KEYCLOAK_CLIENT_SECRET
     #   valueFrom:
     #     secretKeyRef:
-    #       name: gerrit-is-credentials
+    #       name: keycloak-client-gerrit-secret
     #       key: clientSecret
   sso:
     # Create kind: KeycloakClient as a part of chart installation
