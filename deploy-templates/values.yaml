@@ -119,3 +119,10 @@ gerrit:
     #     secretKeyRef:
     #       name: gerrit-is-credentials
     #       key: clientSecret
+  sso:
+    # Create kind: KeycloakClient as a part of chart installation
+    enabled: true
+    # Can be Realm or KeycloakRealm.
+    kind: KeycloakRealm
+    # Name of kind: Realm/KeycloakRealm CR.
+    name: main
