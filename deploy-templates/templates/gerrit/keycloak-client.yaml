@@ -10,7 +10,6 @@ spec:
   clientId: gerrit
   enabled: true
   fullScopeAllowed: true
-  public: false
   realmRef:
     kind: {{ .Values.gerrit.sso.kind }}
     name: {{ .Values.gerrit.sso.name }}
