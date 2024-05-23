@@ -44,6 +44,9 @@ A Helm chart for EDP Gerrit Operator
 | gerrit.resources.limits.memory | string | `"2Gi"` |  |
 | gerrit.resources.requests.cpu | string | `"100m"` |  |
 | gerrit.resources.requests.memory | string | `"512Mi"` |  |
+| gerrit.sso.enabled | bool | `true` |  |
+| gerrit.sso.kind | string | `"KeycloakRealm"` |  |
+| gerrit.sso.name | string | `"main"` |  |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
 | gerrit.version | string | `"3.6.2-oauth"` | Define gerrit docker image tag |

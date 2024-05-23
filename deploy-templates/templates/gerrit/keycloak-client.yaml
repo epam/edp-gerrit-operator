@@ -1,0 +1,28 @@
+{{- if and .Values.gerrit.deploy .Values.gerrit.sso.enabled -}}
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClient
+metadata:
+  name: gerrit
+spec:
+  attributes:
+    post.logout.redirect.uris: +
+  clientAuthenticatorType: client-secret
+  clientId: gerrit
+  enabled: true
+  fullScopeAllowed: true
+  public: true
+  realmRef:
+    kind: {{ .Values.gerrit.sso.kind }}
+    name: {{ .Values.gerrit.sso.name }}
+  realmRoles:
+    - composite: administrator
+      name: gerrit-administrators
+    - composite: developer
+      name: gerrit-users
+  standardFlowEnabled: true
+  webOrigins:
+    - >-
+      https://{{if .Values.gerrit.basePath}}{{ .Values.global.dnsWildCard }}{{else}}gerrit-{{ .Release.Namespace }}.{{ .Values.global.dnsWildCard }}{{end}}
+  webUrl: >-
+    https://{{if .Values.gerrit.basePath}}{{ .Values.global.dnsWildCard }}{{else}}gerrit-{{ .Release.Namespace }}.{{ .Values.global.dnsWildCard }}{{end}}
+{{end}}
