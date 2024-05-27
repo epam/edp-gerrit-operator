@@ -62,7 +62,7 @@ const (
 	updatingStatusErr = "error while updating status"
 )
 
-func NewReconcileGerrit(k8sClient client.Client, scheme *runtime.Scheme, log logr.Logger) (helper.Controller, error) {
+func NewReconcileGerrit(k8sClient client.Client, scheme *runtime.Scheme, _ logr.Logger) (helper.Controller, error) {
 	ps, err := platform.NewService(helper.GetPlatformTypeEnv(), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create platform service")
@@ -71,14 +71,12 @@ func NewReconcileGerrit(k8sClient client.Client, scheme *runtime.Scheme, log log
 	return &ReconcileGerrit{
 		client:  k8sClient,
 		service: gerrit.NewComponentService(ps, k8sClient, scheme),
-		log:     log.WithName("gerrit"),
 	}, nil
 }
 
 type ReconcileGerrit struct {
 	client  client.Client
 	service gerrit.Interface
-	log     logr.Logger
 }
 
 func (r *ReconcileGerrit) SetupWithManager(mgr ctrl.Manager) error {
@@ -97,7 +95,7 @@ func (r *ReconcileGerrit) SetupWithManager(mgr ctrl.Manager) error {
 //+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits/finalizers,verbs=update
 
 func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	log := ctrl.LoggerFrom(ctx)
 	log.Info("Reconciling Gerrit")
 
 	instance := &gerritApi.Gerrit{}
@@ -281,7 +279,7 @@ func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *gerritApi.
 		}
 	}
 
-	r.log.Info(fmt.Sprintf("Status for Gerrit %s has been updated to '%s' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
+	ctrl.LoggerFrom(ctx).Info(fmt.Sprintf("Status for Gerrit %s has been updated to '%s' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
 
 	return nil
 }

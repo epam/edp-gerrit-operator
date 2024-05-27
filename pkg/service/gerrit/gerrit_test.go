@@ -16,10 +16,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/resty.v1"
-	appsV1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	coreV1Api "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	ctrclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
@@ -502,7 +503,7 @@ func TestComponentService_ExternalURL(t *testing.T) {
 	ps.On("GenerateKeycloakSettings", instance).Return(nil, errTest)
 
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{},
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{},
 		&keycloakApi.KeycloakClient{})
 
 	k8sClient := fake.NewClientBuilder().WithScheme(scheme).Build()
@@ -540,7 +541,7 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects().Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
@@ -567,7 +568,7 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 	errTest := errors.New("test")
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
@@ -599,7 +600,7 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 	}
 	ps := &pmock.PlatformService{}
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
@@ -615,6 +616,48 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 	_, err := CS.Integrate(context.Background(), instance)
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Failed to add identity service information"))
+}
+
+func TestComponentService_Integrate_KeycloakDisabled(t *testing.T) {
+	gr := &gerritApi.Gerrit{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      "gerrit",
+			Namespace: "default",
+		},
+		Spec: gerritApi.GerritSpec{
+			KeycloakSpec: gerritApi.KeycloakSpec{
+				Enabled: false,
+			},
+		},
+	}
+
+	dp := &appsv1.Deployment{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      "gerrit",
+			Namespace: "default",
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, gerritApi.AddToScheme(scheme))
+	require.NoError(t, appsv1.AddToScheme(scheme))
+
+	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(gr, dp).Build()
+
+	ps := pmock.NewPlatformService(t)
+	ps.On("GetExternalEndpoint", "default", "gerrit").Return("http://gerrit", "http", nil)
+
+	s := ComponentService{client: cl, PlatformService: ps}
+
+	_, err := s.Integrate(context.Background(), gr)
+
+	require.NoError(t, err)
+
+	updatedDp := &appsv1.Deployment{}
+	err = cl.Get(context.Background(), ctrclient.ObjectKey{Name: "gerrit", Namespace: "default"}, updatedDp)
+
+	require.NoError(t, err)
+	require.Contains(t, updatedDp.Spec.Template.Annotations, DeploymentRestartAnnotation)
 }
 
 func TestComponentService_GetRestClient(t *testing.T) {

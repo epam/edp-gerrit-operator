@@ -10,11 +10,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	appsV1 "k8s.io/api/apps/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -78,7 +80,6 @@ func TestReconcileGerrit_Reconcile_UpdateInstallStatusErr(t *testing.T) {
 
 	rg := ReconcileGerrit{
 		client: &mc,
-		log:    logr.Discard(),
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
@@ -104,7 +105,6 @@ func TestReconcileGerrit_Reconcile_UpdateInstallStatus(t *testing.T) {
 
 	rg := ReconcileGerrit{
 		client: &mc,
-		log:    logr.Discard(),
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
@@ -133,12 +133,11 @@ func TestReconcileGerrit_Reconcile_UpdateEmptyStatusErr(t *testing.T) {
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client: &mc,
-		log:    log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 	assert.NoError(t, err)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
@@ -161,12 +160,11 @@ func TestReconcileGerrit_Reconcile_EmptyClient(t *testing.T) {
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client: &mc,
-		log:    log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
@@ -193,12 +191,11 @@ func TestReconcileGerrit_Reconcile_DeployErr(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  cl,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
@@ -225,12 +222,11 @@ func TestReconcileGerrit_Reconcile_DeployNotReady(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  cl,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 	msg := fmt.Sprintf("Deployment for %v/%v object is not ready for configuration yet", instance.Namespace,
 		instance.Name)
 
@@ -266,12 +262,11 @@ func TestReconcileGerrit_Reconcile_UpdateCreatedStatus(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	assert.NoError(t, err)
 
@@ -304,7 +299,6 @@ func TestReconcileGerrit_Reconcile_ConfigureErr(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     logr.Discard(),
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
@@ -336,12 +330,11 @@ func TestReconcileGerrit_Reconcile_ConfigureDPatched(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
@@ -377,13 +370,12 @@ func TestReconcileGerrit_Reconcile_IsDeploymentReadyErr(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
 	msg := fmt.Sprintf("Failed to check Deployment config for %v/%v Gerrit!", instance.Namespace, instance.Name)
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
@@ -417,14 +409,13 @@ func TestReconcileGerrit_Reconcile_IsDeploymentReadyFalse(t *testing.T) {
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
 	msg := fmt.Sprintf("Deployment config for %v/%v Gerrit is not ready for configuration yet",
 		instance.Namespace, instance.Name)
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
@@ -455,18 +446,17 @@ func TestReconcileGerrit_Reconcile_ExposeConfigurationErr(t *testing.T) {
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil).Once()
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, errTest)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, errTest)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
@@ -494,18 +484,17 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeStartErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	assert.NoError(t, err)
 
@@ -534,18 +523,17 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeFinishErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	assert.ErrorIs(t, err, errTest)
 
@@ -574,13 +562,12 @@ func TestReconcileGerrit_Reconcile_IntegrateErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
-	serviceMock.On("Integrate", ctx, instance).Return(instance, errTest)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
+	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, errTest)
 
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     logr.Discard(),
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
@@ -609,19 +596,18 @@ func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T)
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
-	serviceMock.On("Integrate", ctx, instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
+	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, nil)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
 	assert.NoError(t, err)
 
@@ -654,19 +640,18 @@ func TestReconcileGerrit_Reconcile_UpdateAvailableStatusErr(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
-	serviceMock.On("Integrate", ctx, instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
+	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, nil)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     log,
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,
 	}
-	rs, err := rg.Reconcile(ctx, req)
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 	msg := fmt.Sprintf("Failed update availability status for Gerrit object with name %s", instance.Name)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
@@ -694,13 +679,12 @@ func TestReconcileGerrit_Reconcile_Valid(t *testing.T) {
 	serviceMock := gmock.Interface{}
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", ctx, instance).Return(instance, nil)
-	serviceMock.On("Integrate", ctx, instance).Return(instance, nil)
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
+	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, nil)
 
 	rg := ReconcileGerrit{
 		client:  &mc,
 		service: &serviceMock,
-		log:     logr.Discard(),
 	}
 	req := reconcile.Request{
 		NamespacedName: nsn,

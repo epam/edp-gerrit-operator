@@ -7,10 +7,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/apps/v1"
 	coreV1Api "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +40,8 @@ const (
 	rsaID     = "id_rsa"
 	rsaIDFile = "id_rsa.pub"
 	admin     = "-admin"
+
+	DeploymentRestartAnnotation = "kubectl.kubernetes.io/restartedAt"
 )
 
 // Interface expresses behavior of the Gerrit EDP Component.
@@ -421,12 +425,16 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 
 // Integrate applies actions required for the integration with the other EDP Components.
 func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
+	l := ctrl.LoggerFrom(ctx)
+
 	externalUrl, err := s.getExternalUrl(instance)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
 	}
 
 	if instance.Spec.KeycloakSpec.Enabled {
+		l.Info("Keycloak integration enabled")
+
 		var keycloakClient *keycloakApi.KeycloakClient
 
 		keycloakClient, err = s.getKeycloakClient(ctx, instance)
@@ -452,7 +460,24 @@ func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Ger
 			return instance, errors.Wrap(err, "Failed to add identity service information")
 		}
 	} else {
-		log.V(1).Info("Keycloak integration not enabled.")
+		l.Info("Keycloak integration not enabled. Restarting deployment.")
+
+		gerritDep := &v1.Deployment{}
+		if err = s.client.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, gerritDep); err != nil {
+			return nil, fmt.Errorf("failed to get deployment %q: %w", instance.Name, err)
+		}
+
+		old := gerritDep.DeepCopy()
+
+		if gerritDep.Spec.Template.Annotations == nil {
+			gerritDep.Spec.Template.Annotations = map[string]string{}
+		}
+
+		gerritDep.Spec.Template.Annotations[DeploymentRestartAnnotation] = time.Now().Format(time.RFC3339)
+
+		if err = s.client.Patch(ctx, gerritDep, client.MergeFrom(old)); err != nil {
+			return nil, fmt.Errorf("failed to patch deployment: %w", err)
+		}
 	}
 
 	return instance, nil
