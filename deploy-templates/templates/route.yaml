@@ -24,7 +24,5 @@ spec:
         name: {{.Values.gerrit.name}}
         weight: 100
     wildcardPolicy: None
-status:
-    ingress: []
 {{- end -}}
 {{- end -}}
