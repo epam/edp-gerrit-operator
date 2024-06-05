@@ -8,63 +8,65 @@ metadata:
 rules:
 - apiGroups:
     - '*'
+  attributeRestrictions: null
   resources:
     - securitycontextconstraints
   verbs:
-    - patch
-    - update
+    - create
     - delete
     - get
     - list
-    - create
+    - patch
+    - update
 - apiGroups:
     - '*'
+  attributeRestrictions: null
   resources:
+    - gerritgroups
+    - gerritgroups/status
+    - gerritreplicationconfigs
+    - gerritreplicationconfigs/status
     - gerrits
     - gerrits/finalizers
     - gerrits/status
-    - gerritreplicationconfigs
-    - gerritreplicationconfigs/status
-    - gerritgroups
-    - gerritgroups/status
   verbs:
     - '*'
 - apiGroups:
     - '*'
+  attributeRestrictions: null
   resources:
+    - events
+    - gerritgroupmembers
+    - gerritgroupmembers/finalizers
+    - gerritgroupmembers/status
+    - gerritgroups
+    - gerritgroups/status
+    - gerritmergerequests
+    - gerritmergerequests/finalizers
+    - gerritmergerequests/status
+    - gerritprojectaccesses
+    - gerritprojectaccesses/finalizers
+    - gerritprojectaccesses/status
+    - gerritprojects
+    - gerritprojects/finalizers
+    - gerritprojects/status
+    - gerritreplicationconfigs
+    - gerritreplicationconfigs/status
     - gerrits
     - gerrits/finalizers
     - gerrits/status
-    - gerritreplicationconfigs
-    - gerritreplicationconfigs/status
-    - gerritgroups
-    - gerritgroups/status
-    - keycloaks
-    - keycloaks/status
     - keycloakclients
     - keycloakclients/finalizers
     - keycloakclients/status
     - keycloakrealms
     - keycloakrealms/status
-    - gerritgroups
-    - gerritgroups/status
-    - gerritgroupmembers
-    - gerritgroupmembers/status
-    - gerritgroupmembers/finalizers
-    - gerritprojectaccesses
-    - gerritprojectaccesses/status
-    - gerritprojectaccesses/finalizers
-    - gerritprojects
-    - gerritprojects/status
-    - gerritprojects/finalizers
-    - gerritmergerequests
-    - gerritmergerequests/status
-    - gerritmergerequests/finalizers
-    - events
+    - keycloaks
+    - keycloaks/status
   verbs:
     - '*'
 - apiGroups:
     - coordination.k8s.io
+  attributeRestrictions: null
   resources:
     - leases
   verbs:
