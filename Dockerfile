@@ -7,7 +7,7 @@ ENV OPERATOR=/usr/local/bin/gerrit-operator \
 
 RUN apk add --no-cache ca-certificates==20240226-r0 \
                        openssh-client==9.3_p2-r1 \
-                       openssl==3.1.4-r6 \
+                       openssl==3.1.5-r0 \
                        git==2.40.1-r0
 
 # install operator binary
