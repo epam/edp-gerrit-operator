@@ -1,8 +1,28 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.21.0"></a>
+## [v2.21.0] - 2024-06-12
+### Features
+
+- Enable gerrit restart flow ([#47](https://github.com/epam/edp-gerrit-operator/issues/47))
+- Add the ability to remove the files with GerritMergeRequest CR ([#30](https://github.com/epam/edp-gerrit-operator/issues/30))
+
 ### Routine
 
+- Bump alpine packages ([#49](https://github.com/epam/edp-gerrit-operator/issues/49))
+- Update argocd diff ([#49](https://github.com/epam/edp-gerrit-operator/issues/49))
+- Align argocd diff ([#42](https://github.com/epam/edp-gerrit-operator/issues/42))
+- Switch to private Keycloak client ([#42](https://github.com/epam/edp-gerrit-operator/issues/42))
+- Enable Keycloak client creation ([#42](https://github.com/epam/edp-gerrit-operator/issues/42))
+- Disable keycloak configuration by default ([#42](https://github.com/epam/edp-gerrit-operator/issues/42))
+- Update oauth gerrit plugin instead of gerrit version ([#39](https://github.com/epam/edp-gerrit-operator/issues/39))
+- Bump gerrit image version to 3.7.9 ([#39](https://github.com/epam/edp-gerrit-operator/issues/39))
+- Bump to Go 1.22 ([#37](https://github.com/epam/edp-gerrit-operator/issues/37))
+- Add codeowners file to the repo ([#31](https://github.com/epam/edp-gerrit-operator/issues/31))
+- Describe GerritMergeRequest CR spec ([#28](https://github.com/epam/edp-gerrit-operator/issues/28))
+- Update current development version ([#26](https://github.com/epam/edp-gerrit-operator/issues/26))
 - Bump alpine version ([#27](https://github.com/epam/edp-gerrit-operator/issues/27))
 - Update current development version ([#26](https://github.com/epam/edp-gerrit-operator/issues/26))
 
@@ -103,7 +123,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.21.0...HEAD
+[v2.21.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...v2.21.0
 [v2.20.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...v2.20.1
 [v2.20.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.19.0...v2.20.0
 [v2.19.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.18.0...v2.19.0
