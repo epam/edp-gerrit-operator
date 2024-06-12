@@ -3,7 +3,7 @@
 
 
 <a name="v2.21.0"></a>
-## v2.21.0 - 2024-06-06
+## v2.21.0 - 2024-06-12
 ### Features
 
 - Enable gerrit restart flow ([#47](https://github.com/epam/edp-gerrit-operator/issues/47))
