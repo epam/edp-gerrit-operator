@@ -1,4 +1,4 @@
-FROM alpine:3.18.6
+FROM alpine:3.18.8
 
 ENV OPERATOR=/usr/local/bin/gerrit-operator \
     USER_UID=1001 \
@@ -6,8 +6,8 @@ ENV OPERATOR=/usr/local/bin/gerrit-operator \
     HOME=/home/gerrit-operator
 
 RUN apk add --no-cache ca-certificates==20240226-r0 \
-                       openssh-client==9.3_p2-r1 \
-                       openssl==3.1.5-r0 \
+                       openssh-client==9.3_p2-r2 \
+                       openssl==3.1.6-r0 \
                        git==2.40.1-r0
 
 # install operator binary
