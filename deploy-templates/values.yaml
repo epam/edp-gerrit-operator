@@ -23,10 +23,10 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 image:
-  # -- EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator)
+  # -- KubeRocketCI gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator)
   repository: epamedp/gerrit-operator
   # -- if not defined then .Chart.AppVersion is used
-  # -- EDP gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags)
+  # -- KubeRocketCI gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags)
   tag:
 imagePullPolicy: "IfNotPresent"
 

@@ -2,15 +2,15 @@
 
 ![Version: 2.22.0-SNAPSHOT](https://img.shields.io/badge/Version-2.22.0--SNAPSHOT-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.22.0-SNAPSHOT](https://img.shields.io/badge/AppVersion-2.22.0--SNAPSHOT-informational?style=flat-square)
 
-A Helm chart for EDP Gerrit Operator
+A Helm chart for KubeRocketCI Gerrit Operator
 
-**Homepage:** <https://epam.github.io/edp-install/>
+**Homepage:** <https://docs.kuberocketci.io/>
 
 ## Maintainers
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| epmd-edp | <SupportEPMD-EDP@epam.com> | <https://solutionshub.epam.com/solution/epam-delivery-platform> |
+| epmd-edp | <SupportEPMD-EDP@epam.com> | <https://solutionshub.epam.com/solution/kuberocketci> |
 | sergk |  | <https://github.com/SergK> |
 
 ## Source Code
@@ -57,8 +57,8 @@ A Helm chart for EDP Gerrit Operator
 | global.openshift.deploymentType | string | `"deployments"` | Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
 | global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |
 | groupMemberSyncInterval | string | `"30m"` | If not defined the exponential formula with the max value of 1hr will be used |
-| image.repository | string | `"epamedp/gerrit-operator"` | EDP gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
-| image.tag | string | `nil` | EDP gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |
+| image.repository | string | `"epamedp/gerrit-operator"` | KubeRocketCI gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
+| image.tag | string | `nil` | KubeRocketCI gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |
 | imagePullPolicy | string | `"IfNotPresent"` |  |
 | name | string | `"gerrit-operator"` | component name |
 | nodeSelector | object | `{}` |  |
