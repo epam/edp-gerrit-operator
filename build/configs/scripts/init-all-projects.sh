@@ -32,6 +32,6 @@ cat << EOF > \"webhooks.config\"
 EOF
 
 git add .
-git commit -a -m \"Uploaded EDP Gerrit config\"
+git commit -a -m \"Uploaded KRCI Gerrit config\"
 git push origin HEAD:refs/meta/config
 git config -f /var/gerrit/review_site/etc/gerrit.config auth.trustedOpenID ^.*\$
