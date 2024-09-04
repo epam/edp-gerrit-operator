@@ -126,3 +126,5 @@ gerrit:
     kind: KeycloakRealm
     # Name of kind: Realm/KeycloakRealm CR.
     name: main
+    # -- Keycloak URL.
+    keycloakUrl: https://keycloak.example.com/auth

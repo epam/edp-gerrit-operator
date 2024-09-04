@@ -104,3 +104,18 @@ Set gerrit.javaOptions
 {{ printf "%s" .Values.gerrit.javaOptions }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Create the name of the secretstore to use
+*/}}
+{{- define "gerrit.secretStoreName" -}}
+  {{- if .Values.externalSecrets.enabled }}
+    {{- if eq .Values.externalSecrets.type "aws" }}
+      {{- printf "%s-%s" "aws" .Values.externalSecrets.secretProvider.aws.service | lower }}
+    {{- end }}
+    {{- if eq .Values.externalSecrets.type "generic" }}
+      {{- $secretStoreName := required "Secret store name is not defined" .Values.externalSecrets.secretProvider.generic.secretStore.name | lower }}
+      {{- printf "%s" $secretStoreName }}
+    {{- end }}
+  {{- end }}
+{{- end }}
