@@ -7,17 +7,12 @@ spec:
   attributes:
     post.logout.redirect.uris: +
   clientAuthenticatorType: client-secret
-  clientId: gerrit
+  clientId: gerrit-{{ .Release.Namespace }}
   enabled: true
   fullScopeAllowed: true
   realmRef:
     kind: {{ .Values.gerrit.sso.kind }}
     name: {{ .Values.gerrit.sso.name }}
-  realmRoles:
-    - composite: administrator
-      name: gerrit-administrators
-    - composite: developer
-      name: gerrit-users
   standardFlowEnabled: true
   webOrigins:
     - >-
