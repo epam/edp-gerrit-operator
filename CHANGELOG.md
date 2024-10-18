@@ -2,6 +2,22 @@
 ## [Unreleased]
 
 
+<a name="v2.22.0"></a>
+## [v2.22.0] - 2024-10-18
+### Features
+
+- Update Dockerfile packages([#59](https://github.com/epam/edp-gerrit-operator/issues/59))
+- Migrate sso resources from edp-install to gerrit-operator([#59](https://github.com/epam/edp-gerrit-operator/issues/59))
+- Remove deprecated v1alpha1 versions from the operator ([#54](https://github.com/epam/edp-gerrit-operator/issues/54))
+
+### Routine
+
+- Update alpine base image to v3.18.9 ([#62](https://github.com/epam/edp-gerrit-operator/issues/62))
+- Update KubeRocketCI names and documentation links ([#57](https://github.com/epam/edp-gerrit-operator/issues/57))
+- Update container image ([#54](https://github.com/epam/edp-gerrit-operator/issues/54))
+- Update current development version ([#52](https://github.com/epam/edp-gerrit-operator/issues/52))
+
+
 <a name="v2.21.0"></a>
 ## [v2.21.0] - 2024-06-12
 ### Features
@@ -123,7 +139,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.21.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.22.0...HEAD
+[v2.22.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.21.0...v2.22.0
 [v2.21.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...v2.21.0
 [v2.20.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...v2.20.1
 [v2.20.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.19.0...v2.20.0
