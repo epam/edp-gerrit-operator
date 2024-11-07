@@ -58,6 +58,7 @@ A Helm chart for KubeRocketCI Gerrit Operator
 | global.openshift.deploymentType | string | `"deployments"` | Which type of kind will be deployed to Openshift (values: deployments/deploymentConfigs) |
 | global.platform | string | `"openshift"` | platform type that can be "kubernetes" or "openshift" |
 | groupMemberSyncInterval | string | `"30m"` | If not defined the exponential formula with the max value of 1hr will be used |
+| image.registry | string | `"docker.io"` | Set the image registry, default to Docker Hub; can be customized to use an alternative provider |
 | image.repository | string | `"epamedp/gerrit-operator"` | KubeRocketCI gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
 | image.tag | string | `nil` | KubeRocketCI gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |
 | imagePullPolicy | string | `"IfNotPresent"` |  |
