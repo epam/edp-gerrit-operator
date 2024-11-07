@@ -23,6 +23,8 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 image:
+  # -- Set the image registry, default to Docker Hub; can be customized to use an alternative provider
+  registry: "docker.io"
   # -- KubeRocketCI gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator)
   repository: epamedp/gerrit-operator
   # -- if not defined then .Chart.AppVersion is used
@@ -83,7 +85,7 @@ gerrit:
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:
-    #      - gerrit-edp.example.com
+    #      - gerrit-krci.example.com
 
   resources:
     limits:
