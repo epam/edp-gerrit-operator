@@ -122,6 +122,9 @@ gerrit:
   sso:
     # Create kind: KeycloakClient as a part of chart installation
     enabled: true
+    # Enable creation of QuickLink for Keycloak
+    quickLink:
+      enabled: false
     # Can be Realm or KeycloakRealm.
     kind: KeycloakRealm
     # Name of kind: Realm/KeycloakRealm CR.
