@@ -1,4 +1,5 @@
 {{- if .Values.gerrit.sso.enabled -}}
+{{- if .Values.gerrit.sso.quickLink.enabled }}
 apiVersion: v2.edp.epam.com/v1
 kind: QuickLink
 metadata:
@@ -9,4 +10,5 @@ spec:
   type: default
   url: "{{ .Values.gerrit.sso.keycloakUrl }}"
   visible: true
-{{ end }}
+{{- end }}
+{{- end }}
