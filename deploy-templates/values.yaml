@@ -124,7 +124,7 @@ gerrit:
     enabled: true
     # Enable creation of QuickLink for Keycloak
     quickLink:
-      enabled: false
+      enabled: true
     # Can be Realm or KeycloakRealm.
     kind: KeycloakRealm
     # Name of kind: Realm/KeycloakRealm CR.
