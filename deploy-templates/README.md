@@ -48,7 +48,7 @@ A Helm chart for KubeRocketCI Gerrit Operator
 | gerrit.sso.keycloakUrl | string | `"https://keycloak.example.com/auth"` | Keycloak URL. |
 | gerrit.sso.kind | string | `"KeycloakRealm"` |  |
 | gerrit.sso.name | string | `"main"` |  |
-| gerrit.sso.quickLink.enabled | bool | `false` |  |
+| gerrit.sso.quickLink.enabled | bool | `true` |  |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
 | gerrit.version | string | `"3.6.2-oauth"` | Define gerrit docker image tag |
