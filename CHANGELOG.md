@@ -2,6 +2,17 @@
 ## [Unreleased]
 
 
+<a name="v2.23.0"></a>
+## [v2.23.0] - 2025-01-24
+### Routine
+
+- Enable QuickLink resource by default ([#71](https://github.com/epam/edp-gerrit-operator/issues/71))
+- Make QuickLink installation optional ([#71](https://github.com/epam/edp-gerrit-operator/issues/71))
+- Update Dockerfile packages ([#66](https://github.com/epam/edp-gerrit-operator/issues/66))
+- Update Pull Request Template ([#66](https://github.com/epam/edp-gerrit-operator/issues/66))
+- Update current development version ([#64](https://github.com/epam/edp-gerrit-operator/issues/64))
+
+
 <a name="v2.22.0"></a>
 ## [v2.22.0] - 2024-10-18
 ### Features
@@ -139,7 +150,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.22.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...HEAD
+[v2.23.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.22.0...v2.23.0
 [v2.22.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.21.0...v2.22.0
 [v2.21.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...v2.21.0
 [v2.20.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.0...v2.20.1
