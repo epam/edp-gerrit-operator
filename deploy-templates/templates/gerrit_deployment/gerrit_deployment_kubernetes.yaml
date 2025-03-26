@@ -21,6 +21,9 @@ spec:
       labels:
         app: {{ .Values.gerrit.name }}
     spec:
+      {{- if .Values.gerrit.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.gerrit.imagePullSecrets | nindent 8 }}
+      {{- end }}
       volumes:
         - name: {{ .Values.gerrit.name }}-data
           persistentVolumeClaim:

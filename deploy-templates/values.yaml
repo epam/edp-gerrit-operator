@@ -29,6 +29,10 @@ image:
   # -- KubeRocketCI gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags)
   tag:
 imagePullPolicy: "IfNotPresent"
+# -- Optional array of imagePullSecrets containing private registry credentials
+## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry
+imagePullSecrets: []
+# - name: regcred
 
 # --  Define interval for synchronizing Gerrit Projects with GerritProject CustomResources
 # --  Default: 5 minutes
