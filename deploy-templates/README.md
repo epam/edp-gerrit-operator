@@ -62,6 +62,7 @@ A Helm chart for KubeRocketCI Gerrit Operator
 | image.repository | string | `"epamedp/gerrit-operator"` | KubeRocketCI gerrit-operator Docker image name. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator) |
 | image.tag | string | `nil` | KubeRocketCI gerrit-operator Docker image tag. The released image can be found on [Dockerhub](https://hub.docker.com/r/epamedp/gerrit-operator/tags) |
 | imagePullPolicy | string | `"IfNotPresent"` |  |
+| imagePullSecrets | list | `[]` | Optional array of imagePullSecrets containing private registry credentials # Ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry |
 | name | string | `"gerrit-operator"` | component name |
 | nodeSelector | object | `{}` |  |
 | projectSyncInterval | string | `"1h"` | Format: golang time.Duration-formatted string |
