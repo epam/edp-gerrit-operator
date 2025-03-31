@@ -23,8 +23,8 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/operator: "true"
   artifacthub.io/images: |
-    - name: gerrit-operator:2.23.0
-      image: epamedp/gerrit-operator:2.23.0
+    - name: gerrit-operator:2.23.1
+      image: epamedp/gerrit-operator:2.23.1
     - name: edp-gerrit:3.6.2-oauth
       image: epamedp/edp-gerrit:3.6.2-oauth
     - name: alpine:3.18.9
