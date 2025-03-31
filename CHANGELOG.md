@@ -2,8 +2,8 @@
 ## [Unreleased]
 
 
-<a name="v2.23.0"></a>
-## v2.23.0 - 2025-01-23
+<a name="v2.23.1"></a>
+## v2.23.1 - 2025-03-27
 ### Features
 
 - Update Dockerfile packages([#59](https://github.com/epam/edp-gerrit-operator/issues/59))
@@ -28,6 +28,8 @@
 
 ### Routine
 
+- Update tool versions in Dockerfile ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
+- Add ImagePullSecrets field support ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
 - Enable QuickLink resource by default ([#71](https://github.com/epam/edp-gerrit-operator/issues/71))
 - Make QuickLink installation optional ([#71](https://github.com/epam/edp-gerrit-operator/issues/71))
 - Update Dockerfile packages ([#66](https://github.com/epam/edp-gerrit-operator/issues/66))
@@ -75,4 +77,4 @@
 - Fix bage path for the build GH Action ([#8](https://github.com/epam/edp-gerrit-operator/issues/8))
 
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.1...HEAD
