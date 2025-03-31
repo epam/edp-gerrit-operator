@@ -1,6 +1,20 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Routine
+
+- Update tool versions in Dockerfile ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
+- Add ImagePullSecrets field support ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
+- Update current development version ([#74](https://github.com/epam/edp-gerrit-operator/issues/74))
+
+
+<a name="v2.23.1"></a>
+## [v2.23.1] - 2025-03-31
+### Routine
+
+- Update tool versions in Dockerfile ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
+- Add ImagePullSecrets field support ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
+
 
 <a name="v2.23.0"></a>
 ## [v2.23.0] - 2025-01-24
@@ -150,7 +164,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.1...HEAD
+[v2.23.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...v2.23.1
 [v2.23.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.22.0...v2.23.0
 [v2.22.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.21.0...v2.22.0
 [v2.21.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.20.1...v2.21.0
