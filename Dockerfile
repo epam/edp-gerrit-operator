@@ -1,5 +1,6 @@
 FROM alpine:3.18.9
 
+ARG TARGETARCH
 ENV OPERATOR=/usr/local/bin/gerrit-operator \
     USER_UID=1001 \
     USER_NAME=gerrit-operator \
@@ -11,7 +12,7 @@ RUN apk add --no-cache ca-certificates==20241121-r1 \
                        git==2.40.4-r0
 
 # install operator binary
-COPY ./dist/go-binary ${OPERATOR}
+COPY ./dist/go-binary-${TARGETARCH} ${OPERATOR}
 
 COPY build/bin /usr/local/bin
 COPY build/configs /usr/local/configs
