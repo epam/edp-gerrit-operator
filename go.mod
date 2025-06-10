@@ -1,6 +1,6 @@
 module github.com/epam/edp-gerrit-operator/v2
 
-go 1.22
+go 1.22.0
 
 replace (
 	github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20221220162201-efeef9d83325
@@ -35,7 +35,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
