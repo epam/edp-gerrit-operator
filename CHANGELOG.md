@@ -1,8 +1,14 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.24.0"></a>
+## [v2.24.0] - 2025-07-21
 ### Routine
 
+- Update codeql and codecov scan gh actions ([#216](https://github.com/epam/edp-gerrit-operator/issues/216))
+- Allow overriding securityContext ([#88](https://github.com/epam/edp-gerrit-operator/issues/88))
+- Update current development version ([#80](https://github.com/epam/edp-gerrit-operator/issues/80))
 - Update tool versions in Dockerfile ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
 - Add ImagePullSecrets field support ([#77](https://github.com/epam/edp-gerrit-operator/issues/77))
 - Update current development version ([#74](https://github.com/epam/edp-gerrit-operator/issues/74))
@@ -164,7 +170,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.1...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.24.0...HEAD
+[v2.24.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.1...v2.24.0
 [v2.23.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...v2.23.1
 [v2.23.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.22.0...v2.23.0
 [v2.22.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.21.0...v2.22.0
