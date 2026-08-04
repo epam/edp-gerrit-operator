@@ -215,7 +215,7 @@ func GetGerritClient(ctx context.Context, cl client.Client, instance client.Obje
 			return nil, errors.Wrap(err, "unable to get gerrit instance")
 		}
 
-		SetOwnerReference(instance, gerritInstance.TypeMeta, &gerritInstance.ObjectMeta)
+		SetOwnerReference(instance, metaV1.TypeMeta{Kind: "Gerrit", APIVersion: gerritApi.GroupVersion.String()}, &gerritInstance.ObjectMeta)
 
 		if err := cl.Update(ctx, instance); err != nil {
 			return nil, errors.Wrap(err, "unable to update instance owner refs")

@@ -291,7 +291,7 @@ func (s *K8SService) getKeycloakRootUrl(instance *gerritApi.Gerrit) (*string, er
 	}
 
 	keycloak := &keycloakApi.Keycloak{}
-	name := realm.OwnerReferences[0].Name //TODO: check if owner references is not empty before access
+	name := realm.OwnerReferences[0].Name // TODO: check if owner references is not empty before access
 
 	err = s.client.Get(ctx, types.NamespacedName{
 		Name:      name,
@@ -467,14 +467,9 @@ func (s *K8SService) UpdateService(svc *coreV1Api.Service, nodePort int32) error
 	ctx := context.Background()
 	ports := svc.Spec.Ports
 
-	updatedPorts, err := updatePort(ports, "ssh", nodePort)
-	if err != nil {
-		return err
-	}
+	svc.Spec.Ports = updatePort(ports, "ssh", nodePort)
 
-	svc.Spec.Ports = updatedPorts
-
-	_, err = s.CoreClient.Services(svc.Namespace).Update(ctx, svc, metaV1.UpdateOptions{})
+	_, err := s.CoreClient.Services(svc.Namespace).Update(ctx, svc, metaV1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("faile to update %q service: %w", svc.Name, err)
 	}
@@ -502,13 +497,13 @@ func newRestConfig() (*rest.Config, error) {
 
 	restConfig, err := config.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrive config: %w", err)
+		return nil, fmt.Errorf("failed to retrieve config: %w", err)
 	}
 
 	return restConfig, nil
 }
 
-func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]coreV1Api.ServicePort, error) {
+func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) []coreV1Api.ServicePort {
 	for i, p := range ports {
 		if p.Name == name {
 			p.Port = nodePort
@@ -518,7 +513,7 @@ func updatePort(ports []coreV1Api.ServicePort, name string, nodePort int32) ([]c
 		ports[i] = p
 	}
 
-	return ports, nil
+	return ports
 }
 
 func (s *K8SService) CreateConfigMap(instance *gerritApi.Gerrit, configMapName string, configMapData map[string]string) error {

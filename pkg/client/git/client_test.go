@@ -23,7 +23,7 @@ func TestClient_Clone_Failure(t *testing.T) {
 }
 
 func TestClient_SetProjectUser(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("test-user-repo", t)
 
@@ -33,7 +33,7 @@ func TestClient_SetProjectUser(t *testing.T) {
 }
 
 func TestClient_SetProjectUserFailure(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("test-user-repo", t)
 
@@ -85,7 +85,7 @@ func createFakeProject(name string, t *testing.T) {
 }
 
 func TestClient_Clone(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("test-clone", t)
 
@@ -99,7 +99,7 @@ func TestClient_Clone(t *testing.T) {
 }
 
 func TestClient_Merge(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	projectName := "test-merge"
 
@@ -135,7 +135,7 @@ func TestClient_GenerateChangeID(t *testing.T) {
 }
 
 func TestClient_SetFileContents(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("demo", t)
 
@@ -148,7 +148,7 @@ func TestClient_SetFileContents(t *testing.T) {
 }
 
 func TestClient_Commit(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("demo", t)
 
@@ -170,7 +170,7 @@ func TestClient_Commit(t *testing.T) {
 }
 
 func TestClient_CheckoutBranch(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("demo", t)
 
@@ -191,7 +191,7 @@ func TestClient_CheckoutBranch(t *testing.T) {
 }
 
 func TestClient_Push(t *testing.T) {
-	defer removeAllWithErrCapture(t, tmpDir)
+	defer removeAllWithErrCapture(t)
 
 	createFakeProject("demo", t)
 
@@ -200,8 +200,8 @@ func TestClient_Push(t *testing.T) {
 	assert.EqualError(t, err, "unable to create new remote: unable to get origin remote: remote not found")
 }
 
-func removeAllWithErrCapture(t *testing.T, p string) {
-	err := os.RemoveAll(p)
+func removeAllWithErrCapture(t *testing.T) {
+	err := os.RemoveAll(tmpDir)
 	require.NoError(t, err)
 }
 

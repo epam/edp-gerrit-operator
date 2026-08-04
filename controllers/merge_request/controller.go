@@ -156,9 +156,9 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
 }
 
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritmergerequests,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritmergerequests/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritmergerequests/finalizers,verbs=update
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritmergerequests,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritmergerequests/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritmergerequests/finalizers,verbs=update
 
 func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (result reconcile.Result, resError error) {
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
@@ -218,10 +218,17 @@ func (r *Reconcile) tryReconcile(ctx context.Context, instance *gerritApi.Gerrit
 		requeue = status == StatusNew
 	}
 
+	// TryToDelete may issue a main-resource Update (finalizer bookkeeping), which
+	// round-trips the server state back into instance and would discard the status
+	// computed above: the status subresource ignores it on regular updates.
+	statusSnapshot := instance.Status
+
 	if err := helper.TryToDelete(ctx, r.k8sClient, instance, finalizerName,
 		r.makeDeletionFunc(ctx, instance)); err != nil {
 		return false, errors.Wrap(err, "unable to delete resource")
 	}
+
+	instance.Status = statusSnapshot
 
 	return requeue, nil
 }

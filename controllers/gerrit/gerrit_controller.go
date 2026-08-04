@@ -10,6 +10,7 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -90,9 +91,9 @@ func (r *ReconcileGerrit) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits/finalizers,verbs=update
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerrits/finalizers,verbs=update
 
 func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -165,7 +166,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		log.Error(err, "Gerrit configuration has been failed.")
 
 		if !gerrit.IsErrUserNotFound(err) {
-			return reconcile.Result{RequeueAfter: RequeueTime10}, fmt.Errorf("failed to configure Gerrit: %w", err)
+			return reconcile.Result{}, fmt.Errorf("failed to configure Gerrit: %w", err)
 		}
 
 		finalRequeueAfterTimeout = requeueTime60
@@ -182,7 +183,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 
 		log.Info(msg)
 
-		return reconcile.Result{RequeueAfter: RequeueTime10}, fmt.Errorf("%s: %w", msg, err)
+		return reconcile.Result{}, fmt.Errorf("%s: %w", msg, err)
 	}
 
 	if !dIsReady {
@@ -234,13 +235,13 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		err = r.updateStatus(ctx, exposedInstance, StatusIntegrationStart)
 		if err != nil {
 			log.Error(err, updatingStatusErr, status, exposedInstance.Status.Status)
-			return reconcile.Result{RequeueAfter: RequeueTime10}, err
+			return reconcile.Result{}, err
 		}
 	}
 
 	exposedInstance, err = r.service.Integrate(ctx, exposedInstance)
 	if err != nil {
-		return reconcile.Result{RequeueAfter: RequeueTime10}, errors.Wrapf(err, "Integration failed")
+		return reconcile.Result{}, errors.Wrapf(err, "Integration failed")
 	}
 
 	if exposedInstance.Status.Status == StatusIntegrationStart {
@@ -268,15 +269,12 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 }
 
 func (r *ReconcileGerrit) updateStatus(ctx context.Context, instance *gerritApi.Gerrit, status string) error {
-	instance.Status.Status = status
-	instance.Status.LastTimeUpdated = metav1.Now()
-
-	err := r.client.Status().Update(ctx, instance)
+	err := r.updateStatusWithRetry(ctx, instance, func() {
+		instance.Status.Status = status
+		instance.Status.LastTimeUpdated = metav1.Now()
+	})
 	if err != nil {
-		err = r.client.Update(ctx, instance)
-		if err != nil {
-			return fmt.Errorf("failed to update Gerrit resource: %w", err)
-		}
+		return err
 	}
 
 	ctrl.LoggerFrom(ctx).Info(fmt.Sprintf("Status for Gerrit %s has been updated to '%s' at %v.", instance.Name, status, instance.Status.LastTimeUpdated))
@@ -289,15 +287,30 @@ func (r ReconcileGerrit) updateAvailableStatus(ctx context.Context, instance *ge
 		return nil
 	}
 
-	instance.Status.Available = value
-	instance.Status.LastTimeUpdated = metav1.Now()
+	return r.updateStatusWithRetry(ctx, instance, func() {
+		instance.Status.Available = value
+		instance.Status.LastTimeUpdated = metav1.Now()
+	})
+}
 
-	err := r.client.Status().Update(ctx, instance)
-	if err != nil {
-		err = r.client.Update(ctx, instance)
-		if err != nil {
-			return fmt.Errorf("failed to update Gerrit resource: %w", err)
+// updateStatusWithRetry persists a status mutation, refreshing the object and
+// re-applying the mutation on resourceVersion conflicts: the reconcile loop
+// patches the deployment and the CR concurrently with watch-driven requeues.
+func (r ReconcileGerrit) updateStatusWithRetry(ctx context.Context, instance *gerritApi.Gerrit, mutate func()) error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		mutate()
+
+		updateErr := r.client.Status().Update(ctx, instance)
+		if k8sErrors.IsConflict(updateErr) {
+			if getErr := r.client.Get(ctx, client.ObjectKeyFromObject(instance), instance); getErr != nil {
+				return getErr
+			}
 		}
+
+		return updateErr
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update Gerrit resource: %w", err)
 	}
 
 	return nil

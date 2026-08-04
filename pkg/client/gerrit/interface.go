@@ -28,10 +28,10 @@ type ClientInterface interface {
 	ChangeGet(changeID string) (*Change, error)
 	InitNewRestClient(instance *gerritApi.Gerrit, url string, user string, password string) error
 	CheckCredentials() (int, error)
-	InitAdminUser(instance *gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (*gerritApi.Gerrit, error)
+	InitAdminUser(instance *gerritApi.Gerrit, platformService platform.PlatformService, GerritScriptsPath string, podName string, gerritAdminPublicKey string) (*gerritApi.Gerrit, error)
 	InitNewSshClient(userName string, privateKey []byte, host string, port int32) error
 	CheckGroup(groupName string) (*int, error)
-	InitAllProjects(instance *gerritApi.Gerrit, platform platform.PlatformService, GerritScriptsPath string,
+	InitAllProjects(instance *gerritApi.Gerrit, platformService platform.PlatformService, GerritScriptsPath string,
 		podName string, gerritAdminPublicKey string) error
 	CreateUser(username string, password string, fullName string, publicKey string) error
 	ChangePassword(username string, password string) error

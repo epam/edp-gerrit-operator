@@ -13,6 +13,7 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -37,13 +38,26 @@ func TestTryToDelete(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+
+	if err := TryToDelete(context.Background(), client, &instance, "fin1", func() error {
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// deletionTimestamp is immutable through Update; issue a real Delete (the
+	// finalizer keeps the object alive) and refresh the local copy.
+	if err := client.Delete(context.Background(), &instance); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.Get(context.Background(),
+		types.NamespacedName{Namespace: instance.Namespace, Name: instance.Name}, &instance); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := TryToDelete(context.Background(), client, &instance, "fin1", func() error {
 		return nil
@@ -52,12 +66,6 @@ func TestTryToDelete(t *testing.T) {
 	}
 
 	instance.DeletionTimestamp = &metaV1.Time{Time: time.Now()}
-
-	if err := TryToDelete(context.Background(), client, &instance, "fin1", func() error {
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
 
 	err := TryToDelete(context.Background(), client, &instance, "fin1", func() error {
 		return errors.New("try del fatal")
@@ -88,13 +96,9 @@ func TestGetGerritClient(t *testing.T) {
 			Namespace: instance.Namespace,
 			Name:      "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
 	gCl := gerritClientMocks.ClientInterface{}
@@ -128,13 +132,9 @@ func TestGetGerritClient_Failure_UnableToGetInstanceOwner(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 	gerritService := gmock.Interface{}
 
 	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
@@ -162,7 +162,7 @@ func TestGetGerritClient_Failure_NoRootGerrits(t *testing.T) {
 		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithRuntimeObjects(&instance).Build()
 	gerritService := gmock.Interface{}
 
 	_, err := GetGerritClient(context.Background(), client, &instance, "", &gerritService)
@@ -193,13 +193,9 @@ func TestGetGerritClient_Failure_UnableToGetRestClient(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: instance.Namespace, Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithRuntimeObjects(&instance, &g).Build()
 
 	gerritService := gmock.Interface{}
 	gerritService.On("GetRestClient", &g).Return(nil, errors.New("mock error"))
@@ -225,13 +221,9 @@ func TestGetGerritInstance(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	ctx := context.Background()
 	wrongGerritName := "ger321"
 

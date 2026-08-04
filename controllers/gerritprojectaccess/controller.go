@@ -78,9 +78,9 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
 }
 
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritprojectaccesses,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritprojectaccesses/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritprojectaccesses/finalizers,verbs=update
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritprojectaccesses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritprojectaccesses/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritprojectaccesses/finalizers,verbs=update
 
 func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (result reconcile.Result, resError error) {
 	reqLogger := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)

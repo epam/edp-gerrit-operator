@@ -99,9 +99,9 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 	return oo.Status == no.Status
 }
 
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritreplicationconfigs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritreplicationconfigs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritreplicationconfigs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritreplicationconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritreplicationconfigs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritreplicationconfigs/finalizers,verbs=update
 
 func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
@@ -129,7 +129,7 @@ func (r *ReconcileGerritReplicationConfig) Reconcile(ctx context.Context, reques
 			return reconcile.Result{}, fmt.Errorf("failed to get gerrit instance: %w", err)
 		}
 
-		helper.SetOwnerReference(instance, gerritInstance.TypeMeta, &gerritInstance.ObjectMeta)
+		helper.SetOwnerReference(instance, metaV1.TypeMeta{Kind: "Gerrit", APIVersion: gerritApi.GroupVersion.String()}, &gerritInstance.ObjectMeta)
 
 		err = r.client.Update(ctx, instance)
 		if err != nil {

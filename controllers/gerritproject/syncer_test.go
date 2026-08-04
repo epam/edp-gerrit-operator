@@ -32,10 +32,6 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
 	prj := gerritApi.GerritProject{
@@ -51,7 +47,7 @@ func TestSyncBackendProjectsTick(t *testing.T) {
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
 	clientMock := gerritClientMocks.ClientInterface{}
 
@@ -103,10 +99,6 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
 	prj := gerritApi.GerritProject{
@@ -122,7 +114,7 @@ func TestSyncBackendProjectsTick_BranchesFailure(t *testing.T) {
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&g, &prj).Build()
 	serviceMock := gmock.Interface{}
 	clientMock := gerritClientMocks.ClientInterface{}
 
@@ -165,13 +157,9 @@ func TestSyncBackendProjectsTick_Failure(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	serviceMock := gmock.Interface{}
 
 	serviceMock.On("GetRestClient", &g).
@@ -219,13 +207,9 @@ func TestSyncBackendProjects(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&g).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&g).Build()
 	serviceMock := gmock.Interface{}
 
 	serviceMock.On("GetRestClient", &g).

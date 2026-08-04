@@ -31,7 +31,7 @@ const (
 var log = ctrl.Log.WithName("client_gerrit")
 
 type Client struct {
-	instance  *gerritApi.Gerrit //TODO: remove this
+	instance  *gerritApi.Gerrit // TODO: remove this
 	resty     *resty.Client
 	sshClient ssh.SSHClientInterface
 }

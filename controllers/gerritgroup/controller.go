@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -76,9 +77,9 @@ func isSpecUpdated(e event.UpdateEvent) bool {
 		(oo.GetDeletionTimestamp().IsZero() && !no.GetDeletionTimestamp().IsZero())
 }
 
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritgroups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritgroups/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritgroups/finalizers,verbs=update
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritgroups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritgroups/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=v2.edp.epam.com,namespace=placeholder,resources=gerritgroups/finalizers,verbs=update
 
 func (r *Reconcile) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log := r.log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
@@ -124,7 +125,7 @@ func (r *Reconcile) tryToReconcile(ctx context.Context, instance *gerritApi.Gerr
 			return errors.Wrap(err, "unable to get gerrit instance")
 		}
 
-		helper.SetOwnerReference(instance, gerritInstance.TypeMeta, &gerritInstance.ObjectMeta)
+		helper.SetOwnerReference(instance, metaV1.TypeMeta{Kind: "Gerrit", APIVersion: gerritApi.GroupVersion.String()}, &gerritInstance.ObjectMeta)
 
 		err = r.client.Update(ctx, instance)
 		if err != nil {

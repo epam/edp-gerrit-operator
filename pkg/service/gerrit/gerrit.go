@@ -408,7 +408,7 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 			map[string]string{},
 		)
 		if err != nil {
-			return instance, errors.Wrapf(err, fmt.Sprintf("Failed to create secret %v", identityServiceSecretName))
+			return instance, errors.Wrapf(err, "Failed to create secret %v", identityServiceSecretName)
 		}
 
 		annotationKey := helpers.GenerateAnnotationKey(spec.IdentityServiceCredentialsSecretPostfix)
@@ -764,11 +764,11 @@ func (s ComponentService) updateDeploymentConfigPort(sshPort, sshPortService int
 // setAnnotation add key:value to current resource annotation.
 func (ComponentService) setAnnotation(instance *gerritApi.Gerrit, key, value string) {
 	if len(instance.Annotations) == 0 {
-		instance.ObjectMeta.Annotations = map[string]string{
+		instance.Annotations = map[string]string{
 			key: value,
 		}
 	} else {
-		instance.ObjectMeta.Annotations[key] = value
+		instance.Annotations[key] = value
 	}
 }
 
