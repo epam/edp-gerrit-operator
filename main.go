@@ -8,15 +8,14 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	buildInfo "github.com/epam/edp-common/pkg/config"
 	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
@@ -29,7 +28,7 @@ import (
 	"github.com/epam/edp-gerrit-operator/v2/controllers/gerritprojectaccess"
 	"github.com/epam/edp-gerrit-operator/v2/controllers/gerritreplicationconfig"
 	"github.com/epam/edp-gerrit-operator/v2/controllers/helper"
-	"github.com/epam/edp-gerrit-operator/v2/controllers/merge_request"
+	mergerequest "github.com/epam/edp-gerrit-operator/v2/controllers/merge_request"
 )
 
 var (
@@ -38,7 +37,6 @@ var (
 )
 
 const (
-	serverPort         = 9443
 	gerritOperatorLock = "edp-gerrit-operator-lock"
 	gitWorkDirEnv      = "GIT_WORK_DIR"
 	gitWorkDirDefault  = "/tmp/git_tmp"
@@ -117,15 +115,13 @@ func initManager(metricsAddr, probeAddr string, enableLeaderElection bool) (ctrl
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 		HealthProbeBindAddress: probeAddr,
-		Port:                   serverPort,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       gerritOperatorLock,
-		MapperProvider: func(_ *rest.Config) (meta.RESTMapper, error) {
-			return apiutil.NewDynamicRESTMapper(cfg)
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{ns: {}},
 		},
-		Namespace: ns,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to start manager")

@@ -57,13 +57,9 @@ func TestReconcile_Reconcile(t *testing.T) {
 			Namespace: groupMember.Namespace,
 			Name:      "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritGroupMember{}).WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 	serviceMock := gmock.Interface{}
 	clientMock := gerritClientMocks.ClientInterface{}
@@ -99,11 +95,15 @@ func TestReconcile_Reconcile(t *testing.T) {
 		t.Fatal(updateInstance.Status.Value)
 	}
 
-	now := metaV1.Time{Time: time.Now()}
-	updateInstance.DeletionTimestamp = &now
+	// deletionTimestamp is immutable through Update; add a finalizer and issue
+	// a real Delete so the API sets the timestamp while the object persists.
 	updateInstance.Finalizers = []string{"test_fake_finalizer"}
 
 	if err := client.Update(context.Background(), &updateInstance); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := client.Delete(context.Background(), &updateInstance); err != nil {
 		t.Fatal(err)
 	}
 
@@ -133,7 +133,7 @@ func TestReconcile_ReconcileFailure1(t *testing.T) {
 	utilRuntime.Must(gerritApi.AddToScheme(scheme))
 	utilRuntime.Must(coreV1.AddToScheme(scheme))
 
-	client := fake.NewClientBuilder().WithScheme(scheme).Build()
+	client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritGroupMember{}).WithScheme(scheme).Build()
 
 	rcn := Reconcile{
 		client: client,
@@ -212,13 +212,9 @@ func TestReconcile_ReconcileFailure2(t *testing.T) {
 					Namespace: groupMember.Namespace,
 					Name:      "ger1",
 				},
-				TypeMeta: metaV1.TypeMeta{
-					APIVersion: "v2.edp.epam.com/v1",
-					Kind:       "Gerrit",
-				},
 			}
 
-			client := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
+			client := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritGroupMember{}).WithScheme(scheme).WithRuntimeObjects(&groupMember, &g).Build()
 
 			nn := types.NamespacedName{
 				Name:      groupMember.Name,
@@ -281,8 +277,8 @@ func TestNewReconcile(t *testing.T) {
 	require.NoError(t, err)
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
-	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritGroupMember{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritGroupMember{}).WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
 
 	_, err = NewReconcile(cl, &sch, logr.Discard())
@@ -315,8 +311,8 @@ func TestReconcile_UpdateErr(t *testing.T) {
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritGroupMember{})
-	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritGroupMember{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritGroupMember{}).WithObjects(instance).WithScheme(s).Build()
 
 	mc.On("Get", nsn, &gerritApi.GerritGroupMember{}).Return(cl)
 

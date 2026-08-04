@@ -40,13 +40,9 @@ func TestReconcile_Reconcile_CreateProject(t *testing.T) {
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: prj.Namespace, Name: "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
 	clientMock := gerritClientMocks.ClientInterface{}
 
@@ -124,12 +120,12 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 
 	prj := gerritApi.GerritProject{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: "ns",
-			Name:      "prj1",
+			Namespace:  "ns",
+			Name:       "prj1",
+			Finalizers: []string{"test_fake_finalizer"},
 			DeletionTimestamp: &metaV1.Time{
 				Time: time.Now(),
 			},
-			Finalizers: []string{"test_fake_finalizer"},
 		},
 		Spec: gerritApi.GerritProjectSpec{
 			Name: "sprj1",
@@ -141,13 +137,9 @@ func TestReconcile_Reconcile_UpdateProject(t *testing.T) {
 			Namespace: prj.Namespace,
 			Name:      "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
 	clientMock := gerritClientMocks.ClientInterface{}
 
@@ -240,12 +232,13 @@ func TestReconcile_Reconcile_NotFound(t *testing.T) {
 	prj := gerritApi.GerritProject{
 		ObjectMeta: metaV1.ObjectMeta{
 			Namespace: "ns", Name: "prj1",
+			Finalizers:        []string{"test_fake_finalizer"},
 			DeletionTimestamp: &metaV1.Time{Time: time.Now()},
 		},
 		Spec: gerritApi.GerritProjectSpec{Name: "sprj1"},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&prj).Build()
 	logger := commonmock.NewLogr()
 
 	rcn := Reconcile{
@@ -291,13 +284,9 @@ func TestReconcile_Reconcile_FailureGetClient(t *testing.T) {
 			Namespace: prj.Namespace,
 			Name:      "ger1",
 		},
-		TypeMeta: metaV1.TypeMeta{
-			APIVersion: "v2.edp.epam.com/v1",
-			Kind:       "Gerrit",
-		},
 	}
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritProject{}).WithScheme(scheme).WithRuntimeObjects(&prj, &g).Build()
 	serviceMock := gmock.Interface{}
 	serviceMock.On("GetRestClient", &g).Return(nil, errors.New("no g client"))
 

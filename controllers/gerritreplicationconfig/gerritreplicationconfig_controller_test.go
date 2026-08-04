@@ -59,10 +59,6 @@ func createGerritReplicationConfig(status string) *gerritApi.GerritReplicationCo
 
 func createGerritByStatus(status string) *gerritApi.Gerrit {
 	return &gerritApi.Gerrit{
-		TypeMeta: metaV1.TypeMeta{
-			Kind:       "Gerrit",
-			APIVersion: "apps/v1",
-		},
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -98,8 +94,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetErr(t *testing.T) {
 	ctx := context.Background()
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
-	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects().WithScheme(s).Build()
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerritReplicationConfig{
@@ -126,8 +122,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetGerritInstanceErr(t *test
 	instance := createGerritReplicationConfig("")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{})
-	cl := fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance).WithScheme(s).Build()
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerritReplicationConfig{
@@ -157,8 +153,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateAfterSetOwnerErr(t *te
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	mc.On("Update").Return(errTest)
 	mc.On("Get", nsn, &gerritApi.GerritReplicationConfig{}).Return(cl)
@@ -193,8 +189,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_GetInstanceOwnerErr(t *testi
 	errTest := errors.New("test")
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{})
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	sw.On("Update").Return(nil)
 
@@ -231,8 +227,8 @@ func TestReconcileGerritReplicationConfig_Reconcile_Valid(t *testing.T) {
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	sw.On("Update").Return(nil)
 
@@ -268,10 +264,9 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusConfiguringUpdateErr(t
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{},
-		&gerritApi.Gerrit{}, &gerritApi.GerritList{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
 
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 	errTest := errors.New("test")
 
 	sw.On("Update").Return(errTest).Once()
@@ -315,10 +310,9 @@ func TestReconcileGerritReplicationConfig_Reconcile_StatusUpdate(t *testing.T) {
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
-		&gerritApi.GerritList{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
 
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 	errTest := errors.New("test")
 
 	sw.On("Update").Return(nil)
@@ -356,10 +350,9 @@ func TestReconcileGerritReplicationConfig_Reconcile_UpdateStatusReadyErr(t *test
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
-		&gerritApi.GerritList{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
 
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 	errTest := errors.New("test")
 
 	sw.On("Update").Return(errTest).Once()
@@ -403,10 +396,9 @@ func TestReconcileGerritReplicationConfig_Reconcile_configureReplicationErr(t *t
 	var list gerritApi.GerritList
 
 	s := runtime.NewScheme()
-	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritReplicationConfig{}, &gerritApi.Gerrit{},
-		&gerritApi.GerritList{})
+	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{}, &gerritApi.GerritList{}, &gerritApi.GerritGroup{}, &gerritApi.GerritReplicationConfig{})
 
-	cl := fake.NewClientBuilder().WithObjects(instance, gerritInstance).WithScheme(s).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}, &gerritApi.GerritReplicationConfig{}).WithObjects(instance, gerritInstance).WithScheme(s).Build()
 
 	errTest := errors.New("test")
 
@@ -643,7 +635,7 @@ func Test_configureReplication_createReplicationConfigErr(t *testing.T) {
 		},
 	}
 
-	pk, err := rsa.GenerateKey(rand.Reader, 128)
+	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
 	privkeyBytes := x509.MarshalPKCS1PrivateKey(pk)
@@ -704,7 +696,7 @@ func Test_configureReplication_updateReplicationConfigErr(t *testing.T) {
 		},
 	}
 
-	pk, err := rsa.GenerateKey(rand.Reader, 128)
+	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
 	privkeyBytes := x509.MarshalPKCS1PrivateKey(pk)

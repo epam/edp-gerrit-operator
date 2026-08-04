@@ -47,7 +47,7 @@ const (
 )
 
 func GenPkey() ([]byte, error) {
-	pk, err := rsa.GenerateKey(rand.Reader, 128)
+	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, err
 	}
@@ -506,7 +506,7 @@ func TestComponentService_ExternalURL(t *testing.T) {
 	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{},
 		&keycloakApi.KeycloakClient{})
 
-	k8sClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+	k8sClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).Build()
 
 	CS := ComponentService{PlatformService: ps, client: k8sClient}
 	_, err := CS.Integrate(context.Background(), instance)
@@ -543,7 +543,7 @@ func TestComponentService_Integrate_getKeycloakClientErr(t *testing.T) {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects().Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithObjects().Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
@@ -570,7 +570,7 @@ func TestComponentService_Integrate_GenerateKeycloakSettingsErr(t *testing.T) {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
 	ps.On("GetExternalEndpoint", instance.Namespace, instance.Name).Return("", "", nil)
@@ -602,7 +602,7 @@ func TestComponentService_Integrate_PatchDeploymentEnvErr(t *testing.T) {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{}, &keycloakApi.KeycloakClient{})
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(client).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithObjects(client).Build()
 	CS := ComponentService{PlatformService: ps, client: cl}
 
 	var envs []coreV1Api.EnvVar
@@ -642,7 +642,7 @@ func TestComponentService_Integrate_KeycloakDisabled(t *testing.T) {
 	require.NoError(t, gerritApi.AddToScheme(scheme))
 	require.NoError(t, appsv1.AddToScheme(scheme))
 
-	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(gr, dp).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(scheme).WithObjects(gr, dp).Build()
 
 	ps := pmock.NewPlatformService(t)
 	ps.On("GetExternalEndpoint", "default", "gerrit").Return("http://gerrit", "http", nil)
@@ -704,7 +704,8 @@ func TestComponentService_ExposeConfiguration_CreateUserErr(t *testing.T) {
 	}
 	service := CreateService(servicePort)
 	scheme := runtime.NewScheme()
-	k8sClient := fake.NewClientBuilder().
+	scheme.AddKnownTypes(appsv1.SchemeGroupVersion, &gerritApi.Gerrit{})
+	k8sClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).
 		WithScheme(scheme).
 		WithObjects().
 		Build()

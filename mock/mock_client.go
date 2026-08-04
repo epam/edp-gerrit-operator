@@ -3,6 +3,9 @@ package mock
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mock "github.com/epam/edp-common/pkg/mock/controller-runtime/client"
@@ -30,4 +33,14 @@ func (c *Client) List(ctx context.Context, list client.ObjectList, opts ...clien
 	}
 
 	return called.Error(0)
+}
+
+// GroupVersionKindFor and IsObjectNamespaced complete the client.Client
+// interface as of controller-runtime v0.15+; tests never call them.
+func (c *Client) GroupVersionKindFor(_ runtime.Object) (schema.GroupVersionKind, error) {
+	return schema.GroupVersionKind{}, nil
+}
+
+func (c *Client) IsObjectNamespaced(_ runtime.Object) (bool, error) {
+	return true, nil
 }

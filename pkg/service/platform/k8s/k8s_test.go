@@ -25,7 +25,7 @@ func TestK8SService_getKeycloakRootUrl(t *testing.T) {
 	assert.NoError(t, keycloakApi.AddToScheme(sch))
 
 	rlm := keycloakApi.KeycloakRealm{ObjectMeta: metav1.ObjectMeta{Name: "main"}}
-	fk := fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&g, &rlm).Build()
+	fk := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(sch).WithRuntimeObjects(&g, &rlm).Build()
 
 	s := K8SService{client: fk}
 	_, err := s.getKeycloakRootUrl(&g)
@@ -96,7 +96,6 @@ func TestK8SService_GetExternalEndpoint(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -153,7 +152,7 @@ func TestK8SService_CreateSecret(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

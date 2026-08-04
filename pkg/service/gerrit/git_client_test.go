@@ -38,7 +38,7 @@ func TestComponentService_GetGitClient_Failure(t *testing.T) {
 	s := ComponentService{
 		PlatformService: &plt,
 		k8sScheme:       sch,
-		client:          fake.NewClientBuilder().WithScheme(sch).Build(),
+		client:          fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(sch).Build(),
 	}
 
 	testCh := testChild{}
@@ -52,7 +52,7 @@ func TestComponentService_GetGitClient_Failure(t *testing.T) {
 		Name:      testCh.OwnerName(),
 		Namespace: testCh.GetNamespace(),
 	}}
-	s.client = fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build()
+	s.client = fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build()
 	plt.On("GetSecretData", testCh.GetNamespace(), fmt.Sprintf("%v-admin-password", rootGerrit.Name)).
 		Return(nil, errors.New("secret fatal")).Once()
 
@@ -81,7 +81,7 @@ func TestComponentService_GetGitClient(t *testing.T) {
 	s := ComponentService{
 		PlatformService: &plt,
 		k8sScheme:       sch,
-		client:          fake.NewClientBuilder().WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build(),
+		client:          fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithScheme(sch).WithRuntimeObjects(&rootGerrit).Build(),
 		runningInClusterFunc: func() bool {
 			return true
 		},

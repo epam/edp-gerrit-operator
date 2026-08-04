@@ -43,15 +43,11 @@ func createClient(instance *gerritApi.Gerrit) client.Client {
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{})
 
-	return fake.NewClientBuilder().WithObjects(instance).WithScheme(s).Build()
+	return fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithObjects(instance).WithScheme(s).Build()
 }
 
 func createGerritByStatus(status string) *gerritApi.Gerrit {
 	return &gerritApi.Gerrit{
-		TypeMeta: metaV1.TypeMeta{
-			Kind:       "Gerrit",
-			APIVersion: "apps/v1",
-		},
 		Spec: gerritApi.GerritSpec{},
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
@@ -153,7 +149,7 @@ func TestReconcileGerrit_Reconcile_EmptyClient(t *testing.T) {
 
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.Gerrit{})
-	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithObjects().WithScheme(s).Build()
 
 	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
 
@@ -237,7 +233,7 @@ func TestReconcileGerrit_Reconcile_DeployNotReady(t *testing.T) {
 
 	assert.True(t, ok)
 	assert.NoError(t, err)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 30 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_UpdateCreatedStatus(t *testing.T) {
@@ -306,7 +302,7 @@ func TestReconcileGerrit_Reconcile_ConfigureErr(t *testing.T) {
 	rs, err := rg.Reconcile(ctx, req)
 
 	assert.ErrorIs(t, err, errTest)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_ConfigureDPatched(t *testing.T) {
@@ -384,7 +380,7 @@ func TestReconcileGerrit_Reconcile_IsDeploymentReadyErr(t *testing.T) {
 
 	assert.True(t, ok)
 	assert.ErrorIs(t, err, errTest)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_IsDeploymentReadyFalse(t *testing.T) {
@@ -424,7 +420,7 @@ func TestReconcileGerrit_Reconcile_IsDeploymentReadyFalse(t *testing.T) {
 
 	assert.True(t, ok)
 	assert.NoError(t, err)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 30 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_ExposeConfigurationErr(t *testing.T) {
@@ -541,7 +537,7 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeFinishErr(t *testing.T) {
 	assert.True(t, ok)
 
 	assert.ErrorIs(t, loggerSink.LastError(), errTest)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_IntegrateErr(t *testing.T) {
@@ -575,7 +571,7 @@ func TestReconcileGerrit_Reconcile_IntegrateErr(t *testing.T) {
 	rs, err := rg.Reconcile(ctx, req)
 
 	assert.ErrorIs(t, err, errTest)
-	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+	assert.Equal(t, reconcile.Result{}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T) {
@@ -701,7 +697,7 @@ func TestNewReconcileGerrit(t *testing.T) {
 	s := runtime.NewScheme()
 	s.AddKnownTypes(appsV1.SchemeGroupVersion, &gerritApi.GerritGroup{}, &gerritApi.GerritList{}, &gerritApi.Gerrit{})
 
-	cl := fake.NewClientBuilder().WithObjects().WithScheme(s).Build()
+	cl := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.Gerrit{}).WithObjects().WithScheme(s).Build()
 	sch := runtime.Scheme{}
 
 	_, err = NewReconcileGerrit(cl, &sch, logr.Discard())

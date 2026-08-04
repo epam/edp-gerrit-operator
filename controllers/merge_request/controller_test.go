@@ -75,7 +75,7 @@ func (s *ControllerTestSuite) TearDownTest() {
 }
 
 func (s *ControllerTestSuite) TestReconcileSetAuthorFailure() {
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritMergeRequest{}).WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
 
 	s.gitClient.On("Clone", s.mergeRequest.Spec.ProjectName).Return("path", nil)
 	s.gitClient.On("GenerateChangeID").Return("change-id-1", nil)
@@ -107,7 +107,7 @@ func (s *ControllerTestSuite) TestReconcileSetAuthorFailure() {
 }
 
 func (s *ControllerTestSuite) TestReconcile() {
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritMergeRequest{}).WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, s.mergeRequest).Build()
 	changeID := "change123"
 
 	s.gitClient.On("Clone", s.mergeRequest.Spec.ProjectName).Return("path", nil)
@@ -152,7 +152,7 @@ func (s *ControllerTestSuite) TestReconcileDelete() {
 	deleteMergeRequest.Finalizers = []string{"test_fake_finalizer"}
 	deleteMergeRequest.Status.ChangeID = "change321"
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, deleteMergeRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritMergeRequest{}).WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, deleteMergeRequest).Build()
 
 	s.gerritClient.On("ChangeGet", deleteMergeRequest.Status.ChangeID).
 		Return(&gerritClient.Change{Status: StatusNew}, nil)
@@ -186,7 +186,7 @@ func (s *ControllerTestSuite) TestReconcileCheckStatus() {
 	checkStatusRequest.Status.ChangeID = "change321"
 	checkStatusRequest.Status.Value = StatusNew
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, checkStatusRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritMergeRequest{}).WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, checkStatusRequest).Build()
 
 	s.gerritClient.On("ChangeGet", checkStatusRequest.Status.ChangeID).
 		Return(&gerritClient.Change{Status: StatusAbandoned}, nil).Once()
@@ -239,7 +239,7 @@ func (s *ControllerTestSuite) TestConfigMap() {
 		},
 	}
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).
+	fakeClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritMergeRequest{}).WithScheme(s.scheme).
 		WithRuntimeObjects(s.rootGerrit, s.mergeRequest, &cm).Build()
 	changeID := "change123"
 
@@ -288,7 +288,7 @@ func (s *ControllerTestSuite) TestReconcileCheckStatusFailure() {
 	checkStatusRequest.Status.ChangeID = "change321"
 	checkStatusRequest.Status.Value = StatusNew
 
-	fakeClient := fake.NewClientBuilder().WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, checkStatusRequest).Build()
+	fakeClient := fake.NewClientBuilder().WithStatusSubresource(&gerritApi.GerritMergeRequest{}).WithScheme(s.scheme).WithRuntimeObjects(s.rootGerrit, checkStatusRequest).Build()
 
 	rec := Reconcile{
 		k8sClient: fakeClient,

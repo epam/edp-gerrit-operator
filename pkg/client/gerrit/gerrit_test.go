@@ -49,7 +49,7 @@ func TestClient_Resty(t *testing.T) {
 func TestClient_InitNewSshClient(t *testing.T) {
 	cl := Client{}
 
-	pk, err := rsa.GenerateKey(rand.Reader, 128)
+	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(pk)
