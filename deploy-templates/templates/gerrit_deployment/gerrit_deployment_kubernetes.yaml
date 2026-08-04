@@ -60,7 +60,7 @@ spec:
             - name: WEBURL
               value: https://{{if .Values.gerrit.basePath}}{{ .Values.global.dnsWildCard }}{{else}}gerrit-{{ .Release.Namespace }}.{{ .Values.global.dnsWildCard }}{{end}}
             - name: GERRIT_INIT_ARGS
-              value: '--install-plugin=delete-project --install-plugin=plugin-manager --install-plugin=commit-message-length-validator --install-plugin=download-commands
+              value: '--install-plugin=delete-project --install-plugin=commit-message-length-validator --install-plugin=download-commands
                         --install-plugin=hooks --install-plugin=reviewnotes --install-plugin=singleusergroup --install-plugin=replication --install-plugin=webhooks'
             - name: JAVA_OPTIONS
               value: {{ template "gerrit.javaOptions" . }}
@@ -77,12 +77,22 @@ spec:
               mountPath: /var/gerrit/review_site/certs
               subPath: certs
             {{- end }}
+          # The startup probe absorbs the slow first boot (site init + reindex),
+          # so readiness needs no fixed initial delay: a warm Gerrit serves in
+          # ~30s and becomes Ready within one 5s probe period of that.
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /
               port: 8080
               scheme: HTTP
-            initialDelaySeconds: 60
             timeoutSeconds: 10
             periodSeconds: 10
             successThreshold: 1

@@ -144,7 +144,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 
 	if !dIsReady {
 		log.Info(fmt.Sprintf("Deployment for %s/%s object is not ready for configuration yet", instance.Namespace, instance.Name))
-		return reconcile.Result{RequeueAfter: requeueTime30}, nil
+		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 	}
 
 	if instance.Status.Status == StatusCreated || instance.Status.Status == "" {
@@ -187,7 +187,7 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 
 	if !dIsReady {
 		log.Info(fmt.Sprintf("Deployment config for %v/%v Gerrit is not ready for configuration yet", instance.Namespace, instance.Name))
-		return reconcile.Result{RequeueAfter: requeueTime30}, nil
+		return reconcile.Result{RequeueAfter: RequeueTime10}, nil
 	}
 
 	if instance.Status.Status == StatusConfiguring {

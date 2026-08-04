@@ -51,7 +51,7 @@ A Helm chart for KubeRocketCI Gerrit Operator
 | gerrit.sso.quickLink.enabled | bool | `true` |  |
 | gerrit.storage.size | string | `"1Gi"` | Size for Gerrit data volume |
 | gerrit.tolerations | list | `[]` |  |
-| gerrit.version | string | `"3.6.2-oauth"` | Define gerrit docker image tag |
+| gerrit.version | string | `"3.14.2"` | Define gerrit docker image tag |
 | global.admins | list | `["stub_user_one@example.com"]` | Administrators of your tenant |
 | global.developers | list | `["stub_user_one@example.com","stub_user_two@example.com"]` | Developers of your tenant |
 | global.dnsWildCard | string | `nil` | a cluster DNS wildcard name |
