@@ -34,4 +34,7 @@ EOF
 git add .
 git commit -a -m \"Uploaded KRCI Gerrit config\"
 git push origin HEAD:refs/meta/config
+# Restore site-owner ownership over refs and objects created by this root-run push,
+# so the Gerrit daemon can take ref locks under them later.
+chown -R \$(stat -c %u:%g /var/gerrit/review_site) /var/gerrit/review_site/git/All-Projects.git
 git config -f /var/gerrit/review_site/etc/gerrit.config auth.trustedOpenID ^.*\$

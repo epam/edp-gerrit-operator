@@ -39,3 +39,7 @@ BLOB_L=\$(echo \$BLOB_ID | tail -c+3)
 mkdir -p /var/gerrit/review_site/git/All-Users.git/objects/\$BLOB_H
 cp .git/objects/\$BLOB_H/\$BLOB_L /var/gerrit/review_site/git/All-Users.git/objects/\$BLOB_H/\$BLOB_L
 echo \$BLOB_ID > /var/gerrit/review_site/git/All-Users.git/refs/sequences/accounts
+# This script runs as root, so the refs and objects it pushed are root-owned.
+# Gerrit 3.13+ writes auth tokens into the user branch, so the daemon needs
+# ownership of everything under All-Users.git to take ref locks there.
+chown -R \$(stat -c %u:%g /var/gerrit/review_site) /var/gerrit/review_site/git/All-Users.git
