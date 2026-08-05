@@ -29,6 +29,9 @@ type GerritSpec struct {
 	ExternalURL string `json:"externalURL,omitempty"`
 }
 
+// KeycloakSpec is deprecated: the operator no longer performs Keycloak integration.
+// SSO is configured via the Helm chart (KeycloakClient CR and OAUTH_* env values).
+// The field is kept for backward compatibility of existing Gerrit resources.
 type KeycloakSpec struct {
 	Enabled bool `json:"enabled"`
 

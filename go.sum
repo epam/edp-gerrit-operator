@@ -32,8 +32,6 @@ github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8 h1:Yu3L0n5+InqUHwLM5Am7ZgCR/YeWG1jMztV2zc/wGtc=
 github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8/go.mod h1:fBJOEpuQC0Bi69gJILqYajwY53Sp8C1V872wU/5k5fE=
-github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800 h1:ZaS4MScUXGXRwUoRS6CoN6EcpQOm8gtifYoLi/M2MoQ=
-github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800/go.mod h1:Y06BFiPLPeuXoO9YqZySN32GTvxPkkdCBFIi559WHGY=
 github.com/evanphx/json-patch v4.12.0+incompatible h1:4onqiflcdA9EOZ4RxV643DvftH5pOlLGNtQ5lPWQu84=
 github.com/evanphx/json-patch v4.12.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.9.11 h1:/8HVnzMq13/3x9TPvjG08wUGqBTmZBsCWzjTM0wiaDU=

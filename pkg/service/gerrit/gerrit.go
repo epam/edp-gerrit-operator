@@ -7,21 +7,15 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/apps/v1"
 	coreV1Api "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	gerritClient "github.com/epam/edp-gerrit-operator/v2/pkg/client/gerrit"
@@ -40,8 +34,6 @@ const (
 	rsaID     = "id_rsa"
 	rsaIDFile = "id_rsa.pub"
 	admin     = "-admin"
-
-	DeploymentRestartAnnotation = "kubectl.kubernetes.io/restartedAt"
 )
 
 // Interface expresses behavior of the Gerrit EDP Component.
@@ -49,7 +41,6 @@ type Interface interface {
 	IsDeploymentReady(instance *gerritApi.Gerrit) (bool, error)
 	Configure(instance *gerritApi.Gerrit) (*gerritApi.Gerrit, bool, error)
 	ExposeConfiguration(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
-	Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error)
 	GetGerritSSHUrl(instance *gerritApi.Gerrit) (string, error)
 	GetServicePort(instance *gerritApi.Gerrit) (int32, error)
 	GetRestClient(gerritInstance *gerritApi.Gerrit) (gerritClient.ClientInterface, error)
@@ -421,136 +412,6 @@ func (s ComponentService) ExposeConfiguration(ctx context.Context, instance *ger
 	}
 
 	return instance, nil
-}
-
-// Integrate applies actions required for the integration with the other EDP Components.
-func (s ComponentService) Integrate(ctx context.Context, instance *gerritApi.Gerrit) (*gerritApi.Gerrit, error) {
-	l := ctrl.LoggerFrom(ctx)
-
-	externalUrl, err := s.getExternalUrl(instance)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
-	}
-
-	if instance.Spec.KeycloakSpec.Enabled {
-		l.Info("Keycloak integration enabled")
-
-		var keycloakClient *keycloakApi.KeycloakClient
-
-		keycloakClient, err = s.getKeycloakClient(ctx, instance)
-		if err != nil {
-			return instance, err
-		}
-
-		if keycloakClient == nil {
-			err = s.createKeycloakClient(ctx, instance, externalUrl)
-			if err != nil {
-				return instance, err
-			}
-		}
-
-		var keycloakEnvironmentValue []coreV1Api.EnvVar
-
-		keycloakEnvironmentValue, err = s.PlatformService.GenerateKeycloakSettings(instance)
-		if err != nil {
-			return instance, fmt.Errorf("failed to generate Keycloak %q env values: %w", instance.Name, err)
-		}
-
-		if err = s.PlatformService.PatchDeploymentEnv(instance, keycloakEnvironmentValue); err != nil {
-			return instance, errors.Wrap(err, "Failed to add identity service information")
-		}
-	} else {
-		l.Info("Keycloak integration not enabled. Restarting deployment.")
-
-		gerritDep := &v1.Deployment{}
-		if err = s.client.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, gerritDep); err != nil {
-			return nil, fmt.Errorf("failed to get deployment %q: %w", instance.Name, err)
-		}
-
-		old := gerritDep.DeepCopy()
-
-		if gerritDep.Spec.Template.Annotations == nil {
-			gerritDep.Spec.Template.Annotations = map[string]string{}
-		}
-
-		gerritDep.Spec.Template.Annotations[DeploymentRestartAnnotation] = time.Now().Format(time.RFC3339)
-
-		if err = s.client.Patch(ctx, gerritDep, client.MergeFrom(old)); err != nil {
-			return nil, fmt.Errorf("failed to patch deployment: %w", err)
-		}
-	}
-
-	return instance, nil
-}
-
-func (s ComponentService) getExternalUrl(instance *gerritApi.Gerrit) (string, error) {
-	if instance.Spec.ExternalURL != "" {
-		return instance.Spec.ExternalURL, nil
-	}
-
-	h, sc, err := s.PlatformService.GetExternalEndpoint(instance.Namespace, instance.Name)
-	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get Route for %v/%v", instance.Namespace, instance.Name)
-	}
-
-	return fmt.Sprintf("%v://%v", sc, h), nil
-}
-
-func (s ComponentService) getKeycloakClient(ctx context.Context, instance *gerritApi.Gerrit) (*keycloakApi.KeycloakClient, error) {
-	k8sClient := &keycloakApi.KeycloakClient{}
-
-	err := s.client.Get(ctx, types.NamespacedName{
-		Name:      instance.Name,
-		Namespace: instance.Namespace,
-	}, k8sClient)
-	if err != nil {
-		if k8sErrors.IsNotFound(err) {
-			return nil, nil
-		}
-
-		return nil, fmt.Errorf("failed to Get k8s KeycloakClient object %q: %w", instance.Name, err)
-	}
-
-	return k8sClient, nil
-}
-
-func (s ComponentService) createKeycloakClient(ctx context.Context, instance *gerritApi.Gerrit, externalUrl string) error {
-	keycloakClient := &keycloakApi.KeycloakClient{
-		TypeMeta: metaV1.TypeMeta{
-			Kind: "KeycloakClient",
-		},
-		ObjectMeta: metaV1.ObjectMeta{
-			Name:      instance.Name,
-			Namespace: instance.Namespace,
-		},
-		Spec: keycloakApi.KeycloakClientSpec{
-			ClientId:                instance.Name,
-			Public:                  true,
-			WebUrl:                  externalUrl,
-			AdvancedProtocolMappers: false,
-			RealmRoles: &[]keycloakApi.RealmRole{
-				{
-					Name:      "gerrit-administrators",
-					Composite: "administrator",
-				},
-				{
-					Name:      "gerrit-users",
-					Composite: "developer",
-				},
-			},
-		},
-	}
-
-	if instance.Spec.KeycloakSpec.Realm != "" {
-		keycloakClient.Spec.TargetRealm = instance.Spec.KeycloakSpec.Realm
-	}
-
-	err := s.client.Create(ctx, keycloakClient)
-	if err != nil {
-		return fmt.Errorf("failed to create k8s client for KeycloakClient: %w", err)
-	}
-
-	return nil
 }
 
 func (s ComponentService) GetRestClient(gerritInstance *gerritApi.Gerrit) (gerritClient.ClientInterface, error) {

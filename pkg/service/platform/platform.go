@@ -48,8 +48,6 @@ type PlatformService interface {
 
 	UpdateService(svc *coreV1Api.Service, port int32) error
 
-	GenerateKeycloakSettings(instance *gerritApi.Gerrit) ([]coreV1Api.EnvVar, error)
-
 	CreateConfigMap(instance *gerritApi.Gerrit, configMapName string, configMapData map[string]string) error
 }
 

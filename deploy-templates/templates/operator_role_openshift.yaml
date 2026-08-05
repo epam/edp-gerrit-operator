@@ -55,13 +55,6 @@ rules:
     - gerrits
     - gerrits/finalizers
     - gerrits/status
-    - keycloakclients
-    - keycloakclients/finalizers
-    - keycloakclients/status
-    - keycloakrealms
-    - keycloakrealms/status
-    - keycloaks
-    - keycloaks/status
   verbs:
     - '*'
 - apiGroups:

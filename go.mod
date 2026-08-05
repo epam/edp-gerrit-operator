@@ -5,7 +5,6 @@ go 1.25.0
 require (
 	github.com/dchest/uniuri v1.2.0
 	github.com/epam/edp-common v0.0.0-20230104131608-33d095012fe8
-	github.com/epam/edp-keycloak-operator v1.3.0-alpha-81.0.20230120183628-cbd0b6083800
 	github.com/go-git/go-git/v5 v5.13.0
 	github.com/go-logr/logr v1.4.3
 	github.com/google/uuid v1.6.0
@@ -35,6 +34,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
