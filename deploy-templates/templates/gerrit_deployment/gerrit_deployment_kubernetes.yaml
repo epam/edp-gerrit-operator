@@ -33,6 +33,15 @@ spec:
           secret:
             secretName: {{ .Values.gerrit.caCerts.secret }}
       {{- end }}
+      {{- if .Values.gerrit.sshHostKeys.enabled }}
+        - name: ssh-host-keys
+          secret:
+            secretName: {{ .Values.gerrit.sshHostKeys.secret }}
+            defaultMode: 0400
+        - name: ssh-host-keys-init
+          configMap:
+            name: {{ .Values.gerrit.name }}-ssh-host-keys-init
+      {{- end }}
       initContainers:
       {{- if .Values.gerrit.caCerts.enabled }}
         - name: ca-certs
@@ -76,6 +85,15 @@ spec:
             - name: {{ .Values.gerrit.name }}-data
               mountPath: /var/gerrit/review_site/certs
               subPath: certs
+            {{- end }}
+            {{- if .Values.gerrit.sshHostKeys.enabled }}
+            # Side path: the review_site PVC mount covers etc/, so the keys are
+            # copied into place by the docker-entrypoint-init.d hook below.
+            - name: ssh-host-keys
+              mountPath: /var/gerrit/ssh-host-keys
+              readOnly: true
+            - name: ssh-host-keys-init
+              mountPath: /docker-entrypoint-init.d
             {{- end }}
           # The startup probe absorbs the slow first boot (site init + reindex),
           # so readiness needs no fixed initial delay: a warm Gerrit serves in

@@ -116,6 +116,22 @@ gerrit:
     # -- Name of the secret containing additional CA certificates
     secret: secret-name
 
+  # Install pre-generated SSH host keys from a Secret so Gerrit serves predictable
+  # host keys across pod restarts and reinstalls, letting clients (ArgoCD,
+  # codebase-operator) pin them statically instead of running ssh-keyscan.
+  # Intended for test environments only: whoever holds the Secret can impersonate
+  # this Gerrit. The Secret must contain the full key set Gerrit would otherwise
+  # generate (ssh_host_rsa_key, ssh_host_ecdsa_key, ssh_host_ecdsa_384_key,
+  # ssh_host_ecdsa_521_key, ssh_host_ed25519_key), each with its .pub half —
+  # any type left out is generated randomly at init and stays unpinned.
+  # Generate the keys, the Secret manifest and the client known_hosts entries
+  # with scripts/generate-ssh-host-keys.sh.
+  sshHostKeys:
+    # -- Flag for enabling SSH host key injection from a pre-created Secret
+    enabled: false
+    # -- Name of the secret containing the SSH host key pairs
+    secret: gerrit-ssh-host-keys
+
   # -- Values to add to JAVA_OPTIONS
   javaOptions: ""
   # -- Additional environment variables

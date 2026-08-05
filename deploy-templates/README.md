@@ -44,6 +44,8 @@ A Helm chart for KubeRocketCI Gerrit Operator
 | gerrit.resources.limits.memory | string | `"2Gi"` |  |
 | gerrit.resources.requests.cpu | string | `"100m"` |  |
 | gerrit.resources.requests.memory | string | `"512Mi"` |  |
+| gerrit.sshHostKeys.enabled | bool | `false` | Flag for enabling SSH host key injection from a pre-created Secret |
+| gerrit.sshHostKeys.secret | string | `"gerrit-ssh-host-keys"` | Name of the secret containing the SSH host key pairs |
 | gerrit.sso.enabled | bool | `true` |  |
 | gerrit.sso.keycloakUrl | string | `"https://keycloak.example.com/auth"` | Keycloak URL. |
 | gerrit.sso.kind | string | `"KeycloakRealm"` |  |
