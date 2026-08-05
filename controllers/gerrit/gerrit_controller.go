@@ -229,22 +229,9 @@ func (r *ReconcileGerrit) Reconcile(ctx context.Context, request reconcile.Reque
 		}
 	}
 
-	if exposedInstance.Status.Status == StatusExposeFinish {
-		log.Info("Integration has started")
-
-		err = r.updateStatus(ctx, exposedInstance, StatusIntegrationStart)
-		if err != nil {
-			log.Error(err, updatingStatusErr, status, exposedInstance.Status.Status)
-			return reconcile.Result{}, err
-		}
-	}
-
-	exposedInstance, err = r.service.Integrate(ctx, exposedInstance)
-	if err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "Integration failed")
-	}
-
-	if exposedInstance.Status.Status == StatusIntegrationStart {
+	// StatusIntegrationStart is still handled for instances that were mid-flight before
+	// the Keycloak integration step was removed (SSO is configured via the Helm chart).
+	if exposedInstance.Status.Status == StatusExposeFinish || exposedInstance.Status.Status == StatusIntegrationStart {
 		msg := fmt.Sprintf("Configuration of %s/%s object has been finished", exposedInstance.Namespace, exposedInstance.Name)
 		log.Info(msg)
 

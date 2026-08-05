@@ -531,47 +531,13 @@ func TestReconcileGerrit_Reconcile_UpdateStatusExposeFinishErr(t *testing.T) {
 	}
 	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), req)
 
-	assert.ErrorIs(t, err, errTest)
+	assert.NoError(t, err)
 
 	loggerSink, ok := log.GetSink().(*commonmock.Logger)
 	assert.True(t, ok)
 
 	assert.ErrorIs(t, loggerSink.LastError(), errTest)
-	assert.Equal(t, reconcile.Result{}, rs)
-}
-
-func TestReconcileGerrit_Reconcile_IntegrateErr(t *testing.T) {
-	sw := &mocks.StatusWriter{}
-	mc := mocks.Client{}
-	ctx := context.Background()
-
-	instance := createGerritByStatus(StatusExposeFinish)
-	cl := createClient(instance)
-
-	errTest := errors.New("test")
-
-	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
-	sw.On("Update").Return(nil)
-	mc.On("Status").Return(sw)
-	mc.On("Update").Return(nil)
-
-	serviceMock := gmock.Interface{}
-	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
-	serviceMock.On("Configure", instance).Return(instance, false, nil)
-	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
-	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, errTest)
-
-	rg := ReconcileGerrit{
-		client:  &mc,
-		service: &serviceMock,
-	}
-	req := reconcile.Request{
-		NamespacedName: nsn,
-	}
-	rs, err := rg.Reconcile(ctx, req)
-
-	assert.ErrorIs(t, err, errTest)
-	assert.Equal(t, reconcile.Result{}, rs)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
 }
 
 func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T) {
@@ -593,7 +559,6 @@ func TestReconcileGerrit_Reconcile_UpdateStatusIntegrationStartErr(t *testing.T)
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
 	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
-	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, nil)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
@@ -637,7 +602,6 @@ func TestReconcileGerrit_Reconcile_UpdateAvailableStatusErr(t *testing.T) {
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
 	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
-	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, nil)
 
 	log := commonmock.NewLogr()
 	rg := ReconcileGerrit{
@@ -676,7 +640,6 @@ func TestReconcileGerrit_Reconcile_Valid(t *testing.T) {
 	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
 	serviceMock.On("Configure", instance).Return(instance, false, nil)
 	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
-	serviceMock.On("Integrate", mock.Anything, instance).Return(instance, nil)
 
 	rg := ReconcileGerrit{
 		client:  &mc,

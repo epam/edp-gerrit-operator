@@ -18,7 +18,6 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	buildInfo "github.com/epam/edp-common/pkg/config"
-	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
 
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	gerritContr "github.com/epam/edp-gerrit-operator/v2/controllers/gerrit"
@@ -73,7 +72,6 @@ func main() {
 
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(gerritApi.AddToScheme(scheme))
-	utilruntime.Must(keycloakApi.AddToScheme(scheme))
 
 	mgr, err := initManager(metricsAddr, probeAddr, enableLeaderElection)
 	if err != nil {

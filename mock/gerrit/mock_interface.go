@@ -161,29 +161,6 @@ func (_m *Interface) GetServicePort(instance *v1.Gerrit) (int32, error) {
 	return r0, r1
 }
 
-// Integrate provides a mock function with given fields: ctx, instance
-func (_m *Interface) Integrate(ctx context.Context, instance *v1.Gerrit) (*v1.Gerrit, error) {
-	ret := _m.Called(ctx, instance)
-
-	var r0 *v1.Gerrit
-	if rf, ok := ret.Get(0).(func(context.Context, *v1.Gerrit) *v1.Gerrit); ok {
-		r0 = rf(ctx, instance)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.Gerrit)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *v1.Gerrit) error); ok {
-		r1 = rf(ctx, instance)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // IsDeploymentReady provides a mock function with given fields: instance
 func (_m *Interface) IsDeploymentReady(instance *v1.Gerrit) (bool, error) {
 	ret := _m.Called(instance)

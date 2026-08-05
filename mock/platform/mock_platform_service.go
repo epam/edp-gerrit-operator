@@ -94,36 +94,6 @@ func (_m *PlatformService) ExecInPod(namespace string, podName string, command [
 	return r0, r1, r2
 }
 
-// GenerateKeycloakSettings provides a mock function with given fields: instance
-func (_m *PlatformService) GenerateKeycloakSettings(instance *v1.Gerrit) ([]corev1.EnvVar, error) {
-	ret := _m.Called(instance)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GenerateKeycloakSettings")
-	}
-
-	var r0 []corev1.EnvVar
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*v1.Gerrit) ([]corev1.EnvVar, error)); ok {
-		return rf(instance)
-	}
-	if rf, ok := ret.Get(0).(func(*v1.Gerrit) []corev1.EnvVar); ok {
-		r0 = rf(instance)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]corev1.EnvVar)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(*v1.Gerrit) error); ok {
-		r1 = rf(instance)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetDeploymentSSHPort provides a mock function with given fields: gerrit
 func (_m *PlatformService) GetDeploymentSSHPort(gerrit *v1.Gerrit) (int32, error) {
 	ret := _m.Called(gerrit)

@@ -27,8 +27,6 @@ import (
 	k8sClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	keycloakApi "github.com/epam/edp-keycloak-operator/api/v1"
-
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit/spec"
 	platformHelper "github.com/epam/edp-gerrit-operator/v2/pkg/service/platform/helper"
@@ -186,124 +184,6 @@ func (s *K8SService) GetDeploymentSSHPort(instance *gerritApi.Gerrit) (int32, er
 	}
 
 	return 0, nil
-}
-
-// GenerateKeycloakSettings generates a set of environment var.
-func (s *K8SService) GenerateKeycloakSettings(instance *gerritApi.Gerrit) ([]coreV1Api.EnvVar, error) {
-	identityServiceSecretName := fmt.Sprintf("%v-%v", instance.Name, spec.IdentityServiceCredentialsSecretPostfix)
-
-	realm, err := s.getKeycloakRealm(instance)
-	if err != nil {
-		return nil, err
-	}
-
-	keycloakUrl, err := s.getKeycloakRootUrl(instance)
-	if err != nil {
-		return nil, err
-	}
-
-	return []coreV1Api.EnvVar{
-		{
-			Name:  "AUTH_TYPE",
-			Value: "OAUTH",
-		},
-		{
-			Name:  "OAUTH_KEYCLOAK_CLIENT_ID",
-			Value: instance.Name,
-		},
-		{
-			Name:  "OAUTH_KEYCLOAK_REALM",
-			Value: realm.Spec.RealmName,
-		},
-		{
-			Name:  "OAUTH_KEYCLOAK_ROOT_URL",
-			Value: *keycloakUrl,
-		},
-		{
-			Name: "OAUTH_KEYCLOAK_CLIENT_SECRET",
-			ValueFrom: &coreV1Api.EnvVarSource{
-				SecretKeyRef: &coreV1Api.SecretKeySelector{
-					LocalObjectReference: coreV1Api.LocalObjectReference{
-						Name: identityServiceSecretName,
-					},
-					Key: "clientSecret",
-				},
-			},
-		},
-	}, nil
-}
-
-func (s *K8SService) getKeycloakRealm(instance *gerritApi.Gerrit) (*keycloakApi.KeycloakRealm, error) {
-	ctx := context.Background()
-
-	if instance.Spec.KeycloakSpec.Realm != "" {
-		realmList := keycloakApi.KeycloakRealmList{}
-		listOpts := k8sClient.ListOptions{Namespace: instance.Namespace}
-
-		k8sClient.MatchingLabels(map[string]string{
-			"targetRealm": instance.Spec.KeycloakSpec.Realm,
-		}).ApplyToList(&listOpts)
-
-		if err := s.client.List(ctx, &realmList, &listOpts); err != nil {
-			return nil, errors.Wrap(err, "unable to get reams by label")
-		}
-
-		if len(realmList.Items) > 0 {
-			return &realmList.Items[0], nil
-		}
-
-		if err := s.client.List(ctx, &realmList,
-			&k8sClient.ListOptions{Namespace: instance.Namespace}); err != nil {
-			return nil, errors.Wrap(err, "unable to get all reams")
-		}
-
-		for i := 0; i < len(realmList.Items); i++ {
-			if realmList.Items[i].Spec.RealmName == instance.Spec.KeycloakSpec.Realm {
-				return &realmList.Items[i], nil
-			}
-		}
-	}
-
-	name := "main"
-	realm := &keycloakApi.KeycloakRealm{}
-
-	err := s.client.Get(ctx, types.NamespacedName{
-		Name:      name,
-		Namespace: instance.Namespace,
-	}, realm)
-	if err != nil {
-		return nil, fmt.Errorf("failed to GET KeycloakRealm resorce %q: %w", name, err)
-	}
-
-	return realm, nil
-}
-
-func (s *K8SService) getKeycloakRootUrl(instance *gerritApi.Gerrit) (*string, error) {
-	ctx := context.Background()
-
-	realm, err := s.getKeycloakRealm(instance)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(realm.OwnerReferences) == 0 {
-		return nil, errors.Errorf("realm [%s] does not have owner refs", realm.Name)
-	}
-
-	keycloak := &keycloakApi.Keycloak{}
-	name := realm.OwnerReferences[0].Name // TODO: check if owner references is not empty before access
-
-	err = s.client.Get(ctx, types.NamespacedName{
-		Name:      name,
-		Namespace: instance.Namespace,
-	}, keycloak)
-	if err != nil {
-		return nil, fmt.Errorf("failed to GET Keycloak resorce %q: %w", name, err)
-	}
-
-	keycloakUrl := keycloak.Spec.Url
-
-	return &keycloakUrl, nil
 }
 
 // GetSecret return data field of Secret.
