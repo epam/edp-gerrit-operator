@@ -324,6 +324,33 @@ func (gc *Client) InitAllProjects(instance *gerritApi.Gerrit, k8sService platfor
 		return errors.Wrapf(err, "Failed to execute init-all-projects.sh script inside gerrit pod")
 	}
 
+	// The script pushes refs/meta/config straight into the bare All-Projects repository on the
+	// pod filesystem, bypassing Gerrit's receive path. The running daemon therefore keeps serving
+	// the ACL it loaded at start-up until its project cache happens to re-read the ref, and until
+	// then edp-ci has no push permission - branch creation is rejected with
+	// "Unable to resolve object ... or get update permission to create new commit objects".
+	if err = gc.flushCaches(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// flushCaches makes Gerrit drop its in-memory caches so that configuration written directly to
+// the site repositories takes effect immediately.
+func (gc *Client) flushCaches() error {
+	cmd := &ssh.SSHCommand{
+		Path:   "gerrit flush-caches --all",
+		Env:    []string{},
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if _, err := gc.sshClient.RunCommand(cmd); err != nil {
+		return errors.Wrap(err, "Failed to flush Gerrit caches")
+	}
+
 	return nil
 }
 
