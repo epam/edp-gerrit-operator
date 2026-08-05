@@ -13,12 +13,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	appsV1 "k8s.io/api/apps/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	commonmock "github.com/epam/edp-common/pkg/mock"
@@ -26,6 +30,7 @@ import (
 	gerritApi "github.com/epam/edp-gerrit-operator/v2/api/v1"
 	mocks "github.com/epam/edp-gerrit-operator/v2/mock"
 	gmock "github.com/epam/edp-gerrit-operator/v2/mock/gerrit"
+	gerritService "github.com/epam/edp-gerrit-operator/v2/pkg/service/gerrit"
 	"github.com/epam/edp-gerrit-operator/v2/pkg/service/platform"
 )
 
@@ -665,4 +670,210 @@ func TestNewReconcileGerrit(t *testing.T) {
 
 	_, err = NewReconcileGerrit(cl, &sch, logr.Discard())
 	assert.NoError(t, err)
+}
+
+func TestNewReconcileGerrit_UnknownPlatformErr(t *testing.T) {
+	t.Setenv("PLATFORM_TYPE", "unknown-platform")
+
+	_, err := NewReconcileGerrit(nil, runtime.NewScheme(), logr.Discard())
+	assert.Error(t, err)
+}
+
+func TestReconcileGerrit_SetupWithManager(t *testing.T) {
+	s := runtime.NewScheme()
+	require.NoError(t, gerritApi.AddToScheme(s))
+
+	mgr, err := ctrl.NewManager(&rest.Config{Host: "http://127.0.0.1:1"}, ctrl.Options{
+		Scheme:  s,
+		Metrics: metricsserver.Options{BindAddress: "0"},
+	})
+	require.NoError(t, err)
+
+	rg := &ReconcileGerrit{}
+	assert.NoError(t, rg.SetupWithManager(mgr))
+}
+
+func TestReconcileGerrit_SetupWithManager_KindNotRegisteredErr(t *testing.T) {
+	mgr, err := ctrl.NewManager(&rest.Config{Host: "http://127.0.0.1:1"}, ctrl.Options{
+		Scheme:  runtime.NewScheme(),
+		Metrics: metricsserver.Options{BindAddress: "0"},
+	})
+	require.NoError(t, err)
+
+	rg := &ReconcileGerrit{}
+	err = rg.SetupWithManager(mgr)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to setup Gerrit controller")
+}
+
+func TestReconcileGerrit_Reconcile_GetErr(t *testing.T) {
+	mc := mocks.Client{}
+	errTest := errors.New("test")
+
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(errTest)
+
+	rg := ReconcileGerrit{
+		client: &mc,
+	}
+	rs, err := rg.Reconcile(context.Background(), reconcile.Request{NamespacedName: nsn})
+
+	assert.ErrorIs(t, err, errTest)
+	assert.Contains(t, err.Error(), "failed Get Gerrit CR")
+	assert.Equal(t, reconcile.Result{}, rs)
+}
+
+func TestReconcileGerrit_Reconcile_ConfigureUserNotFound(t *testing.T) {
+	sw := &mocks.StatusWriter{}
+	mc := mocks.Client{}
+	ctx := context.Background()
+
+	instance := createGerritByStatus(StatusConfigured)
+	cl := createClient(instance)
+
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
+	sw.On("Update").Return(nil)
+	mc.On("Status").Return(sw)
+
+	serviceMock := gmock.Interface{}
+	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
+	serviceMock.On("Configure", instance).
+		Return(instance, false, gerritService.UserNotFoundError("user not found"))
+	serviceMock.On("ExposeConfiguration", mock.Anything, instance).Return(instance, nil)
+
+	rg := ReconcileGerrit{
+		client:  &mc,
+		service: &serviceMock,
+	}
+	rs, err := rg.Reconcile(ctx, reconcile.Request{NamespacedName: nsn})
+
+	assert.NoError(t, err)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 60 * time.Second}, rs)
+}
+
+func TestReconcileGerrit_Reconcile_UpdateStatusConfiguredErr(t *testing.T) {
+	sw := &mocks.StatusWriter{}
+	mc := mocks.Client{}
+	ctx := context.Background()
+
+	instance := createGerritByStatus(StatusConfiguring)
+	cl := createClient(instance)
+
+	errTest := errors.New("test")
+
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
+	sw.On("Update").Return(errTest)
+	mc.On("Status").Return(sw)
+
+	serviceMock := gmock.Interface{}
+	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
+	serviceMock.On("Configure", instance).Return(instance, false, nil)
+
+	log := commonmock.NewLogr()
+	rg := ReconcileGerrit{
+		client:  &mc,
+		service: &serviceMock,
+	}
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), reconcile.Request{NamespacedName: nsn})
+
+	assert.NoError(t, err)
+
+	loggerSink, ok := log.GetSink().(*commonmock.Logger)
+	assert.True(t, ok)
+
+	assert.ErrorIs(t, loggerSink.LastError(), errTest)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+}
+
+func TestReconcileGerrit_Reconcile_UpdateStatusExposeStartFromConfiguredErr(t *testing.T) {
+	sw := &mocks.StatusWriter{}
+	mc := mocks.Client{}
+	ctx := context.Background()
+
+	instance := createGerritByStatus(StatusConfigured)
+	cl := createClient(instance)
+
+	errTest := errors.New("test")
+
+	mc.On("Get", nsn, &gerritApi.Gerrit{}).Return(cl)
+	sw.On("Update").Return(errTest)
+	mc.On("Status").Return(sw)
+
+	serviceMock := gmock.Interface{}
+	serviceMock.On("IsDeploymentReady", instance).Return(true, nil)
+	serviceMock.On("Configure", instance).Return(instance, false, nil)
+
+	log := commonmock.NewLogr()
+	rg := ReconcileGerrit{
+		client:  &mc,
+		service: &serviceMock,
+	}
+	rs, err := rg.Reconcile(ctrl.LoggerInto(ctx, log), reconcile.Request{NamespacedName: nsn})
+
+	assert.NoError(t, err)
+
+	loggerSink, ok := log.GetSink().(*commonmock.Logger)
+	assert.True(t, ok)
+
+	assert.ErrorIs(t, loggerSink.LastError(), errTest)
+	assert.Equal(t, reconcile.Result{RequeueAfter: 10 * time.Second}, rs)
+}
+
+func TestReconcileGerrit_UpdateAvailableStatus_NoChange(t *testing.T) {
+	instance := createGerritByStatus(StatusReady)
+	instance.Status.Available = true
+
+	rg := ReconcileGerrit{}
+
+	assert.NoError(t, rg.updateAvailableStatus(context.Background(), instance, true))
+}
+
+func TestReconcileGerrit_UpdateStatusWithRetry_Conflict(t *testing.T) {
+	sw := &mocks.StatusWriter{}
+	mc := mocks.Client{}
+	ctx := context.Background()
+
+	instance := createGerritByStatus(StatusCreated)
+	cl := createClient(instance)
+
+	conflictErr := k8sErrors.NewConflict(
+		schema.GroupResource{Group: "v2.edp.epam.com", Resource: "gerrits"}, name, errors.New("conflict"))
+
+	sw.On("Update").Return(conflictErr).Once()
+	sw.On("Update").Return(nil).Once()
+	mc.On("Status").Return(sw)
+	mc.On("Get", nsn, instance).Return(cl)
+
+	rg := ReconcileGerrit{client: &mc}
+
+	err := rg.updateStatusWithRetry(ctx, instance, func() {
+		instance.Status.Status = StatusReady
+	})
+
+	assert.NoError(t, err)
+	sw.AssertNumberOfCalls(t, "Update", 2)
+}
+
+func TestReconcileGerrit_UpdateStatusWithRetry_ConflictGetErr(t *testing.T) {
+	sw := &mocks.StatusWriter{}
+	mc := mocks.Client{}
+	ctx := context.Background()
+
+	instance := createGerritByStatus(StatusCreated)
+
+	conflictErr := k8sErrors.NewConflict(
+		schema.GroupResource{Group: "v2.edp.epam.com", Resource: "gerrits"}, name, errors.New("conflict"))
+	errTest := errors.New("get failed")
+
+	sw.On("Update").Return(conflictErr)
+	mc.On("Status").Return(sw)
+	mc.On("Get", nsn, instance).Return(errTest)
+
+	rg := ReconcileGerrit{client: &mc}
+
+	err := rg.updateStatusWithRetry(ctx, instance, func() {
+		instance.Status.Status = StatusReady
+	})
+
+	assert.ErrorIs(t, err, errTest)
 }
