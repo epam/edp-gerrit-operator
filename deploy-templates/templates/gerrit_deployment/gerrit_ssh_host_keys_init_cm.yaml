@@ -1,0 +1,25 @@
+{{- if and .Values.gerrit.deploy .Values.gerrit.sshHostKeys.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.gerrit.name }}-ssh-host-keys-init
+  labels:
+    app: {{ .Values.gerrit.name }}
+    {{- include "gerrit-operator.labels" . | nindent 4 }}
+data:
+  ssh-host-keys.sh: |
+    # Sourced as root by gerrit-entrypoint.sh (set -e active) after the
+    # first-time `gerrit init` and before the daemon starts, so the pinned
+    # keys below are what sshd loads. `cp -f` also converges sites whose PVC
+    # already holds randomly generated keys. The later `gerrit init` run never
+    # regenerates host keys that exist.
+    for f in /var/gerrit/ssh-host-keys/ssh_host_*; do
+      key="$(basename "$f")"
+      cp -f "$f" "${GERRIT_SITE}/etc/${key}"
+      chown "${GERRIT_USER}:${GERRIT_USER}" "${GERRIT_SITE}/etc/${key}"
+      case "$key" in
+        *.pub) chmod 644 "${GERRIT_SITE}/etc/${key}" ;;
+        *)     chmod 600 "${GERRIT_SITE}/etc/${key}" ;;
+      esac
+    done
+{{- end }}

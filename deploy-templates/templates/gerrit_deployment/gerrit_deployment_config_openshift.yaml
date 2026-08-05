@@ -78,6 +78,15 @@ spec:
           volumeMounts:
             - mountPath: /var/gerrit/review_site
               name: {{ .Values.gerrit.name }}-data
+            {{- if .Values.gerrit.sshHostKeys.enabled }}
+            # Side path: the review_site PVC mount covers etc/, so the keys are
+            # copied into place by the docker-entrypoint-init.d hook below.
+            - name: ssh-host-keys
+              mountPath: /var/gerrit/ssh-host-keys
+              readOnly: true
+            - name: ssh-host-keys-init
+              mountPath: /docker-entrypoint-init.d
+            {{- end }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -89,6 +98,15 @@ spec:
         - name: {{ .Values.gerrit.name }}-data
           persistentVolumeClaim:
             claimName: {{ .Values.gerrit.name }}-data
+        {{- if .Values.gerrit.sshHostKeys.enabled }}
+        - name: ssh-host-keys
+          secret:
+            secretName: {{ .Values.gerrit.sshHostKeys.secret }}
+            defaultMode: 0400
+        - name: ssh-host-keys-init
+          configMap:
+            name: {{ .Values.gerrit.name }}-ssh-host-keys-init
+        {{- end }}
       {{- with .Values.gerrit.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
