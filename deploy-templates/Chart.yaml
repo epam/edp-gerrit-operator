@@ -3,8 +3,8 @@ description: A Helm chart for KubeRocketCI Gerrit Operator
 home: https://docs.kuberocketci.io/
 name: gerrit-operator
 type: application
-version: 2.25.0-SNAPSHOT
-appVersion: 2.25.0-SNAPSHOT
+version: 2.26.0-SNAPSHOT
+appVersion: 2.26.0-SNAPSHOT
 icon: https://docs.kuberocketci.io/img/logo.svg
 keywords:
   - edp
@@ -23,10 +23,10 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/operator: "true"
   artifacthub.io/images: |
-    - name: gerrit-operator:2.24.0
-      image: epamedp/gerrit-operator:2.24.0
-    - name: edp-gerrit:3.6.2-oauth
-      image: epamedp/edp-gerrit:3.6.2-oauth
+    - name: gerrit-operator:2.25.0
+      image: epamedp/gerrit-operator:2.25.0
+    - name: edp-gerrit:3.14.2
+      image: epamedp/edp-gerrit:3.14.2
     - name: alpine:3.18.9
       image: alpine:3.18.9
   artifacthub.io/operatorCapabilities: Full Lifecycle
