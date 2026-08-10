@@ -2,6 +2,31 @@
 ## [Unreleased]
 
 
+<a name="v2.25.0"></a>
+## [v2.25.0] - 2026-08-10
+### Features
+
+- add optional SSH host key injection for predictable Gerrit host keys
+
+### Bug Fixes
+
+- flush Gerrit caches after installing the All-Projects ACL
+- align Gerrit provisioning with Gerrit 3.14 and bump default image
+
+### Code Refactoring
+
+- remove deprecated Keycloak integration from the operator
+
+### Testing
+
+- cover all reconciliation paths in the Gerrit controller
+
+### Routine
+
+- upgrade to Go 1.25, Kubernetes 1.34 API and golangci-lint v2
+- Update current development version ([#93](https://github.com/epam/edp-gerrit-operator/issues/93))
+
+
 <a name="v2.24.0"></a>
 ## [v2.24.0] - 2025-07-21
 ### Routine
@@ -170,7 +195,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.24.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.25.0...HEAD
+[v2.25.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.24.0...v2.25.0
 [v2.24.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.1...v2.24.0
 [v2.23.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...v2.23.1
 [v2.23.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.22.0...v2.23.0
