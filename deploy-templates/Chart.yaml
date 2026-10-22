@@ -27,8 +27,6 @@ annotations:
       image: epamedp/gerrit-operator:2.25.0
     - name: edp-gerrit:3.14.2
       image: epamedp/edp-gerrit:3.14.2
-    - name: alpine:3.18.9
-      image: alpine:3.18.9
   artifacthub.io/operatorCapabilities: Full Lifecycle
   artifacthub.io/crds: |
     - kind: Gerrit
