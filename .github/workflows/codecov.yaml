@@ -5,19 +5,20 @@ on:
     branches: [ master ]
 
 env:
-  GOLANG_VERSION: '1.25'
+  GOLANG_VERSION: '1.27'
 
 jobs:
 
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GOLANG_VERSION }}
+          check-latest: true
 
       - name: Test
         run: make test

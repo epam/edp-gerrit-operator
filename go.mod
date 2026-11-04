@@ -1,6 +1,6 @@
 module github.com/epam/edp-gerrit-operator/v2
 
-go 1.25.0
+go 1.27.3
 
 require (
 	github.com/dchest/uniuri v1.2.0
@@ -15,7 +15,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.53.0
-	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	gopkg.in/resty.v1 v1.12.0
 	k8s.io/api v0.34.10
 	k8s.io/apimachinery v0.34.10
