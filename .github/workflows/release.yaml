@@ -5,7 +5,7 @@ on:
       - 'v*'
 
 env:
-    GOLANG_VERSION: '1.25'
+    GOLANG_VERSION: '1.27'
 
 jobs:
   prepare-release:
@@ -16,14 +16,15 @@ jobs:
       SOURCE_TAG: ${{ github.ref }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: '0'
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GOLANG_VERSION }}
+          check-latest: true
 
       - name: Check if the published tag is well formed and setup vars
         run: |

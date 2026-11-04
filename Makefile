@@ -110,9 +110,10 @@ helm-docs: helmdocs	## generate helm docs
 	$(HELMDOCS)
 
 GOLANGCILINT = ${CURRENT_DIR}/bin/golangci-lint
+GOLANGCI_LINT_VERSION ?= v2.15.0
 .PHONY: golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
-	$(call go-get-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,v2.12.2)
+	$(call go-get-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
