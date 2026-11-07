@@ -1,6 +1,22 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Routine
+
+- Update current development version
+
+
+<a name="v2.26.0"></a>
+## [v2.26.0] - 2026-11-07
+### Bug Fixes
+
+- build the image on Alpine 3.24 and pin git by minor version
+
+### Routine
+
+- Bump Go to 1.27.3
+- Update current development version
+
 
 <a name="v2.25.0"></a>
 ## [v2.25.0] - 2026-08-10
@@ -195,7 +211,8 @@
 <a name="v2.16.0"></a>
 ## [v2.16.0] - 2023-08-17
 
-[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.25.0...HEAD
+[Unreleased]: https://github.com/epam/edp-gerrit-operator/compare/v2.26.0...HEAD
+[v2.26.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.25.0...v2.26.0
 [v2.25.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.24.0...v2.25.0
 [v2.24.0]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.1...v2.24.0
 [v2.23.1]: https://github.com/epam/edp-gerrit-operator/compare/v2.23.0...v2.23.1
