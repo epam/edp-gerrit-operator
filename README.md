@@ -35,7 +35,7 @@ In order to install the KubeRocketCI Gerrit Operator, follow the steps below:
      ```bash
      helm search repo epamedp/gerrit-operator -l
      NAME                     CHART VERSION   APP VERSION     DESCRIPTION
-     epamedp/gerrit-operator  2.21.0          2.21.0          A Helm chart for KubeRocketCI Gerrit Operator
+     epamedp/gerrit-operator  2.26.0          2.26.0          A Helm chart for KubeRocketCI Gerrit Operator
      ```
 
     _**NOTE:** It is highly recommended to use the latest released version._
